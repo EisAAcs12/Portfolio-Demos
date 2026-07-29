@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Amathuba Hub — Attendance Ledger (Demo)</title>
+<meta name="theme-color" content="#1C1E1F">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -310,6 +311,7 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="clock">Clock In / Out</button>
       <button class="tab" data-tab="swap">Day Swap</button>
+      <button class="tab" data-tab="leave">Leave/Out Of Office</button>
       <button class="tab" data-tab="history">My Log</button>
       <button class="tab" data-tab="manager">Manager</button>
       <button class="tab" data-tab="settings">Settings</button>
@@ -345,10 +347,10 @@ const DEMO_STORE = {};
 // ---------------------------------------------------------------
 // Defaults live in state.settings so the Admin tab can change them
 // at runtime. (Demo build: PINs below are sample values, safe to share.)
-// ---------------------------------------------------------------
 const KEY_EMPLOYEES = "amathuba_employees";
 const KEY_ATTENDANCE = "amathuba_attendance";
 const KEY_SWAPS = "amathuba_swaps";
+const KEY_LEAVE = "amathuba_leave";
 const KEY_SETTINGS = "amathuba_settings";
 
 const DEFAULT_EMPLOYEES = ["Alex", "Drew", "Morgan", "Casey", "Jordan", "Riley", "Taylor"];
@@ -391,6 +393,7 @@ let state = {
   employees: [],
   attendance: [],
   swaps: [],
+  leave: [],
   settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
 };
 
@@ -400,10 +403,12 @@ let settingsUnlocked = false;
 let adminUnlocked = false;
 let editingAttendanceId = null;
 let editingSwapId = null;
+let editingLeaveId = null;
 let activeTab = "clock";
 let selectedEmployee = "";
 let historyEmployee = "";
 let swapEmployee = "";
+let leaveEmployee = "";
 let pendingLateDraft = false; // whether the "late reason" panel is open
 
 // ---------------- Storage helpers (in-memory demo store) ----------------
@@ -416,10 +421,11 @@ async function setData(key, value){
 }
 
 async function loadState(){
-  const [employeesRaw, attendance, swaps, settingsRaw] = await Promise.all([
+  const [employeesRaw, attendance, swaps, leave, settingsRaw] = await Promise.all([
     getData(KEY_EMPLOYEES, null),
     getData(KEY_ATTENDANCE, []),
     getData(KEY_SWAPS, []),
+    getData(KEY_LEAVE, []),
     getData(KEY_SETTINGS, null)
   ]);
   let employees = employeesRaw;
@@ -435,7 +441,7 @@ async function loadState(){
     // fill in any new fields older saved settings might be missing
     settings = Object.assign({}, DEFAULT_SETTINGS, settings);
   }
-  state = { employees, attendance, swaps, settings };
+  state = { employees, attendance, swaps, leave, settings };
 }
 
 function uid(){
@@ -585,6 +591,38 @@ function toISODateLocal(d){
   return `${y}-${m}-${day}`;
 }
 
+// ---------------- DD/MM/YYYY date field helpers (used by Leave tab) ----------------
+// Auto-inserts slashes as the person types: 27 -> 27/ -> 27/07 -> 27/07/2026
+function applyDateMask(inputEl){
+  inputEl.addEventListener('input', ()=>{
+    let digits = inputEl.value.replace(/\D/g, '').slice(0, 8);
+    let out = digits.slice(0,2);
+    if(digits.length > 2) out += '/' + digits.slice(2,4);
+    if(digits.length > 4) out += '/' + digits.slice(4,8);
+    inputEl.value = out;
+  });
+}
+
+// Parses "DD/MM/YYYY" into an ISO "YYYY-MM-DD" string, or null if invalid.
+function parseDDMMYYYY(str){
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((str || '').trim());
+  if(!match) return null;
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+  if(month < 1 || month > 12 || day < 1 || day > 31 || year < 2000 || year > 2100) return null;
+  const d = new Date(year, month - 1, day);
+  if(d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null; // rejects e.g. 31/02
+  return toISODateLocal(d);
+}
+
+// Formats an ISO "YYYY-MM-DD" string into "DD/MM/YYYY" for display in editable fields.
+function isoToDDMMYYYY(iso){
+  if(!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
 // ---------------- Skills training overrides ----------------
 function nextWeekday(dateStr){
   const d = new Date(dateStr + "T00:00:00");
@@ -621,6 +659,10 @@ function getTrainingStatus(name, dateStr){
 
 // Merges the normal hybrid in-office/remote split with skills-training
 // overrides (training days, comp days off, and blocked comp days).
+function isOnLeave(name, dateStr){
+  return state.leave.some(l => l.name === name && dateStr >= l.startDate && dateStr <= l.endDate);
+}
+
 function officeStatusForDate(date){
   const dateStr = toISODateLocal(date);
   const base = officeGroupsForDate(date);
@@ -629,8 +671,15 @@ function officeStatusForDate(date){
   const training = [];
   const compOff = [];
   const compBlocked = [];
+  const onLeave = [];
 
   state.employees.forEach(name=>{
+    if(isOnLeave(name, dateStr)){
+      onLeave.push(name);
+      inOffice = inOffice.filter(n=>n!==name);
+      remote = remote.filter(n=>n!==name);
+      return; // leave overrides training/comp-off — they're simply out
+    }
     const status = getTrainingStatus(name, dateStr);
     if(status === 'training'){
       training.push(name);
@@ -645,7 +694,7 @@ function officeStatusForDate(date){
     }
   });
 
-  return { inOffice, remote, training, compOff, compBlocked };
+  return { inOffice, remote, training, compOff, compBlocked, onLeave };
 }
 
 // Returns the next `count` weekday dates (YYYY-MM-DD) where `name` is scheduled
@@ -703,6 +752,7 @@ function render(){
   const view = document.getElementById('view');
   if(activeTab === 'clock') view.innerHTML = renderClockTab();
   else if(activeTab === 'swap') view.innerHTML = renderSwapTab();
+  else if(activeTab === 'leave') view.innerHTML = renderLeaveTab();
   else if(activeTab === 'history') view.innerHTML = renderHistoryTab();
   else if(activeTab === 'manager') view.innerHTML = renderManagerTab();
   else if(activeTab === 'settings') view.innerHTML = renderSettingsTab();
@@ -714,9 +764,9 @@ function render(){
 function renderScheduleBanner(){
   const today = new Date();
   const status = officeStatusForDate(today);
-  const { inOffice, remote, training, compOff, compBlocked } = status;
+  const { inOffice, remote, training, compOff, compBlocked, onLeave } = status;
 
-  if(inOffice.length === 0 && remote.length === 0 && training.length === 0){
+  if(inOffice.length === 0 && remote.length === 0 && training.length === 0 && onLeave.length === 0){
     return `<div class="schedule-banner"><span class="schedule-banner__label">Weekend</span> — no office rotation today.</div>`;
   }
 
@@ -726,6 +776,9 @@ function renderScheduleBanner(){
   }
   if(compOff.length){
     extra += `<div><span class="schedule-banner__label">Comp day off today:</span> ${compOff.map(escapeHtml).join(', ')} (post-training)</div>`;
+  }
+  if(onLeave.length){
+    extra += `<div><span class="schedule-banner__label">On leave today:</span> ${onLeave.map(escapeHtml).join(', ')}</div>`;
   }
   if(compBlocked.length){
     extra += `<div class="schedule-banner__warning">Note: comp day off for ${compBlocked.map(escapeHtml).join(', ')} postponed — no office coverage that day.</div>`;
@@ -749,7 +802,9 @@ function renderClockTab(){
     const todayStr = toISODateLocal(new Date());
     const trainingStatus = getTrainingStatus(selectedEmployee, todayStr);
 
-    if(trainingStatus === 'training'){
+    if(isOnLeave(selectedEmployee, todayStr)){
+      actionBlock = `<p class="training-note">You're on leave today — no clock-in needed. Enjoy your time off!</p>`;
+    } else if(trainingStatus === 'training'){
       actionBlock = `<p class="training-note">You're in skills training today — no clock-in needed. Have a great session!</p>`;
     } else if(trainingStatus === 'comp-off'){
       actionBlock = `<p class="training-note">You're on your comp day off today — no clock-in needed. Enjoy the day!</p>`;
@@ -880,11 +935,63 @@ function renderSwapTab(){
   `;
 }
 
-// ---------------- My Log tab ----------------
+// ---------------- Leave / Out of Office tab ----------------
+function renderLeaveTab(){
+  const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===leaveEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  const mine = leaveEmployee ? state.leave.filter(l=>l.name===leaveEmployee).slice().sort((a,b)=> b.startDate.localeCompare(a.startDate)) : [];
+  const today = toISODateLocal(new Date());
+
+  return `
+    <div class="card">
+      <h2 class="card__title">Log leave / out of office</h2>
+      <p class="card__sub">Let the team know you won't be in on specific days.</p>
+
+      <div class="field">
+        <label for="leaveEmpSelect">Your name</label>
+        <select id="leaveEmpSelect">
+          <option value="">Select your name…</option>
+          ${empOptions}
+        </select>
+      </div>
+      ${leaveEmployee ? `
+      <div class="field">
+        <label for="leaveFromDate">First day out</label>
+        <input type="text" id="leaveFromDate" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
+      </div>
+      <div class="field">
+        <label for="leaveToDate">Last day out</label>
+        <input type="text" id="leaveToDate" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
+      </div>
+      <div class="field">
+        <label for="leaveReason">Reason</label>
+        <textarea id="leaveReason" placeholder="e.g. annual leave, sick, family responsibility..."></textarea>
+      </div>
+      <button class="btn btn--primary" id="submitLeaveBtn">Log Leave</button>
+      ` : ''}
+    </div>
+
+    ${leaveEmployee ? `
+    <div class="card">
+      <h2 class="card__title">Your logged leave</h2>
+      ${mine.length === 0 ? `<p class="empty-note">No leave logged yet.</p>` : mine.map(l=>`
+        <div class="ledger-row">
+          <div class="ledger-row__main">
+            <span class="ledger-row__name">${l.startDate === l.endDate ? fmtDate(l.startDate) : `${fmtDate(l.startDate)} → ${fmtDate(l.endDate)}`}</span>
+            <span class="ledger-row__reason">${escapeHtml(l.reason)}</span>
+          </div>
+          ${l.endDate >= today ? `<span class="badge badge--pending">Upcoming/current</span>` : `<span class="badge badge--approved">Past</span>`}
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+}
+
+
 function renderHistoryTab(){
   const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===historyEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
   const dailySummaries = historyEmployee ? computeDailySummary(historyEmployee) : [];
   const swaps = historyEmployee ? state.swaps.filter(s=>s.name===historyEmployee).slice().reverse() : [];
+  const leaveEntries = historyEmployee ? state.leave.filter(l=>l.name===historyEmployee).slice().sort((a,b)=> b.startDate.localeCompare(a.startDate)) : [];
 
   return `
     <div class="card">
@@ -925,6 +1032,16 @@ function renderHistoryTab(){
               <span class="ledger-row__reason">${escapeHtml(s.reason)}</span>
             </div>
             <span class="badge badge--${s.status}">${s.status}</span>
+          </div>
+        `).join('')}
+
+        <div class="section-heading">Leave / Out of Office</div>
+        ${leaveEntries.length === 0 ? `<p class="empty-note">No leave logged yet.</p>` : leaveEntries.map(l=>`
+          <div class="ledger-row">
+            <div class="ledger-row__main">
+              <span class="ledger-row__name">${l.startDate === l.endDate ? fmtDate(l.startDate) : `${fmtDate(l.startDate)} → ${fmtDate(l.endDate)}`}</span>
+              <span class="ledger-row__reason">${escapeHtml(l.reason)}</span>
+            </div>
           </div>
         `).join('')}
       ` : `<p class="empty-note">Select your name to see your history.</p>`}
@@ -969,8 +1086,21 @@ function renderApprovalsAndLog(){
   const pendingLate = state.attendance.filter(r=>r.late && r.reasonStatus==='pending').slice().reverse();
   const pendingSwaps = state.swaps.filter(s=>s.status==='pending').slice().reverse();
   const recent = state.attendance.slice().reverse().slice(0, 40);
+  const today = toISODateLocal(new Date());
+  const upcomingLeave = state.leave.filter(l=>l.endDate >= today).slice().sort((a,b)=> a.startDate.localeCompare(b.startDate));
 
   return `
+    <div class="section-heading">Upcoming / current leave</div>
+    ${upcomingLeave.length === 0 ? `<p class="empty-note">Nobody has upcoming leave logged.</p>` : upcomingLeave.map(l=>`
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(l.name)}</span>
+          <span class="ledger-row__meta">${l.startDate === l.endDate ? fmtDate(l.startDate) : `${fmtDate(l.startDate)} → ${fmtDate(l.endDate)}`}</span>
+          <span class="ledger-row__reason">${escapeHtml(l.reason)}</span>
+        </div>
+      </div>
+    `).join('')}
+
     <div class="section-heading">Pending late-reason approvals</div>
     ${pendingLate.length === 0 ? `<p class="empty-note">Nothing pending.</p>` : pendingLate.map(r=>`
       <div class="ledger-row">
@@ -1201,6 +1331,37 @@ function renderAdminTab(){
     `;
   }).join('');
 
+  const leaveRows = state.leave.slice().sort((a,b)=> b.startDate.localeCompare(a.startDate)).map(l=>{
+    if(editingLeaveId === l.id){
+      const empOpts = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===l.name?'selected':''}>${escapeHtml(n)}</option>`).join('');
+      return `
+        <div class="ledger-row" style="flex-direction:column;align-items:stretch;">
+          <div class="field"><label>Name</label><select id="editLeaveName-${l.id}">${empOpts}</select></div>
+          <div class="field"><label>First day out</label><input type="text" id="editLeaveFrom-${l.id}" value="${isoToDDMMYYYY(l.startDate)}" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div>
+          <div class="field"><label>Last day out</label><input type="text" id="editLeaveTo-${l.id}" value="${isoToDDMMYYYY(l.endDate)}" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10"></div>
+          <div class="field"><label>Reason</label><textarea id="editLeaveReason-${l.id}">${escapeHtml(l.reason)}</textarea></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn--teal btn--sm" data-save-leave="${l.id}">Save</button>
+            <button class="btn btn--ghost btn--sm" data-cancel-leave="${l.id}">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(l.name)}</span>
+          <span class="ledger-row__meta">${l.startDate === l.endDate ? fmtDate(l.startDate) : `${fmtDate(l.startDate)} → ${fmtDate(l.endDate)}`}</span>
+          <span class="ledger-row__reason">${escapeHtml(l.reason)}</span>
+        </div>
+        <div class="ledger-row__actions">
+          <button class="btn btn--ghost btn--sm" data-edit-leave="${l.id}">Edit</button>
+          <button class="btn btn--danger btn--sm" data-delete-leave="${l.id}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   return `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -1246,9 +1407,14 @@ function renderAdminTab(){
       ${swapRows || '<p class="empty-note">No swap requests yet.</p>'}
     </div>
 
+    <div class="card">
+      <h2 class="card__title">Edit / Delete Leave Records</h2>
+      ${leaveRows || '<p class="empty-note">No leave logged yet.</p>'}
+    </div>
+
     <div class="card danger-zone">
       <h2 class="card__title">Danger Zone</h2>
-      <p class="card__sub">Permanently clears all attendance and swap records. Employee list is kept.</p>
+      <p class="card__sub">Permanently clears all attendance, swap, and leave records. Employee list is kept.</p>
       <button class="btn btn--danger" id="resetDataBtn">Reset All Attendance Data</button>
     </div>
   `;
@@ -1326,6 +1492,49 @@ function attachHandlers(){
         });
         await setData(KEY_SWAPS, state.swaps);
         swapEmployee = name;
+        render();
+      });
+    }
+  }
+
+  if(activeTab === 'leave'){
+    const sel = document.getElementById('leaveEmpSelect');
+    if(sel){
+      sel.addEventListener('change', (e)=>{ leaveEmployee = e.target.value; render(); });
+    }
+    const leaveFromEl = document.getElementById('leaveFromDate');
+    if(leaveFromEl) applyDateMask(leaveFromEl);
+    const leaveToEl = document.getElementById('leaveToDate');
+    if(leaveToEl) applyDateMask(leaveToEl);
+
+    const submitBtn = document.getElementById('submitLeaveBtn');
+    if(submitBtn){
+      submitBtn.addEventListener('click', async ()=>{
+        const name = document.getElementById('leaveEmpSelect').value;
+        const fromRaw = document.getElementById('leaveFromDate').value;
+        const toRaw = document.getElementById('leaveToDate').value;
+        const reason = document.getElementById('leaveReason').value.trim();
+        if(!name || !fromRaw || !toRaw || !reason){
+          await showAlert('Please fill in your name, both dates, and a reason.');
+          return;
+        }
+        const from = parseDDMMYYYY(fromRaw);
+        const to = parseDDMMYYYY(toRaw);
+        if(!from || !to){
+          await showAlert('Please enter both dates as DD/MM/YYYY (e.g. 27/07/2026).');
+          return;
+        }
+        if(to < from){
+          await showAlert('Last day out cannot be before the first day out.');
+          return;
+        }
+        submitBtn.disabled = true;
+        state.leave.push({
+          id: uid(), name, startDate: from, endDate: to, reason,
+          submittedAt: new Date().toISOString()
+        });
+        await setData(KEY_LEAVE, state.leave);
+        leaveEmployee = name;
         render();
       });
     }
@@ -1553,15 +1762,59 @@ function attachHandlers(){
       });
     });
 
+    document.querySelectorAll('[data-edit-leave]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingLeaveId = btn.dataset.editLeave; render(); });
+    });
+    document.querySelectorAll('[data-cancel-leave]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingLeaveId = null; render(); });
+    });
+    if(editingLeaveId){
+      const editFromEl = document.getElementById(`editLeaveFrom-${editingLeaveId}`);
+      if(editFromEl) applyDateMask(editFromEl);
+      const editToEl = document.getElementById(`editLeaveTo-${editingLeaveId}`);
+      if(editToEl) applyDateMask(editToEl);
+    }
+    document.querySelectorAll('[data-save-leave]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.saveLeave;
+        const rec = state.leave.find(l=>l.id===id);
+        if(!rec) return;
+        const fromParsed = parseDDMMYYYY(document.getElementById(`editLeaveFrom-${id}`).value);
+        const toParsed = parseDDMMYYYY(document.getElementById(`editLeaveTo-${id}`).value);
+        if(!fromParsed || !toParsed){
+          await showAlert('Please enter both dates as DD/MM/YYYY (e.g. 27/07/2026).');
+          return;
+        }
+        rec.name = document.getElementById(`editLeaveName-${id}`).value;
+        rec.startDate = fromParsed;
+        rec.endDate = toParsed;
+        rec.reason = document.getElementById(`editLeaveReason-${id}`).value.trim();
+        await setData(KEY_LEAVE, state.leave);
+        editingLeaveId = null;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-delete-leave]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.deleteLeave;
+        if(!(await askConfirm('Delete this leave record permanently?', 'Delete'))) return;
+        state.leave = state.leave.filter(l=>l.id!==id);
+        await setData(KEY_LEAVE, state.leave);
+        render();
+      });
+    });
+
     const resetBtn = document.getElementById('resetDataBtn');
     if(resetBtn){
       resetBtn.addEventListener('click', async ()=>{
-        if(!(await askConfirm('This permanently deletes ALL attendance and swap records. Continue?', 'Continue'))) return;
+        if(!(await askConfirm('This permanently deletes ALL attendance, swap, and leave records. Continue?', 'Continue'))) return;
         if(!(await askConfirm('Are you absolutely sure? This cannot be undone.', 'Yes, reset everything'))) return;
         state.attendance = [];
         state.swaps = [];
+        state.leave = [];
         await setData(KEY_ATTENDANCE, state.attendance);
         await setData(KEY_SWAPS, state.swaps);
+        await setData(KEY_LEAVE, state.leave);
         render();
       });
     }
