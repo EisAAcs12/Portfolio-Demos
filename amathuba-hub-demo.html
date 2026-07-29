@@ -1,0 +1,1637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amathuba Hub — Attendance Ledger (Demo)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg: #1C1E1F;
+  --surface: #262829;
+  --surface-alt: #303234;
+  --ink: #EDEDEC;
+  --ink-muted: #9A9C9E;
+  --accent: #77B23B;
+  --accent-dark: #4F7E2A;
+  --accent-bright: #8FCB55;
+  --accent-soft: rgba(119, 178, 59, 0.15);
+  --teal: #4C9186;
+  --teal-dark: #2E5F58;
+  --danger: #B4525D;
+  --danger-dark: #9B3A44;
+  --border: #38393B;
+  --radius: 10px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;color-scheme:dark;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', system-ui, sans-serif;
+  min-height:100vh;
+}
+#app{max-width:960px;margin:0 auto;padding:0 16px 60px;}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  display:flex;flex-direction:column;gap:14px;
+  padding:22px 16px 18px;
+  margin:0 -16px 24px;
+  border-bottom:2px solid var(--accent);
+  background:linear-gradient(120deg, var(--accent-soft) 0%, transparent 55%);
+}
+.brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.brand-logo{height:40px;width:auto;display:block;}
+.brand-tagline{
+  font-size:12.5px;color:var(--ink-muted);letter-spacing:0.4px;text-transform:uppercase;
+  padding-left:14px;border-left:1px solid var(--border);
+  line-height:1.3;
+}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.tab{
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:13.5px;font-weight:500;
+  padding:9px 14px;border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.tab:hover{border-color:var(--ink-muted);color:var(--ink);}
+.tab.active{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+.tab-admin.active{background:var(--danger-dark);border-color:var(--danger-dark);color:#fff;}
+.tab:focus-visible, .btn:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--teal); outline-offset:2px;
+}
+
+/* ---------- Layout bits ---------- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  margin-bottom:20px;
+  box-shadow:0 1px 2px rgba(0,0,0,0.3), 0 10px 28px rgba(0,0,0,0.35);
+}
+.card--hero{
+  border-top:3px solid var(--accent);
+}
+.card__title{
+  font-family:'Fraunces',serif;font-weight:700;font-size:18px;
+  margin:0 0 4px;
+}
+.card__sub{color:var(--ink-muted);font-size:13.5px;margin:0 0 18px;}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field label{font-size:12.5px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.4px;}
+select,input[type=date],input[type=time],input[type=datetime-local],input[type=text],input[type=password],textarea{
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:14.5px;
+  padding:11px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--surface-alt);
+  color:var(--ink);
+}
+textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;}
+
+.btn{
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:14.5px;font-weight:600;
+  padding:12px 20px;border-radius:8px;border:none;
+  cursor:pointer;
+  transition:transform .08s, opacity .12s;
+}
+.btn:active{transform:scale(0.98);}
+.btn--primary{background:var(--accent-dark);color:#fff;}
+.btn--primary:hover{filter:brightness(1.1);}
+.btn--teal{background:var(--teal);color:#fff;}
+.btn--teal:hover{background:var(--teal-dark);}
+.btn--ghost{background:transparent;border:1px solid var(--border);color:var(--ink);}
+.btn--ghost:hover{border-color:var(--ink-muted);}
+.btn--danger{background:var(--danger);color:#fff;}
+.btn--danger:hover{background:var(--danger-dark);}
+.btn--sm{padding:7px 12px;font-size:12.5px;}
+.btn[disabled]{opacity:0.45;cursor:not-allowed;}
+
+.badge{
+  display:inline-block;font-size:11.5px;font-weight:600;
+  padding:3px 9px;border-radius:999px;letter-spacing:0.3px;
+  text-transform:uppercase;
+}
+.badge--pending{background:#F2E6C9;color:#7A5A17;}
+.badge--approved{background:#DCEAE7;color:var(--teal-dark);}
+.badge--rejected{background:#F1DBDD;color:var(--danger-dark);}
+.badge--late{background:#F1DBDD;color:var(--danger-dark);}
+.badge--ontime{background:#DCEAE7;color:var(--teal-dark);}
+
+/* ---------- Clock tab ---------- */
+.clock-display{
+  font-family:'IBM Plex Mono',monospace;
+  text-align:center;padding:6px 0 22px;
+  position:relative;
+}
+.clock-halo{
+  position:absolute;
+  top:50%;left:50%;
+  width:180px;height:180px;
+  transform:translate(-50%,-60%);
+  background:radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+  z-index:0;
+  pointer-events:none;
+}
+.clock-display .time{position:relative;z-index:1;font-size:42px;font-weight:600;color:var(--ink);letter-spacing:1px;}
+.clock-display .date{position:relative;z-index:1;font-size:13.5px;color:var(--ink-muted);margin-top:4px;}
+
+.stamp-btn{
+  width:100%;padding:20px;font-size:17px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  position:relative;
+  overflow:visible;
+}
+.stamp-btn.stamped{animation:stamp .35s ease;}
+.stamp-btn.stamped::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:12px;
+  border:2px solid var(--accent-dark);
+  animation:ringPulse .6s ease-out;
+  pointer-events:none;
+}
+@keyframes stamp{
+  0%{transform:scale(1) rotate(0);}
+  35%{transform:scale(0.93) rotate(-2deg);}
+  100%{transform:scale(1) rotate(0);}
+}
+@keyframes ringPulse{
+  0%{transform:scale(1);opacity:0.9;}
+  100%{transform:scale(1.15);opacity:0;}
+}
+
+.confirm-note{
+  margin-top:14px;padding:12px 14px;border-radius:8px;
+  background:var(--surface-alt);font-size:13.5px;color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;
+}
+.training-note{
+  padding:14px 16px;border-radius:8px;
+  background:var(--accent-soft);color:var(--ink);
+  font-size:14px;font-weight:500;text-align:center;
+  margin:0;
+}
+
+/* ---------- Ledger / list rows ---------- */
+.ledger-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:13px 0;border-bottom:1px dashed var(--border);
+}
+.ledger-row:last-child{border-bottom:none;}
+.ledger-row__main{display:flex;flex-direction:column;gap:2px;}
+.ledger-row__name{font-weight:600;font-size:14px;}
+.ledger-row__meta{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-muted);}
+.ledger-row__reason{font-size:12.5px;color:var(--ink-muted);margin-top:3px;max-width:420px;}
+.ledger-row__actions{display:flex;gap:6px;flex-shrink:0;}
+.day-summary{
+  margin-bottom:18px;padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+.day-summary:last-child{border-bottom:none;}
+.day-summary__head{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+  margin-bottom:6px;
+}
+.day-summary__date{font-family:'Fraunces',serif;font-weight:700;font-size:15px;}
+.empty-note{color:var(--ink-muted);font-size:13.5px;padding:10px 0;}
+
+.section-heading{
+  font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--ink-muted);margin:26px 0 10px;
+}
+.section-heading:first-child{margin-top:0;}
+
+.schedule-banner{
+  background:var(--accent-soft);
+  border-radius:8px;
+  padding:12px 16px;
+  font-size:13px;
+  color:var(--ink);
+  margin-bottom:18px;
+  display:flex;flex-direction:column;gap:3px;
+}
+.schedule-banner__label{font-weight:600;color:var(--accent-bright);}
+.demo-banner{
+  background:var(--accent-soft);
+  border:1px solid var(--accent);
+  border-radius:8px;
+  padding:10px 16px;
+  font-size:13px;
+  color:var(--ink);
+  margin-bottom:20px;
+  text-align:center;
+}
+.demo-banner code{
+  background:var(--surface-alt);
+  padding:2px 6px;
+  border-radius:4px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+}
+.schedule-banner__warning{
+  margin-top:6px;padding:8px 10px;border-radius:6px;
+  background:#F1DBDD;color:var(--danger-dark);font-size:12.5px;font-weight:500;
+}
+.schedule-note{
+  font-size:13px;color:var(--ink-muted);margin:0 0 16px;
+}
+.schedule-note strong{color:var(--accent-bright);}
+.pin-gate{max-width:320px;margin:0 auto;text-align:center;}
+.pin-gate .card__title{text-align:center;}
+
+.emp-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface-alt);border-radius:999px;
+  padding:6px 6px 6px 14px;font-size:13.5px;margin:4px 6px 4px 0;
+}
+.emp-chip button{
+  border:none;background:var(--danger-dark);color:#fff;border-radius:50%;
+  width:20px;height:20px;font-size:12px;cursor:pointer;line-height:1;
+}
+
+.danger-zone{border:1px solid var(--danger);border-radius:var(--radius);padding:18px;background:rgba(180,82,93,0.12);}
+.danger-zone .card__title{color:var(--danger);}
+
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(38,40,42,0.45);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;
+  padding:20px;
+}
+.modal-overlay.hidden{display:none;}
+.modal-box{
+  background:var(--surface);
+  border-radius:var(--radius);
+  padding:24px;
+  max-width:380px;
+  width:100%;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+}
+.modal-box p{margin:0 0 16px;font-size:14.5px;color:var(--ink);line-height:1.4;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;}
+
+@media (prefers-reduced-motion: reduce){
+  .stamp-btn.stamped, .stamp-btn.stamped::after{animation:none;}
+  .btn{transition:none;}
+}
+
+@media (max-width: 560px){
+  .brand-logo{height:32px;}
+  .brand-tagline{padding-left:0;border-left:none;flex-basis:100%;}
+  .clock-display .time{font-size:32px;}
+  .card{padding:18px;}
+  .ledger-row{flex-direction:column;align-items:flex-start;}
+  .ledger-row__actions{align-self:flex-end;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAjMAAACDCAMAAABP2WqsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAwBQTFRFvtmgwdum5/Hcn8hymMNqoMh1xd2r2OjG8ffquteamsRrttWUosp4pcl9uNaYrtCK2+rLtdSSstKPmMRptNOSs9KQvNie7PTjh7tQw92pY2RmvNic6/Tjt9aWnsZxnMZu2enI1ObBj71Zd7I7tNKR0eW9wNqjirxTo8l6ncVv5e/YutaZp8x/pct7////o8l5sbGyu9idiouM3ezO2NjZgLdH5fHazOK1i7xU9fX1qs+FbW5w9vrzxMXFkcBglMFjj75bmMNp6+zsnp6ggIGDk8BhmcVsibtRk8Bid3d53evNg7hJ4uLiosh4hblLlJWWmsRsh7lOncZyqKipn8Z0jr5akL5dzs7Puru8kL5coch3jLxXirtTirtSlcFlhrlMjLxWl8Nnm8VvgrdIibtQgbdHiLpPmcRrnsZznMVw7vXmm8VukL9ek8Bgjb1Yjb1XksBfh7lNlcFkjb1Zl8NohrlNmsRti7xVncZxoMd1iLxUosh5oMh2kL9dn8Zzjr5Z3OvNlsJmnMVxqcyBf7ZFmcRs+fz31OfC9/v0iLpOkcBfkb9egLdFhLlK6PLdgLdG6fLferM/+Pv1lsFm+Pv0+fv2l8Jn6/Pi6vPgf7ZElsFl7PTklsJnfbVDlcJmmMNojLxVnsZyhblOm8Vtoch2oMd26fLe6vPhs9SR3OrN2unKn8d19/rzhLlLfrVE3OvMiLtSksBg1+jFlMFksNGN6PLe7fTl+fz2msVqjr1X6/Phjb1W3OrMoch4kL9bm8Vwf7ZH9/vzhLhKlcJklsJl1ufDjb5an8d0grhLmcRqnsZvoMhz9/r01efCosl1msZr2+vMjL1Wjr5bj75a7/bo1+fEosl3m8Ztn8h0kL9cl8Jmqc2Aosl43+3Qm8VsrM+IvNechbpPn8dzp8uAnsdynsdwn8dy2unJ7fXl5fDZ5vHairxWlcFjtNOQq86Fq86ElMBhsdGOstOO8vfs6vLg7fXkzuO4qc2CqMyBqM2A7fXmnMZtlMFi1ebCncZw////LGSp/QAAAQB0Uk5T////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AFP3ByUAABBxSURBVHja7N15YBTVGQBwWki9UBBRZL3QVGttm2w2kyyTzSa4u8SsLG5ggV2wolwegDUgWghK0SKxBmJQ0VgFq1TwqlbrgWe1Wq3a2vs+bbX3be9WtzM78+5jZ3bXJO1+7y8ys7PHvN98871rGJWHAsVfGQWnAAqYgQJmoIAZKGAGCpiBAgXMQAEzUP63zfxt3OjRR/0QTiSY8Vre+bV7773xxhs3feceOJVgxhuZVwtiNm3acgigATOeyBxeALNpy5arr94LaMCMFzIOmC1XL7PK3i/C2QQzHsjYYApili1ZAmjATJHyjcM3YTCWmCVLZuy9Es4nmNGUuisPISHGFmMVQANmdGTq6u45hAEzY+unTvs3oAEzGjJ1VqRZhsHM2HqaVc48BtCAGQ2ZurpnXiEhxhZz5kUXvQRowIy0xVRzpavmzxaYzzkhxhKzatWsWS9dBycVzIhk3rPsxWcQmkKIscEUxHzs7LNHAxowI5Kxkpi9ONI49yQbjCVm6dJTTgE0YEZCxrojfRmh+Z0tpgCmIOaMMz74MqABMxwZJ+39NkZji3HA2GKmTp36CqABM6T0T52B0t5jMBo7xDhgbDEfPuusbwEaMMOQQWnvMde5aA4uiCmAscScfvoFH/rBNXBqwQwis3Ur6opZteotFGkOJiHGFnPhR+aOBTRgxiGDu2KctPd1FGkOsMF8wgFz4dy506ZN+wCgATMWma+SEOOmvaMxGjvEXFAIMZaY+fPnzQM0YCbf/zjp7Z2F0t6X93XRHHU6AmOLuXRl31XvBzTVbqb/cbq3dylKe7sHXDQHkRBz6cqrus+fPh3QVLmZ/kdJiFlKt6zPx2jsEDOvEGJsMZ2d7f8ENNVspv9RJsQgMHba+8e/uGj2IyFmemd7e/vqhX8H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" alt="Amathuba Hub">
+      <span class="brand-tagline">Attendance Ledger</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="clock">Clock In / Out</button>
+      <button class="tab" data-tab="swap">Day Swap</button>
+      <button class="tab" data-tab="history">My Log</button>
+      <button class="tab" data-tab="manager">Manager</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab tab-admin" data-tab="admin">Admin</button>
+    </nav>
+  </header>
+  <div class="demo-banner">
+    <strong>Demo Mode</strong> — sample data only, resets on refresh. Try it out: Manager PIN <code>1234</code> (Alex) · Settings PIN <code>0000</code> · Admin PIN <code>9999</code>.
+  </div>
+  <main id="view"></main>
+</div>
+
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <p id="modalMessage"></p>
+    <div class="field" id="modalInputWrap" style="display:none;">
+      <input type="text" id="modalInput">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" id="modalCancelBtn">Cancel</button>
+      <button class="btn btn--danger" id="modalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// DEMO VERSION — this uses in-memory sample data only. Nothing here
+// connects to any real database; refreshing the page resets everything.
+// ---------------------------------------------------------------
+const DEMO_STORE = {};
+
+// ---------------------------------------------------------------
+// Defaults live in state.settings so the Admin tab can change them
+// at runtime. (Demo build: PINs below are sample values, safe to share.)
+// ---------------------------------------------------------------
+const KEY_EMPLOYEES = "amathuba_employees";
+const KEY_ATTENDANCE = "amathuba_attendance";
+const KEY_SWAPS = "amathuba_swaps";
+const KEY_SETTINGS = "amathuba_settings";
+
+const DEFAULT_EMPLOYEES = ["Alex", "Drew", "Morgan", "Casey", "Jordan", "Riley", "Taylor"];
+const GROUP_A = ["Alex", "Jordan", "Taylor", "Morgan"];
+const GROUP_B = ["Casey", "Riley", "Drew"];
+const REQUIRED_HOURS = 8; // fixed daily target: leave time = clock-in time + this many hours
+
+// Skills development classes: separate groups from the hybrid office groups above.
+// Casey isn't in either — he stays on his normal hybrid schedule throughout.
+const SKILLS_GROUP_1 = ["Alex", "Morgan", "Drew"];
+const SKILLS_GROUP_2 = ["Riley", "Taylor", "Jordan"];
+
+// Each block: Group 1 trains first, Group 2 trains immediately after.
+// Hardcoded because the exact dates don't follow a clean formula month to month.
+const SKILLS_BLOCKS = [
+  {
+    group1Dates: ["2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20"],
+    group2Dates: ["2026-08-21", "2026-08-24", "2026-08-25", "2026-08-26"]
+  },
+  {
+    group1Dates: ["2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24"],
+    group2Dates: ["2026-09-25", "2026-09-28", "2026-09-29", "2026-09-30"]
+  },
+  {
+    group1Dates: ["2026-10-14", "2026-10-15", "2026-10-16"],
+    group2Dates: ["2026-10-19", "2026-10-20", "2026-10-21"]
+  }
+];
+
+const DEFAULT_SETTINGS = {
+  startTime: "08:00",
+  scheduleAnchorMonday: "2026-07-27", // a known Monday
+  anchorGroupAIsMWF: false,           // on that Monday, was Group A in on Mon/Wed/Fri?
+  settingsPin: "0000",
+  adminPin: "9999",
+  managers: { "Alex": "1234" }         // name -> PIN, editable from the Admin tab
+};
+
+let state = {
+  employees: [],
+  attendance: [],
+  swaps: [],
+  settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
+};
+
+let managerUnlocked = false;
+let managerName = "";
+let settingsUnlocked = false;
+let adminUnlocked = false;
+let editingAttendanceId = null;
+let editingSwapId = null;
+let activeTab = "clock";
+let selectedEmployee = "";
+let historyEmployee = "";
+let swapEmployee = "";
+let pendingLateDraft = false; // whether the "late reason" panel is open
+
+// ---------------- Storage helpers (in-memory demo store) ----------------
+async function getData(key, fallback){
+  return (key in DEMO_STORE) ? JSON.parse(JSON.stringify(DEMO_STORE[key])) : fallback;
+}
+async function setData(key, value){
+  DEMO_STORE[key] = JSON.parse(JSON.stringify(value));
+  return true;
+}
+
+async function loadState(){
+  const [employeesRaw, attendance, swaps, settingsRaw] = await Promise.all([
+    getData(KEY_EMPLOYEES, null),
+    getData(KEY_ATTENDANCE, []),
+    getData(KEY_SWAPS, []),
+    getData(KEY_SETTINGS, null)
+  ]);
+  let employees = employeesRaw;
+  if(employees === null){
+    employees = DEFAULT_EMPLOYEES.slice();
+    await setData(KEY_EMPLOYEES, employees);
+  }
+  let settings = settingsRaw;
+  if(settings === null){
+    settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    await setData(KEY_SETTINGS, settings);
+  } else {
+    // fill in any new fields older saved settings might be missing
+    settings = Object.assign({}, DEFAULT_SETTINGS, settings);
+  }
+  state = { employees, attendance, swaps, settings };
+}
+
+function uid(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+// ---------------- Custom modal (replaces confirm/prompt/alert, which are
+// blocked in some sandboxed preview contexts) ----------------
+let modalState = { resolve: null, isPrompt: false };
+
+function openModal({ message, isPrompt = false, defaultValue = '', confirmLabel = 'Confirm', danger = true, hideCancel = false }){
+  return new Promise(resolve=>{
+    modalState.resolve = resolve;
+    modalState.isPrompt = isPrompt;
+    document.getElementById('modalMessage').textContent = message;
+    const wrap = document.getElementById('modalInputWrap');
+    const input = document.getElementById('modalInput');
+    if(isPrompt){
+      wrap.style.display = 'block';
+      input.value = defaultValue;
+      setTimeout(()=>input.focus(), 50);
+    } else {
+      wrap.style.display = 'none';
+    }
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    confirmBtn.textContent = confirmLabel;
+    confirmBtn.className = 'btn ' + (danger ? 'btn--danger' : 'btn--primary');
+    const cancelBtn = document.getElementById('modalCancelBtn');
+    cancelBtn.style.display = hideCancel ? 'none' : 'inline-block';
+    document.getElementById('modalOverlay').classList.remove('hidden');
+  });
+}
+
+function closeModal(result){
+  document.getElementById('modalOverlay').classList.add('hidden');
+  if(modalState.resolve) modalState.resolve(result);
+  modalState.resolve = null;
+}
+
+function askConfirm(message, confirmLabel = 'Confirm'){
+  return openModal({ message, isPrompt: false, confirmLabel, danger: true });
+}
+function askPrompt(message, defaultValue = ''){
+  return openModal({ message, isPrompt: true, defaultValue, confirmLabel: 'Save', danger: false });
+}
+function showAlert(message){
+  return openModal({ message, isPrompt: false, confirmLabel: 'OK', danger: false, hideCancel: true });
+}
+
+function fmtDateTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-ZA', { day:'2-digit', month:'short', year:'numeric' }) +
+    "  " + d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+}
+function fmtDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString('en-ZA', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function lastRecordFor(name){
+  const rows = state.attendance.filter(r => r.name === name);
+  return rows.length ? rows[rows.length - 1] : null;
+}
+
+// Groups an employee's attendance into calendar days and sums worked hours
+// per day by pairing consecutive clock-in/clock-out records.
+function computeDailySummary(name){
+  const recs = state.attendance.filter(r=>r.name===name).slice().sort((a,b)=> new Date(a.ts) - new Date(b.ts));
+  const byDate = {};
+  recs.forEach(r=>{
+    const dateKey = toISODateLocal(new Date(r.ts));
+    if(!byDate[dateKey]) byDate[dateKey] = [];
+    byDate[dateKey].push(r);
+  });
+  const summaries = Object.keys(byDate).sort().reverse().map(dateKey=>{
+    const dayRecs = byDate[dateKey];
+    let totalMs = 0;
+    let openIn = null;
+    dayRecs.forEach(r=>{
+      if(r.type === 'in'){ openIn = r; }
+      else if(r.type === 'out' && openIn){
+        totalMs += (new Date(r.ts) - new Date(openIn.ts));
+        openIn = null;
+      }
+    });
+    const stillClockedIn = openIn !== null;
+    const totalHours = totalMs / (1000*60*60);
+    return {
+      date: dateKey,
+      totalHours,
+      met: totalHours >= REQUIRED_HOURS,
+      stillClockedIn,
+      records: dayRecs
+    };
+  });
+  return summaries;
+}
+
+function formatHours(h){
+  const hrs = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return `${hrs}h ${mins}m`;
+}
+
+function isLateNow(){
+  const now = new Date();
+  const [h, m] = (state.settings.startTime || "08:00").split(":").map(Number);
+  const threshold = new Date(now);
+  threshold.setHours(h, m, 0, 0);
+  return now > threshold;
+}
+
+// ---------------- Hybrid schedule helpers ----------------
+function mondayOf(date){
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sun
+  const diff = (day === 0) ? -6 : (1 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function isGroupAMWFForWeek(date){
+  const anchor = new Date(state.settings.scheduleAnchorMonday + "T00:00:00");
+  const weekMonday = mondayOf(date);
+  const weeksDiff = Math.round((weekMonday - anchor) / (7*24*60*60*1000));
+  const flipped = ((weeksDiff % 2) + 2) % 2 === 1;
+  return flipped ? !state.settings.anchorGroupAIsMWF : state.settings.anchorGroupAIsMWF;
+}
+
+function officeGroupsForDate(date){
+  const dow = date.getDay(); // 1=Mon..5=Fri
+  const groupAisMWF = isGroupAMWFForWeek(date);
+  if(dow === 1 || dow === 3 || dow === 5){
+    return groupAisMWF ? { inOffice: GROUP_A, remote: GROUP_B } : { inOffice: GROUP_B, remote: GROUP_A };
+  }
+  if(dow === 2 || dow === 4){
+    return groupAisMWF ? { inOffice: GROUP_B, remote: GROUP_A } : { inOffice: GROUP_A, remote: GROUP_B };
+  }
+  return { inOffice: [], remote: [] };
+}
+
+function toISODateLocal(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// ---------------- Skills training overrides ----------------
+function nextWeekday(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  while(d.getDay() === 0 || d.getDay() === 6){ d.setDate(d.getDate() + 1); }
+  return toISODateLocal(d);
+}
+
+// Checks whether, once `group`'s members are excluded, anyone is still
+// scheduled in the office on `dateStr` per the normal hybrid rotation.
+function hasCoverageExcluding(dateStr, excludeGroup){
+  const d = new Date(dateStr + "T00:00:00");
+  const { inOffice } = officeGroupsForDate(d);
+  return inOffice.filter(n => !excludeGroup.includes(n)).length > 0;
+}
+
+// Returns 'training', 'comp-off', 'comp-blocked', or null for a given
+// employee on a given date, based on the hardcoded skills training blocks.
+function getTrainingStatus(name, dateStr){
+  for(const block of SKILLS_BLOCKS){
+    if(block.group1Dates.includes(dateStr) && SKILLS_GROUP_1.includes(name)) return 'training';
+    if(block.group2Dates.includes(dateStr) && SKILLS_GROUP_2.includes(name)) return 'training';
+
+    const group1CompDay = block.group2Dates[0]; // Group 2's first training day — always covered
+    if(dateStr === group1CompDay && SKILLS_GROUP_1.includes(name)) return 'comp-off';
+
+    const group2CompDay = nextWeekday(block.group2Dates[block.group2Dates.length - 1]);
+    if(dateStr === group2CompDay && SKILLS_GROUP_2.includes(name)){
+      return hasCoverageExcluding(dateStr, SKILLS_GROUP_2) ? 'comp-off' : 'comp-blocked';
+    }
+  }
+  return null;
+}
+
+// Merges the normal hybrid in-office/remote split with skills-training
+// overrides (training days, comp days off, and blocked comp days).
+function officeStatusForDate(date){
+  const dateStr = toISODateLocal(date);
+  const base = officeGroupsForDate(date);
+  let inOffice = base.inOffice.slice();
+  let remote = base.remote.slice();
+  const training = [];
+  const compOff = [];
+  const compBlocked = [];
+
+  state.employees.forEach(name=>{
+    const status = getTrainingStatus(name, dateStr);
+    if(status === 'training'){
+      training.push(name);
+      inOffice = inOffice.filter(n=>n!==name);
+      remote = remote.filter(n=>n!==name);
+    } else if(status === 'comp-off'){
+      compOff.push(name);
+      inOffice = inOffice.filter(n=>n!==name);
+      remote = remote.filter(n=>n!==name);
+    } else if(status === 'comp-blocked'){
+      compBlocked.push(name);
+    }
+  });
+
+  return { inOffice, remote, training, compOff, compBlocked };
+}
+
+// Returns the next `count` weekday dates (YYYY-MM-DD) where `name` is scheduled
+// in office (wantOffice=true) or scheduled remote (wantOffice=false).
+function upcomingScheduleDates(name, wantOffice, count){
+  const results = [];
+  let d = new Date();
+  d.setHours(0,0,0,0);
+  let guard = 0;
+  while(results.length < count && guard < 120){
+    const dow = d.getDay();
+    if(dow >= 1 && dow <= 5){
+      const { inOffice } = officeGroupsForDate(d);
+      const isOfficeDay = inOffice.includes(name);
+      if(isOfficeDay === wantOffice){
+        results.push(toISODateLocal(d));
+      }
+    }
+    d.setDate(d.getDate()+1);
+    guard++;
+  }
+  return results;
+}
+
+function personalWeekScheduleLabel(name){
+  const days = ['Mon','Tue','Wed','Thu','Fri'];
+  const today = new Date();
+  const monday = mondayOf(today);
+  const officeDays = [];
+  for(let i=0;i<5;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    const { inOffice } = officeGroupsForDate(d);
+    if(inOffice.includes(name)) officeDays.push(days[i]);
+  }
+  return officeDays.length ? officeDays.join('/') : 'none';
+}
+
+// ---------------- Rendering shell ----------------
+function setTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  render();
+}
+
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.tab');
+  if(!btn) return;
+  setTab(btn.dataset.tab);
+});
+
+function render(){
+  const view = document.getElementById('view');
+  if(activeTab === 'clock') view.innerHTML = renderClockTab();
+  else if(activeTab === 'swap') view.innerHTML = renderSwapTab();
+  else if(activeTab === 'history') view.innerHTML = renderHistoryTab();
+  else if(activeTab === 'manager') view.innerHTML = renderManagerTab();
+  else if(activeTab === 'settings') view.innerHTML = renderSettingsTab();
+  else if(activeTab === 'admin') view.innerHTML = renderAdminTab();
+  attachHandlers();
+}
+
+// ---------------- Clock In / Out tab ----------------
+function renderScheduleBanner(){
+  const today = new Date();
+  const status = officeStatusForDate(today);
+  const { inOffice, remote, training, compOff, compBlocked } = status;
+
+  if(inOffice.length === 0 && remote.length === 0 && training.length === 0){
+    return `<div class="schedule-banner"><span class="schedule-banner__label">Weekend</span> — no office rotation today.</div>`;
+  }
+
+  let extra = '';
+  if(training.length){
+    extra += `<div><span class="schedule-banner__label">In training today:</span> ${training.map(escapeHtml).join(', ')} (in office, training room)</div>`;
+  }
+  if(compOff.length){
+    extra += `<div><span class="schedule-banner__label">Comp day off today:</span> ${compOff.map(escapeHtml).join(', ')} (post-training)</div>`;
+  }
+  if(compBlocked.length){
+    extra += `<div class="schedule-banner__warning">Note: comp day off for ${compBlocked.map(escapeHtml).join(', ')} postponed — no office coverage that day.</div>`;
+  }
+
+  return `
+    <div class="schedule-banner">
+      <div><span class="schedule-banner__label">In office today:</span> ${inOffice.length ? inOffice.map(escapeHtml).join(', ') : '—'}</div>
+      <div><span class="schedule-banner__label">Remote today:</span> ${remote.length ? remote.map(escapeHtml).join(', ') : '—'}</div>
+      ${extra}
+    </div>
+  `;
+}
+
+function renderClockTab(){
+  const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  const noEmployees = state.employees.length === 0;
+
+  let actionBlock = '';
+  if(!noEmployees && selectedEmployee){
+    const todayStr = toISODateLocal(new Date());
+    const trainingStatus = getTrainingStatus(selectedEmployee, todayStr);
+
+    if(trainingStatus === 'training'){
+      actionBlock = `<p class="training-note">You're in skills training today — no clock-in needed. Have a great session!</p>`;
+    } else if(trainingStatus === 'comp-off'){
+      actionBlock = `<p class="training-note">You're on your comp day off today — no clock-in needed. Enjoy the day!</p>`;
+    } else {
+      const last = lastRecordFor(selectedEmployee);
+      const nextAction = (last && last.type === 'in') ? 'out' : 'in';
+      const willBeLate = nextAction === 'in' && isLateNow();
+
+      if(nextAction === 'in' && willBeLate){
+        actionBlock = `
+          <div class="field">
+            <label for="lateReason">Why the late clock-in?</label>
+            <textarea id="lateReason" placeholder="e.g. traffic on the N1, load shedding delay..."></textarea>
+          </div>
+          <button class="btn btn--danger stamp-btn" id="clockActionBtn" data-action="in" data-late="1">Confirm Late Clock-In</button>
+        `;
+      } else if(nextAction === 'in'){
+        actionBlock = `<button class="btn btn--primary stamp-btn" id="clockActionBtn" data-action="in" data-late="0">Clock In</button>`;
+      } else {
+        actionBlock = `<button class="btn btn--teal stamp-btn" id="clockActionBtn" data-action="out" data-late="0">Clock Out</button>`;
+      }
+    }
+  }
+
+  return `
+    <div class="card card--hero">
+      <div class="clock-display">
+        <div class="clock-halo"></div>
+        <div class="time" id="liveClock">--:--:--</div>
+        <div class="date" id="liveDate"></div>
+      </div>
+      ${renderScheduleBanner()}
+
+      ${noEmployees ? `<p class="empty-note">No employees have been added yet. Ask your Owner to add the team under the Owner tab.</p>` : `
+      <div class="field">
+        <label for="empSelect">Your name</label>
+        <select id="empSelect">
+          <option value="">Select your name…</option>
+          ${empOptions}
+        </select>
+      </div>
+      ${actionBlock}
+      `}
+      <div id="clockConfirm"></div>
+    </div>
+  `;
+}
+
+function tickClock(){
+  const now = new Date();
+  const t = document.getElementById('liveClock');
+  const d = document.getElementById('liveDate');
+  if(t) t.textContent = now.toLocaleTimeString('en-ZA', { hour12:false });
+  if(d) d.textContent = now.toLocaleDateString('en-ZA', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+}
+setInterval(tickClock, 1000);
+
+// ---------------- Day Swap tab ----------------
+function formatScheduleOption(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString('en-ZA', { weekday:'short', day:'2-digit', month:'short', year:'numeric' });
+}
+
+function renderSwapTab(){
+  const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===swapEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  const mine = swapEmployee ? state.swaps.filter(s=>s.name===swapEmployee).slice().reverse() : [];
+
+  let dayFields = `<p class="empty-note">Select your name to see your office days.</p>`;
+  if(swapEmployee){
+    const officeDates = upcomingScheduleDates(swapEmployee, true, 6);
+    const remoteDates = upcomingScheduleDates(swapEmployee, false, 6);
+    const fromOptions = officeDates.map(ds=>`<option value="${ds}">${formatScheduleOption(ds)}</option>`).join('');
+    const toOptions = remoteDates.map(ds=>`<option value="${ds}">${formatScheduleOption(ds)}</option>`).join('');
+    dayFields = `
+      <p class="schedule-note">This week ${escapeHtml(swapEmployee)} is normally in on: <strong>${personalWeekScheduleLabel(swapEmployee)}</strong></p>
+      <div class="field">
+        <label for="fromDate">Day you need off (your upcoming office days)</label>
+        <select id="fromDate">
+          <option value="">Select a date…</option>
+          ${fromOptions}
+        </select>
+      </div>
+      <div class="field">
+        <label for="toDate">Day you'll work instead (your upcoming remote days)</label>
+        <select id="toDate">
+          <option value="">Select a date…</option>
+          ${toOptions}
+        </select>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card">
+      <h2 class="card__title">Request an office day swap</h2>
+      <p class="card__sub">Swap which day you're in the office, with a reason for the manager to review.</p>
+
+      <div class="field">
+        <label for="swapEmpSelect">Your name</label>
+        <select id="swapEmpSelect">
+          <option value="">Select your name…</option>
+          ${empOptions}
+        </select>
+      </div>
+      ${dayFields}
+      ${swapEmployee ? `
+      <div class="field">
+        <label for="swapReason">Reason</label>
+        <textarea id="swapReason" placeholder="e.g. dentist appointment, will make up the day on Saturday..."></textarea>
+      </div>
+      <button class="btn btn--primary" id="submitSwapBtn">Submit Request</button>
+      ` : ''}
+    </div>
+
+    ${swapEmployee ? `
+    <div class="card">
+      <h2 class="card__title">Your requests</h2>
+      ${mine.length === 0 ? `<p class="empty-note">No swap requests yet.</p>` : mine.map(s=>`
+        <div class="ledger-row">
+          <div class="ledger-row__main">
+            <span class="ledger-row__name">Off ${fmtDate(s.fromDate)} → In ${fmtDate(s.toDate)}</span>
+            <span class="ledger-row__reason">${escapeHtml(s.reason)}</span>
+          </div>
+          <span class="badge badge--${s.status}">${s.status}</span>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+}
+
+// ---------------- My Log tab ----------------
+function renderHistoryTab(){
+  const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===historyEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  const dailySummaries = historyEmployee ? computeDailySummary(historyEmployee) : [];
+  const swaps = historyEmployee ? state.swaps.filter(s=>s.name===historyEmployee).slice().reverse() : [];
+
+  return `
+    <div class="card">
+      <h2 class="card__title">My Log</h2>
+      <div class="field">
+        <label for="historyEmpSelect">Your name</label>
+        <select id="historyEmpSelect">
+          <option value="">Select your name…</option>
+          ${empOptions}
+        </select>
+      </div>
+
+      ${historyEmployee ? `
+        <div class="section-heading">Attendance</div>
+        ${dailySummaries.length === 0 ? `<p class="empty-note">No attendance recorded yet.</p>` : dailySummaries.map(day=>`
+          <div class="day-summary">
+            <div class="day-summary__head">
+              <span class="day-summary__date">${fmtDate(day.date)}</span>
+            </div>
+            ${day.records.map(r=>`
+              <div class="ledger-row">
+                <div class="ledger-row__main">
+                  <span class="ledger-row__name">${r.type === 'in' ? 'Clocked In' : 'Clocked Out'}</span>
+                  <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
+                  ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+                </div>
+                ${r.type === 'in' ? `<span class="badge badge--${r.late ? 'late' : 'ontime'}">${r.late ? 'Late' : 'On time'}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+
+        <div class="section-heading">Day Swap Requests</div>
+        ${swaps.length === 0 ? `<p class="empty-note">No swap requests yet.</p>` : swaps.map(s=>`
+          <div class="ledger-row">
+            <div class="ledger-row__main">
+              <span class="ledger-row__name">Off ${fmtDate(s.fromDate)} → In ${fmtDate(s.toDate)}</span>
+              <span class="ledger-row__reason">${escapeHtml(s.reason)}</span>
+            </div>
+            <span class="badge badge--${s.status}">${s.status}</span>
+          </div>
+        `).join('')}
+      ` : `<p class="empty-note">Select your name to see your history.</p>`}
+    </div>
+  `;
+}
+
+// ---------------- Manager tab ----------------
+function renderManagerTab(){
+  if(!managerUnlocked){
+    const nameOptions = Object.keys(state.settings.managers).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+    return `
+      <div class="card pin-gate">
+        <h2 class="card__title">Manager Login</h2>
+        <p class="card__sub">Sign in with your name and manager PIN.</p>
+        <div class="field">
+          <select id="managerNameInput">
+            <option value="">Select your name…</option>
+            ${nameOptions}
+          </select>
+        </div>
+        <div class="field">
+          <input type="password" id="managerPinInput" placeholder="PIN">
+        </div>
+        <button class="btn btn--primary" id="managerUnlockBtn">Unlock</button>
+        <p class="empty-note" id="managerPinError"></p>
+      </div>
+    `;
+  }
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <h2 class="card__title">Manager Dashboard — ${escapeHtml(managerName)}</h2>
+        <button class="btn btn--ghost btn--sm" id="managerLockBtn">Lock</button>
+      </div>
+      ${renderApprovalsAndLog()}
+    </div>
+  `;
+}
+
+function renderApprovalsAndLog(){
+  const pendingLate = state.attendance.filter(r=>r.late && r.reasonStatus==='pending').slice().reverse();
+  const pendingSwaps = state.swaps.filter(s=>s.status==='pending').slice().reverse();
+  const recent = state.attendance.slice().reverse().slice(0, 40);
+
+  return `
+    <div class="section-heading">Pending late-reason approvals</div>
+    ${pendingLate.length === 0 ? `<p class="empty-note">Nothing pending.</p>` : pendingLate.map(r=>`
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(r.name)}</span>
+          <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
+          <span class="ledger-row__reason">${escapeHtml(r.reason)}</span>
+        </div>
+        <div class="ledger-row__actions">
+          <button class="btn btn--teal btn--sm" data-approve-late="${r.id}">Approve</button>
+          <button class="btn btn--danger btn--sm" data-reject-late="${r.id}">Reject</button>
+        </div>
+      </div>
+    `).join('')}
+
+    <div class="section-heading">Pending day-swap requests</div>
+    ${pendingSwaps.length === 0 ? `<p class="empty-note">Nothing pending.</p>` : pendingSwaps.map(s=>`
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(s.name)}</span>
+          <span class="ledger-row__meta">Off ${fmtDate(s.fromDate)} → In ${fmtDate(s.toDate)}</span>
+          <span class="ledger-row__reason">${escapeHtml(s.reason)}</span>
+        </div>
+        <div class="ledger-row__actions">
+          <button class="btn btn--teal btn--sm" data-approve-swap="${s.id}">Approve</button>
+          <button class="btn btn--danger btn--sm" data-reject-swap="${s.id}">Reject</button>
+        </div>
+      </div>
+    `).join('')}
+
+    <div class="section-heading">Full attendance log (most recent 40)</div>
+    ${recent.length === 0 ? `<p class="empty-note">No records yet.</p>` : recent.map(r=>`
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(r.name)} — ${r.type === 'in' ? 'In' : 'Out'}</span>
+          <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
+          ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+        </div>
+        <span class="badge badge--${r.late ? (r.reasonStatus || 'pending') : 'ontime'}">${r.late ? (r.reasonStatus || 'pending') : 'On time'}</span>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ---------------- Settings tab ----------------
+function renderSettingsTab(){
+  if(!settingsUnlocked){
+    return `
+      <div class="card pin-gate">
+        <h2 class="card__title">Settings Access</h2>
+        <p class="card__sub">Team, schedule, and attendance configuration.</p>
+        <div class="field">
+          <input type="password" id="settingsPinInput" placeholder="PIN">
+        </div>
+        <button class="btn btn--primary" id="settingsUnlockBtn">Unlock</button>
+        <p class="empty-note" id="settingsPinError"></p>
+      </div>
+    `;
+  }
+  const chips = state.employees.map(n=>`
+    <span class="emp-chip">${escapeHtml(n)} <button data-remove-emp="${escapeHtml(n)}" title="Remove">×</button></span>
+  `).join('');
+
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <h2 class="card__title">Team</h2>
+        <button class="btn btn--ghost btn--sm" id="settingsLockBtn">Lock</button>
+      </div>
+      <div class="field">
+        <label for="newEmpInput">Add employee</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="newEmpInput" placeholder="Full name" style="flex:1;">
+          <button class="btn btn--primary" id="addEmpBtn">Add</button>
+        </div>
+      </div>
+      <div>${chips || '<p class="empty-note">No employees yet.</p>'}</div>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Attendance Settings</h2>
+      <div class="field">
+        <label for="startTimeInput">Official start time (clock-ins after this are marked late)</label>
+        <input type="time" id="startTimeInput" value="${state.settings.startTime}">
+      </div>
+      <button class="btn btn--primary" id="saveSettingsBtn">Save Settings</button>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Hybrid Schedule</h2>
+      <p class="card__sub">
+        Group A (Alex, Jordan, Taylor, Morgan) and Group B (Casey, Riley, Drew) alternate
+        Mon/Wed/Fri and Tue/Thu each week. If the rotation ever drifts, correct it here by picking
+        a Monday and which group was in on Mon/Wed/Fri that week.
+      </p>
+      <div class="field">
+        <label for="anchorMondayInput">A reference Monday</label>
+        <input type="date" id="anchorMondayInput" value="${state.settings.scheduleAnchorMonday}">
+      </div>
+      <div class="field">
+        <label for="anchorGroupInput">On that Monday's week, who was on Mon/Wed/Fri?</label>
+        <select id="anchorGroupInput">
+          <option value="true" ${state.settings.anchorGroupAIsMWF ? 'selected' : ''}>Group A (Alex, Jordan, Taylor, Morgan)</option>
+          <option value="false" ${!state.settings.anchorGroupAIsMWF ? 'selected' : ''}>Group B (Casey, Riley, Drew)</option>
+        </select>
+      </div>
+      <button class="btn btn--primary" id="saveScheduleBtn">Save Schedule</button>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Approvals &amp; Log</h2>
+      ${renderApprovalsAndLog()}
+    </div>
+  `;
+}
+
+// ---------------- Admin tab (Riley only) ----------------
+function renderAdminTab(){
+  if(!adminUnlocked){
+    return `
+      <div class="card pin-gate">
+        <h2 class="card__title">Admin Access</h2>
+        <p class="card__sub">Full control — access, records, and data.</p>
+        <div class="field">
+          <input type="password" id="adminPinInput" placeholder="PIN">
+        </div>
+        <button class="btn btn--primary" id="adminUnlockBtn">Unlock</button>
+        <p class="empty-note" id="adminPinError"></p>
+      </div>
+    `;
+  }
+
+  const managerRows = Object.entries(state.settings.managers).map(([name, pin])=>`
+    <div class="ledger-row">
+      <div class="ledger-row__main">
+        <span class="ledger-row__name">${escapeHtml(name)}</span>
+        <span class="ledger-row__meta">PIN: ${escapeHtml(pin)}</span>
+      </div>
+      <div class="ledger-row__actions">
+        <button class="btn btn--ghost btn--sm" data-edit-manager="${escapeHtml(name)}">Change PIN</button>
+        <button class="btn btn--danger btn--sm" data-remove-manager="${escapeHtml(name)}">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  const attendanceRows = state.attendance.slice().reverse().map(r=>{
+    if(editingAttendanceId === r.id){
+      const empOpts = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===r.name?'selected':''}>${escapeHtml(n)}</option>`).join('');
+      return `
+        <div class="ledger-row" style="flex-direction:column;align-items:stretch;">
+          <div class="field"><label>Name</label><select id="editName-${r.id}">${empOpts}</select></div>
+          <div class="field"><label>Type</label>
+            <select id="editType-${r.id}">
+              <option value="in" ${r.type==='in'?'selected':''}>Clock In</option>
+              <option value="out" ${r.type==='out'?'selected':''}>Clock Out</option>
+            </select>
+          </div>
+          <div class="field"><label>Timestamp</label><input type="datetime-local" id="editTs-${r.id}" value="${r.ts.slice(0,16)}"></div>
+          <div class="field">
+            <label><input type="checkbox" id="editLate-${r.id}" ${r.late?'checked':''}> Marked late</label>
+          </div>
+          <div class="field"><label>Reason</label><textarea id="editReason-${r.id}">${escapeHtml(r.reason || '')}</textarea></div>
+          <div class="field"><label>Approval status</label>
+            <select id="editStatus-${r.id}">
+              <option value="pending" ${r.reasonStatus==='pending'?'selected':''}>Pending</option>
+              <option value="approved" ${r.reasonStatus==='approved'?'selected':''}>Approved</option>
+              <option value="rejected" ${r.reasonStatus==='rejected'?'selected':''}>Rejected</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn--teal btn--sm" data-save-attendance="${r.id}">Save</button>
+            <button class="btn btn--ghost btn--sm" data-cancel-attendance="${r.id}">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(r.name)} — ${r.type === 'in' ? 'In' : 'Out'}</span>
+          <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
+          ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+        </div>
+        <div class="ledger-row__actions">
+          <button class="btn btn--ghost btn--sm" data-edit-attendance="${r.id}">Edit</button>
+          <button class="btn btn--danger btn--sm" data-delete-attendance="${r.id}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const swapRows = state.swaps.slice().reverse().map(s=>{
+    if(editingSwapId === s.id){
+      const empOpts = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===s.name?'selected':''}>${escapeHtml(n)}</option>`).join('');
+      return `
+        <div class="ledger-row" style="flex-direction:column;align-items:stretch;">
+          <div class="field"><label>Name</label><select id="editSwapName-${s.id}">${empOpts}</select></div>
+          <div class="field"><label>Day off</label><input type="date" id="editFrom-${s.id}" value="${s.fromDate}"></div>
+          <div class="field"><label>Day instead</label><input type="date" id="editTo-${s.id}" value="${s.toDate}"></div>
+          <div class="field"><label>Reason</label><textarea id="editSwapReason-${s.id}">${escapeHtml(s.reason)}</textarea></div>
+          <div class="field"><label>Status</label>
+            <select id="editSwapStatus-${s.id}">
+              <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+              <option value="approved" ${s.status==='approved'?'selected':''}>Approved</option>
+              <option value="rejected" ${s.status==='rejected'?'selected':''}>Rejected</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn--teal btn--sm" data-save-swap="${s.id}">Save</button>
+            <button class="btn btn--ghost btn--sm" data-cancel-swap="${s.id}">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="ledger-row">
+        <div class="ledger-row__main">
+          <span class="ledger-row__name">${escapeHtml(s.name)}</span>
+          <span class="ledger-row__meta">Off ${fmtDate(s.fromDate)} → In ${fmtDate(s.toDate)}</span>
+          <span class="ledger-row__reason">${escapeHtml(s.reason)}</span>
+        </div>
+        <div class="ledger-row__actions">
+          <span class="badge badge--${s.status}">${s.status}</span>
+          <button class="btn btn--ghost btn--sm" data-edit-swap="${s.id}">Edit</button>
+          <button class="btn btn--danger btn--sm" data-delete-swap="${s.id}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <h2 class="card__title">Access &amp; PINs</h2>
+        <button class="btn btn--ghost btn--sm" id="adminLockBtn">Lock</button>
+      </div>
+      <div class="field">
+        <label for="settingsPinInput2">Settings tab PIN</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="settingsPinInput2" value="${escapeHtml(state.settings.settingsPin)}" style="flex:1;">
+          <button class="btn btn--primary btn--sm" id="saveSettingsPinBtn">Save</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="adminPinInput2">Admin tab PIN (this tab)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="adminPinInput2" value="${escapeHtml(state.settings.adminPin)}" style="flex:1;">
+          <button class="btn btn--primary btn--sm" id="saveAdminPinBtn">Save</button>
+        </div>
+      </div>
+      <div class="section-heading">Managers</div>
+      ${managerRows || '<p class="empty-note">No managers set up.</p>'}
+      <div class="field" style="margin-top:14px;">
+        <label for="newManagerName">Add manager</label>
+        <div style="display:flex;gap:8px;">
+          <select id="newManagerName" style="flex:1;">
+            <option value="">Select name…</option>
+            ${state.employees.filter(n=>!state.settings.managers[n]).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+          </select>
+          <input type="text" id="newManagerPin" placeholder="PIN" style="width:100px;">
+          <button class="btn btn--primary btn--sm" id="addManagerBtn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Edit / Delete Attendance Records</h2>
+      ${attendanceRows || '<p class="empty-note">No records yet.</p>'}
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Edit / Delete Swap Requests</h2>
+      ${swapRows || '<p class="empty-note">No swap requests yet.</p>'}
+    </div>
+
+    <div class="card danger-zone">
+      <h2 class="card__title">Danger Zone</h2>
+      <p class="card__sub">Permanently clears all attendance and swap records. Employee list is kept.</p>
+      <button class="btn btn--danger" id="resetDataBtn">Reset All Attendance Data</button>
+    </div>
+  `;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------------- Event handlers (delegated per-tab) ----------------
+function attachHandlers(){
+  if(activeTab === 'clock'){
+    const empSelect = document.getElementById('empSelect');
+    if(empSelect){
+      empSelect.addEventListener('change', (e)=>{
+        selectedEmployee = e.target.value;
+        render();
+      });
+    }
+    const actionBtn = document.getElementById('clockActionBtn');
+    if(actionBtn){
+      actionBtn.addEventListener('click', async ()=>{
+        const action = actionBtn.dataset.action;
+        const late = actionBtn.dataset.late === '1';
+        let reason = null;
+        if(late){
+          const reasonEl = document.getElementById('lateReason');
+          reason = reasonEl ? reasonEl.value.trim() : '';
+          if(!reason){
+            reasonEl.style.borderColor = 'var(--danger)';
+            reasonEl.focus();
+            return;
+          }
+        }
+        actionBtn.disabled = true;
+        const record = {
+          id: uid(),
+          name: selectedEmployee,
+          type: action,
+          ts: new Date().toISOString(),
+          late: late,
+          reason: reason,
+          reasonStatus: late ? 'pending' : null
+        };
+        state.attendance.push(record);
+        await setData(KEY_ATTENDANCE, state.attendance);
+        actionBtn.classList.add('stamped');
+        document.getElementById('clockConfirm').innerHTML =
+          `<div class="confirm-note">Stamped: ${record.type === 'in' ? 'Clock-In' : 'Clock-Out'} at ${fmtDateTime(record.ts)}</div>`;
+        setTimeout(()=>render(), 700);
+      });
+    }
+  }
+
+  if(activeTab === 'swap'){
+    const sel = document.getElementById('swapEmpSelect');
+    if(sel){
+      sel.addEventListener('change', (e)=>{ swapEmployee = e.target.value; render(); });
+    }
+    const submitBtn = document.getElementById('submitSwapBtn');
+    if(submitBtn){
+      submitBtn.addEventListener('click', async ()=>{
+        const name = document.getElementById('swapEmpSelect').value;
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
+        const reason = document.getElementById('swapReason').value.trim();
+        if(!name || !from || !to || !reason){
+          await showAlert('Please fill in your name, both dates, and a reason.');
+          return;
+        }
+        submitBtn.disabled = true;
+        state.swaps.push({
+          id: uid(), name, fromDate: from, toDate: to, reason,
+          status: 'pending', requestedAt: new Date().toISOString()
+        });
+        await setData(KEY_SWAPS, state.swaps);
+        swapEmployee = name;
+        render();
+      });
+    }
+  }
+
+  if(activeTab === 'history'){
+    const sel = document.getElementById('historyEmpSelect');
+    if(sel){
+      sel.addEventListener('change', (e)=>{ historyEmployee = e.target.value; render(); });
+    }
+  }
+
+  if(activeTab === 'manager'){
+    const unlockBtn = document.getElementById('managerUnlockBtn');
+    if(unlockBtn){
+      unlockBtn.addEventListener('click', ()=>{
+        const name = document.getElementById('managerNameInput').value;
+        const val = document.getElementById('managerPinInput').value;
+        if(name && state.settings.managers[name] && val === state.settings.managers[name]){
+          managerUnlocked = true;
+          managerName = name;
+          render();
+        } else {
+          document.getElementById('managerPinError').textContent = 'Incorrect name or PIN.';
+        }
+      });
+    }
+    const lockBtn = document.getElementById('managerLockBtn');
+    if(lockBtn){
+      lockBtn.addEventListener('click', ()=>{ managerUnlocked = false; managerName = ""; render(); });
+    }
+    attachApprovalHandlers();
+  }
+
+  if(activeTab === 'settings'){
+    const unlockBtn = document.getElementById('settingsUnlockBtn');
+    if(unlockBtn){
+      unlockBtn.addEventListener('click', ()=>{
+        const val = document.getElementById('settingsPinInput').value;
+        if(val === state.settings.settingsPin){ settingsUnlocked = true; render(); }
+        else{ document.getElementById('settingsPinError').textContent = 'Incorrect PIN.'; }
+      });
+    }
+    const lockBtn = document.getElementById('settingsLockBtn');
+    if(lockBtn){
+      lockBtn.addEventListener('click', ()=>{ settingsUnlocked = false; render(); });
+    }
+    const addBtn = document.getElementById('addEmpBtn');
+    if(addBtn){
+      addBtn.addEventListener('click', async ()=>{
+        const input = document.getElementById('newEmpInput');
+        const name = input.value.trim();
+        if(!name) return;
+        if(state.employees.includes(name)){ await showAlert('That name is already on the list.'); return; }
+        state.employees.push(name);
+        await setData(KEY_EMPLOYEES, state.employees);
+        render();
+      });
+    }
+    document.querySelectorAll('[data-remove-emp]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const name = btn.dataset.removeEmp;
+        if(!(await askConfirm(`Remove ${name} from the employee list? Their past records stay in the log.`, 'Remove'))) return;
+        state.employees = state.employees.filter(n=>n!==name);
+        await setData(KEY_EMPLOYEES, state.employees);
+        render();
+      });
+    });
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if(saveSettingsBtn){
+      saveSettingsBtn.addEventListener('click', async ()=>{
+        const val = document.getElementById('startTimeInput').value;
+        if(!val) return;
+        state.settings.startTime = val;
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+    if(saveScheduleBtn){
+      saveScheduleBtn.addEventListener('click', async ()=>{
+        const dateVal = document.getElementById('anchorMondayInput').value;
+        const groupVal = document.getElementById('anchorGroupInput').value;
+        if(!dateVal) return;
+        const dow = new Date(dateVal + "T00:00:00").getDay();
+        if(dow !== 1){
+          await showAlert('Please pick a Monday for the reference date.');
+          return;
+        }
+        state.settings.scheduleAnchorMonday = dateVal;
+        state.settings.anchorGroupAIsMWF = (groupVal === 'true');
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    attachApprovalHandlers();
+  }
+
+  if(activeTab === 'admin'){
+    const unlockBtn = document.getElementById('adminUnlockBtn');
+    if(unlockBtn){
+      unlockBtn.addEventListener('click', ()=>{
+        const val = document.getElementById('adminPinInput').value;
+        if(val === state.settings.adminPin){ adminUnlocked = true; render(); }
+        else{ document.getElementById('adminPinError').textContent = 'Incorrect PIN.'; }
+      });
+    }
+    const lockBtn = document.getElementById('adminLockBtn');
+    if(lockBtn){
+      lockBtn.addEventListener('click', ()=>{ adminUnlocked = false; render(); });
+    }
+
+    const saveSettingsPinBtn = document.getElementById('saveSettingsPinBtn');
+    if(saveSettingsPinBtn){
+      saveSettingsPinBtn.addEventListener('click', async ()=>{
+        const val = document.getElementById('settingsPinInput2').value.trim();
+        if(!val) return;
+        state.settings.settingsPin = val;
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    const saveAdminPinBtn = document.getElementById('saveAdminPinBtn');
+    if(saveAdminPinBtn){
+      saveAdminPinBtn.addEventListener('click', async ()=>{
+        const val = document.getElementById('adminPinInput2').value.trim();
+        if(!val) return;
+        state.settings.adminPin = val;
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    const addManagerBtn = document.getElementById('addManagerBtn');
+    if(addManagerBtn){
+      addManagerBtn.addEventListener('click', async ()=>{
+        const name = document.getElementById('newManagerName').value;
+        const pin = document.getElementById('newManagerPin').value.trim();
+        if(!name || !pin) return;
+        state.settings.managers[name] = pin;
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    document.querySelectorAll('[data-edit-manager]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const name = btn.dataset.editManager;
+        const newPin = await askPrompt(`New PIN for ${name}:`, state.settings.managers[name]);
+        if(newPin === null || !newPin.trim()) return;
+        state.settings.managers[name] = newPin.trim();
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    });
+    document.querySelectorAll('[data-remove-manager]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const name = btn.dataset.removeManager;
+        if(!(await askConfirm(`Remove manager access for ${name}?`, 'Remove'))) return;
+        delete state.settings.managers[name];
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-edit-attendance]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingAttendanceId = btn.dataset.editAttendance; render(); });
+    });
+    document.querySelectorAll('[data-cancel-attendance]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingAttendanceId = null; render(); });
+    });
+    document.querySelectorAll('[data-save-attendance]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.saveAttendance;
+        const rec = state.attendance.find(r=>r.id===id);
+        if(!rec) return;
+        rec.name = document.getElementById(`editName-${id}`).value;
+        rec.type = document.getElementById(`editType-${id}`).value;
+        const tsVal = document.getElementById(`editTs-${id}`).value;
+        if(tsVal) rec.ts = new Date(tsVal).toISOString();
+        rec.late = document.getElementById(`editLate-${id}`).checked;
+        rec.reason = document.getElementById(`editReason-${id}`).value.trim() || null;
+        rec.reasonStatus = document.getElementById(`editStatus-${id}`).value;
+        await setData(KEY_ATTENDANCE, state.attendance);
+        editingAttendanceId = null;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-delete-attendance]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.deleteAttendance;
+        if(!(await askConfirm('Delete this attendance record permanently?', 'Delete'))) return;
+        state.attendance = state.attendance.filter(r=>r.id!==id);
+        await setData(KEY_ATTENDANCE, state.attendance);
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-edit-swap]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingSwapId = btn.dataset.editSwap; render(); });
+    });
+    document.querySelectorAll('[data-cancel-swap]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingSwapId = null; render(); });
+    });
+    document.querySelectorAll('[data-save-swap]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.saveSwap;
+        const rec = state.swaps.find(s=>s.id===id);
+        if(!rec) return;
+        rec.name = document.getElementById(`editSwapName-${id}`).value;
+        rec.fromDate = document.getElementById(`editFrom-${id}`).value;
+        rec.toDate = document.getElementById(`editTo-${id}`).value;
+        rec.reason = document.getElementById(`editSwapReason-${id}`).value.trim();
+        rec.status = document.getElementById(`editSwapStatus-${id}`).value;
+        await setData(KEY_SWAPS, state.swaps);
+        editingSwapId = null;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-delete-swap]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.deleteSwap;
+        if(!(await askConfirm('Delete this swap request permanently?', 'Delete'))) return;
+        state.swaps = state.swaps.filter(s=>s.id!==id);
+        await setData(KEY_SWAPS, state.swaps);
+        render();
+      });
+    });
+
+    const resetBtn = document.getElementById('resetDataBtn');
+    if(resetBtn){
+      resetBtn.addEventListener('click', async ()=>{
+        if(!(await askConfirm('This permanently deletes ALL attendance and swap records. Continue?', 'Continue'))) return;
+        if(!(await askConfirm('Are you absolutely sure? This cannot be undone.', 'Yes, reset everything'))) return;
+        state.attendance = [];
+        state.swaps = [];
+        await setData(KEY_ATTENDANCE, state.attendance);
+        await setData(KEY_SWAPS, state.swaps);
+        render();
+      });
+    }
+  }
+}
+
+function attachApprovalHandlers(){
+  document.querySelectorAll('[data-approve-late]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.approveLate;
+      const rec = state.attendance.find(r=>r.id===id);
+      if(rec) rec.reasonStatus = 'approved';
+      await setData(KEY_ATTENDANCE, state.attendance);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-reject-late]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.rejectLate;
+      const rec = state.attendance.find(r=>r.id===id);
+      if(rec) rec.reasonStatus = 'rejected';
+      await setData(KEY_ATTENDANCE, state.attendance);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-approve-swap]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.approveSwap;
+      const rec = state.swaps.find(s=>s.id===id);
+      if(rec) rec.status = 'approved';
+      await setData(KEY_SWAPS, state.swaps);
+      render();
+    });
+  });
+  document.querySelectorAll('[data-reject-swap]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.rejectSwap;
+      const rec = state.swaps.find(s=>s.id===id);
+      if(rec) rec.status = 'rejected';
+      await setData(KEY_SWAPS, state.swaps);
+      render();
+    });
+  });
+}
+
+// ---------------- Init ----------------
+document.getElementById('modalCancelBtn').addEventListener('click', ()=>{
+  closeModal(modalState.isPrompt ? null : false);
+});
+document.getElementById('modalConfirmBtn').addEventListener('click', ()=>{
+  if(modalState.isPrompt){
+    closeModal(document.getElementById('modalInput').value);
+  } else {
+    closeModal(true);
+  }
+});
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'modalOverlay'){
+    closeModal(modalState.isPrompt ? null : false);
+  }
+});
+document.getElementById('modalInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ closeModal(document.getElementById('modalInput').value); }
+});
+
+(async function init(){
+  await loadState();
+  tickClock();
+  render();
+})();
+</script>
+</body>
+</html>
