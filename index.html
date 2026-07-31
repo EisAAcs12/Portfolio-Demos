@@ -23,6 +23,8 @@
   --danger: #B4525D;
   --danger-dark: #9B3A44;
   --border: #38393B;
+  --leave-color: #A183C9;
+  --compoff-color: #D4A54C;
   --radius: 10px;
 }
 
@@ -180,6 +182,32 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
   background:var(--surface-alt);font-size:13.5px;color:var(--ink);
   font-family:'IBM Plex Mono',monospace;
 }
+.location-note{
+  margin:10px 0 0;font-size:12px;color:var(--ink-muted);text-align:center;
+}
+.location-link{
+  display:inline-block;margin-top:4px;font-size:12px;
+  color:var(--accent-bright);text-decoration:none;font-weight:500;
+}
+.location-link:hover{text-decoration:underline;}
+
+/* ---------- Admin: System Info / Raw Data ---------- */
+.sysinfo-grid{
+  display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:10px;
+}
+.sysinfo-item{
+  background:var(--surface-alt);border-radius:8px;padding:10px 12px;
+  display:flex;flex-direction:column;gap:3px;
+}
+.sysinfo-label{font-size:11px;text-transform:uppercase;letter-spacing:0.3px;color:var(--ink-muted);font-weight:600;}
+.sysinfo-value{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink);word-break:break-word;}
+.raw-data-view{
+  background:var(--surface-alt);border-radius:8px;padding:14px;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.5;
+  color:var(--ink);overflow-x:auto;max-height:400px;overflow-y:auto;
+  margin:14px 0 0;white-space:pre-wrap;word-break:break-word;
+}
 .training-note{
   padding:14px 16px;border-radius:8px;
   background:var(--accent-soft);color:var(--ink);
@@ -251,6 +279,67 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
   font-size:13px;color:var(--ink-muted);margin:0 0 16px;
 }
 .schedule-note strong{color:var(--accent-bright);}
+
+/* ---------- Team Calendar ---------- */
+.cal-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.cal-nav{display:flex;align-items:center;gap:8px;}
+.cal-nav__label{font-family:'Fraunces',serif;font-weight:700;font-size:14.5px;min-width:130px;text-align:center;}
+
+.cal-legend{
+  display:flex;flex-wrap:wrap;gap:12px 18px;
+  margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);
+}
+.cal-legend__item{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--ink-muted);
+}
+.cal-legend__swatch{
+  width:12px;height:12px;border-radius:3px;flex-shrink:0;
+}
+.cal-legend__swatch--groupA{background:var(--accent);}
+.cal-legend__swatch--groupB{background:var(--teal);}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;margin-bottom:4px;}
+.cal-grid--labels{margin-bottom:6px;}
+.cal-weekday{
+  text-align:center;font-size:11px;font-weight:600;color:var(--ink-muted);
+  text-transform:uppercase;letter-spacing:0.3px;padding-bottom:2px;
+}
+.cal-cell{
+  aspect-ratio:1;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface-alt);color:var(--ink);
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  cursor:pointer;transition:border-color .12s, filter .12s;
+  padding:2px;
+}
+.cal-cell:hover{border-color:var(--accent-bright);filter:brightness(1.12);}
+.cal-cell--blank{background:transparent;border:none;cursor:default;}
+.cal-cell--weekend{background:transparent;border:1px dashed var(--border);color:var(--ink-muted);}
+.cal-cell--groupA{background:rgba(119, 178, 59, 0.32);}
+.cal-cell--groupB{background:rgba(76, 145, 134, 0.32);}
+.cal-cell--today{border:2px solid var(--accent-bright);font-weight:700;}
+.cal-cell--selected{outline:2px solid #fff;outline-offset:-3px;}
+.cal-cell__num{line-height:1;}
+.cal-cell__dots{display:flex;gap:2px;min-height:6px;align-items:center;}
+.cal-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.cal-dot--training{background:var(--danger);}
+.cal-dot--leave{background:var(--leave-color);}
+.cal-dot--compoff{background:var(--compoff-color);}
+.cal-legend__item .cal-dot{width:10px;height:10px;}
+
+.cal-detail{
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+}
+.cal-detail__date{font-family:'Fraunces',serif;font-weight:700;font-size:15px;margin-bottom:10px;}
+.cal-detail__row{font-size:13.5px;margin-bottom:6px;}
+
+@media (max-width: 560px){
+  .cal-cell{font-size:11.5px;}
+  .cal-nav__label{min-width:100px;font-size:13px;}
+  .cal-legend{gap:8px 12px;}
+  .cal-legend__item{font-size:11px;}
+}
 .pin-gate{max-width:320px;margin:0 auto;text-align:center;}
 .pin-gate .card__title{text-align:center;}
 
@@ -410,6 +499,12 @@ let historyEmployee = "";
 let swapEmployee = "";
 let leaveEmployee = "";
 let pendingLateDraft = false; // whether the "late reason" panel is open
+let calendarViewYear = new Date().getFullYear();
+let calendarViewMonth = new Date().getMonth(); // 0-indexed
+let calendarSelectedDate = toISODateLocal(new Date());
+let rawDataViewerOpen = false;
+
+const APP_VERSION = "1.6.0";
 
 // ---------------- Storage helpers (in-memory demo store) ----------------
 async function getData(key, fallback){
@@ -446,6 +541,28 @@ async function loadState(){
 
 function uid(){
   return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+// Captures location once, only at the moment of clock in/out — never runs
+// in the background. Resolves to {lat, lng, accuracy} or null if unavailable,
+// denied, or slow (8s timeout so a clock-in is never blocked by GPS).
+function captureLocationOnce(){
+  return new Promise((resolve)=>{
+    if(!('geolocation' in navigator)){ resolve(null); return; }
+    const timer = setTimeout(()=> resolve(null), 8000);
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        clearTimeout(timer);
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: Math.round(pos.coords.accuracy)
+        });
+      },
+      ()=>{ clearTimeout(timer); resolve(null); },
+      { enableHighAccuracy: false, timeout: 7500, maximumAge: 60000 }
+    );
+  });
 }
 
 // ---------------- Custom modal (replaces confirm/prompt/alert, which are
@@ -489,6 +606,12 @@ function askPrompt(message, defaultValue = ''){
 }
 function showAlert(message){
   return openModal({ message, isPrompt: false, confirmLabel: 'OK', danger: false, hideCancel: true });
+}
+
+function locationLinkHtml(location){
+  if(!location) return '';
+  const url = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+  return `<a href="${url}" target="_blank" rel="noopener" class="location-link">📍 View location (±${location.accuracy}m)</a>`;
 }
 
 function fmtDateTime(iso){
@@ -847,8 +970,118 @@ function renderClockTab(){
         </select>
       </div>
       ${actionBlock}
+      ${actionBlock.includes('clockActionBtn') ? `<p class="location-note">📍 Your location is recorded at the moment you clock in/out — not tracked at any other time.</p>` : ''}
       `}
       <div id="clockConfirm"></div>
+    </div>
+
+    ${renderTeamCalendar()}
+  `;
+}
+
+// ---------------- Team Calendar ----------------
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WEEKDAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+function calendarDayInfo(date){
+  const base = officeGroupsForDate(date); // base hybrid rotation, before training/leave overlays
+  const overrides = officeStatusForDate(date);
+  const isGroupADay = base.inOffice.some(n => GROUP_A.includes(n));
+  return {
+    isGroupADay,
+    hasTraining: overrides.training.length > 0,
+    hasLeave: overrides.onLeave.length > 0,
+    hasCompOff: overrides.compOff.length > 0
+  };
+}
+
+function renderTeamCalendar(){
+  const year = calendarViewYear;
+  const month = calendarViewMonth; // 0-indexed
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = toISODateLocal(new Date());
+
+  let cells = '';
+  for(let i=0; i<startOffset; i++){
+    cells += `<div class="cal-cell cal-cell--blank"></div>`;
+  }
+  for(let day=1; day<=daysInMonth; day++){
+    const cellDate = new Date(year, month, day);
+    const dateStr = toISODateLocal(cellDate);
+    const dow = cellDate.getDay();
+    const isWeekend = (dow === 0 || dow === 6);
+    const isToday = dateStr === todayStr;
+    const isSelected = dateStr === calendarSelectedDate;
+
+    if(isWeekend){
+      cells += `
+        <button class="cal-cell cal-cell--weekend ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}">
+          <span class="cal-cell__num">${day}</span>
+        </button>
+      `;
+      continue;
+    }
+
+    const info = calendarDayInfo(cellDate);
+    const groupClass = info.isGroupADay ? 'cal-cell--groupA' : 'cal-cell--groupB';
+    const dots = `
+      ${info.hasTraining ? '<span class="cal-dot cal-dot--training" title="Training"></span>' : ''}
+      ${info.hasLeave ? '<span class="cal-dot cal-dot--leave" title="Leave"></span>' : ''}
+      ${info.hasCompOff ? '<span class="cal-dot cal-dot--compoff" title="Comp day off"></span>' : ''}
+    `;
+    cells += `
+      <button class="cal-cell ${groupClass} ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}">
+        <span class="cal-cell__num">${day}</span>
+        <span class="cal-cell__dots">${dots}</span>
+      </button>
+    `;
+  }
+
+  const selectedDate = new Date(calendarSelectedDate + "T00:00:00");
+  const selectedStatus = officeStatusForDate(selectedDate);
+  const selectedDow = selectedDate.getDay();
+  const isSelectedWeekend = (selectedDow === 0 || selectedDow === 6);
+  const selectedLabel = selectedDate.toLocaleDateString('en-ZA', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+  return `
+    <div class="card">
+      <div class="cal-header">
+        <h2 class="card__title">Team Calendar</h2>
+        <div class="cal-nav">
+          <button class="btn btn--ghost btn--sm" id="calPrevBtn">‹</button>
+          <span class="cal-nav__label">${MONTH_NAMES[month]} ${year}</span>
+          <button class="btn btn--ghost btn--sm" id="calNextBtn">›</button>
+          <button class="btn btn--ghost btn--sm" id="calTodayBtn">Today</button>
+        </div>
+      </div>
+
+      <div class="cal-legend">
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--groupA"></span>Alex, Jordan, Taylor, Morgan</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--groupB"></span>Casey, Riley, Drew</span>
+        <span class="cal-legend__item"><span class="cal-dot cal-dot--training"></span>Skills training</span>
+        <span class="cal-legend__item"><span class="cal-dot cal-dot--leave"></span>Leave / out of office</span>
+        <span class="cal-legend__item"><span class="cal-dot cal-dot--compoff"></span>Comp day off</span>
+      </div>
+
+      <div class="cal-grid cal-grid--labels">
+        ${WEEKDAY_LABELS.map(l=>`<div class="cal-weekday">${l}</div>`).join('')}
+      </div>
+      <div class="cal-grid">
+        ${cells}
+      </div>
+
+      <div class="cal-detail">
+        <div class="cal-detail__date">${selectedLabel}</div>
+        ${isSelectedWeekend ? `<p class="empty-note">Weekend — no office rotation.</p>` : `
+          <div class="cal-detail__row"><span class="schedule-banner__label">In office:</span> ${selectedStatus.inOffice.length ? selectedStatus.inOffice.map(escapeHtml).join(', ') : '—'}</div>
+          <div class="cal-detail__row"><span class="schedule-banner__label">Remote:</span> ${selectedStatus.remote.length ? selectedStatus.remote.map(escapeHtml).join(', ') : '—'}</div>
+          ${selectedStatus.training.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">In training:</span> ${selectedStatus.training.map(escapeHtml).join(', ')}</div>` : ''}
+          ${selectedStatus.compOff.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">Comp day off:</span> ${selectedStatus.compOff.map(escapeHtml).join(', ')}</div>` : ''}
+          ${selectedStatus.onLeave.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">On leave:</span> ${selectedStatus.onLeave.map(escapeHtml).join(', ')}</div>` : ''}
+        `}
+      </div>
     </div>
   `;
 }
@@ -1017,6 +1250,7 @@ function renderHistoryTab(){
                   <span class="ledger-row__name">${r.type === 'in' ? 'Clocked In' : 'Clocked Out'}</span>
                   <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
                   ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+                  ${locationLinkHtml(r.location)}
                 </div>
                 ${r.type === 'in' ? `<span class="badge badge--${r.late ? 'late' : 'ontime'}">${r.late ? 'Late' : 'On time'}</span>` : ''}
               </div>
@@ -1138,6 +1372,7 @@ function renderApprovalsAndLog(){
           <span class="ledger-row__name">${escapeHtml(r.name)} — ${r.type === 'in' ? 'In' : 'Out'}</span>
           <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
           ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+          ${locationLinkHtml(r.location)}
         </div>
         <span class="badge badge--${r.late ? (r.reasonStatus || 'pending') : 'ontime'}">${r.late ? (r.reasonStatus || 'pending') : 'On time'}</span>
       </div>
@@ -1283,6 +1518,7 @@ function renderAdminTab(){
           <span class="ledger-row__name">${escapeHtml(r.name)} — ${r.type === 'in' ? 'In' : 'Out'}</span>
           <span class="ledger-row__meta">${fmtDateTime(r.ts)}</span>
           ${r.reason ? `<span class="ledger-row__reason">${escapeHtml(r.reason)}</span>` : ''}
+          ${locationLinkHtml(r.location)}
         </div>
         <div class="ledger-row__actions">
           <button class="btn btn--ghost btn--sm" data-edit-attendance="${r.id}">Edit</button>
@@ -1362,7 +1598,50 @@ function renderAdminTab(){
     `;
   }).join('');
 
+  const swCache = ('serviceWorker' in navigator) ? (navigator.serviceWorker.controller ? 'Active' : 'Not controlling this page') : 'Unsupported';
+  const onlineStatus = navigator.onLine ? 'Online' : 'Offline';
+  const dataJson = {
+    employees: state.employees,
+    attendance: state.attendance,
+    swaps: state.swaps,
+    leave: state.leave
+  };
+
   return `
+    <div class="card">
+      <h2 class="card__title">System Info</h2>
+      <div class="sysinfo-grid">
+        <div class="sysinfo-item"><span class="sysinfo-label">App version</span><span class="sysinfo-value">${APP_VERSION}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Backend</span><span class="sysinfo-value">In-memory (demo)</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Connection</span><span class="sysinfo-value">${onlineStatus}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Service worker</span><span class="sysinfo-value">${swCache}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Employees</span><span class="sysinfo-value">${state.employees.length}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Attendance records</span><span class="sysinfo-value">${state.attendance.length}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Swap requests</span><span class="sysinfo-value">${state.swaps.length}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Leave records</span><span class="sysinfo-value">${state.leave.length}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Managers</span><span class="sysinfo-value">${Object.keys(state.settings.managers).length}</span></div>
+        <div class="sysinfo-item"><span class="sysinfo-label">Browser</span><span class="sysinfo-value">${escapeHtml(navigator.userAgent.slice(0, 60))}…</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card__title">Data Backup</h2>
+      <p class="card__sub">Download a full snapshot of all app data, or restore from a previous backup.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn--primary btn--sm" id="exportDataBtn">Export Backup (.json)</button>
+        <label class="btn btn--ghost btn--sm" for="importDataFile" style="cursor:pointer;">Import Backup (.json)</label>
+        <input type="file" id="importDataFile" accept="application/json" style="display:none;">
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 class="card__title">Raw Data Viewer</h2>
+        <button class="btn btn--ghost btn--sm" id="toggleRawDataBtn">${rawDataViewerOpen ? 'Hide' : 'Show'}</button>
+      </div>
+      ${rawDataViewerOpen ? `<pre class="raw-data-view">${escapeHtml(JSON.stringify(dataJson, null, 2))}</pre>` : ''}
+    </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <h2 class="card__title">Access &amp; PINs</h2>
@@ -1450,6 +1729,8 @@ function attachHandlers(){
           }
         }
         actionBtn.disabled = true;
+        actionBtn.textContent = 'Getting location…';
+        const location = await captureLocationOnce();
         const record = {
           id: uid(),
           name: selectedEmployee,
@@ -1457,7 +1738,8 @@ function attachHandlers(){
           ts: new Date().toISOString(),
           late: late,
           reason: reason,
-          reasonStatus: late ? 'pending' : null
+          reasonStatus: late ? 'pending' : null,
+          location: location // {lat, lng, accuracy} or null — captured only at this instant
         };
         state.attendance.push(record);
         await setData(KEY_ATTENDANCE, state.attendance);
@@ -1467,6 +1749,39 @@ function attachHandlers(){
         setTimeout(()=>render(), 700);
       });
     }
+
+    const calPrevBtn = document.getElementById('calPrevBtn');
+    if(calPrevBtn){
+      calPrevBtn.addEventListener('click', ()=>{
+        calendarViewMonth--;
+        if(calendarViewMonth < 0){ calendarViewMonth = 11; calendarViewYear--; }
+        render();
+      });
+    }
+    const calNextBtn = document.getElementById('calNextBtn');
+    if(calNextBtn){
+      calNextBtn.addEventListener('click', ()=>{
+        calendarViewMonth++;
+        if(calendarViewMonth > 11){ calendarViewMonth = 0; calendarViewYear++; }
+        render();
+      });
+    }
+    const calTodayBtn = document.getElementById('calTodayBtn');
+    if(calTodayBtn){
+      calTodayBtn.addEventListener('click', ()=>{
+        const today = new Date();
+        calendarViewYear = today.getFullYear();
+        calendarViewMonth = today.getMonth();
+        calendarSelectedDate = toISODateLocal(today);
+        render();
+      });
+    }
+    document.querySelectorAll('[data-cal-date]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        calendarSelectedDate = btn.dataset.calDate;
+        render();
+      });
+    });
   }
 
   if(activeTab === 'swap'){
@@ -1645,6 +1960,72 @@ function attachHandlers(){
     const lockBtn = document.getElementById('adminLockBtn');
     if(lockBtn){
       lockBtn.addEventListener('click', ()=>{ adminUnlocked = false; render(); });
+    }
+
+    const toggleRawDataBtn = document.getElementById('toggleRawDataBtn');
+    if(toggleRawDataBtn){
+      toggleRawDataBtn.addEventListener('click', ()=>{
+        rawDataViewerOpen = !rawDataViewerOpen;
+        render();
+      });
+    }
+
+    const exportDataBtn = document.getElementById('exportDataBtn');
+    if(exportDataBtn){
+      exportDataBtn.addEventListener('click', ()=>{
+        const backup = {
+          exportedAt: new Date().toISOString(),
+          appVersion: APP_VERSION,
+          employees: state.employees,
+          attendance: state.attendance,
+          swaps: state.swaps,
+          leave: state.leave,
+          settings: state.settings
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `amathuba-hub-backup-${toISODateLocal(new Date())}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    const importDataFile = document.getElementById('importDataFile');
+    if(importDataFile){
+      importDataFile.addEventListener('change', async (e)=>{
+        const file = e.target.files[0];
+        if(!file) return;
+        try{
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if(!parsed || !Array.isArray(parsed.employees) || !Array.isArray(parsed.attendance)){
+            await showAlert('This file doesn\'t look like a valid Amathuba Hub backup.');
+            return;
+          }
+          if(!(await askConfirm('This will overwrite ALL current data with the contents of this backup. Continue?', 'Restore'))) return;
+          state.employees = parsed.employees || [];
+          state.attendance = parsed.attendance || [];
+          state.swaps = parsed.swaps || [];
+          state.leave = parsed.leave || [];
+          if(parsed.settings) state.settings = Object.assign({}, DEFAULT_SETTINGS, parsed.settings);
+          await Promise.all([
+            setData(KEY_EMPLOYEES, state.employees),
+            setData(KEY_ATTENDANCE, state.attendance),
+            setData(KEY_SWAPS, state.swaps),
+            setData(KEY_LEAVE, state.leave),
+            setData(KEY_SETTINGS, state.settings)
+          ]);
+          await showAlert('Backup restored successfully.');
+          render();
+        }catch(err){
+          console.error('Import error', err);
+          await showAlert('Could not read that file — make sure it\'s a valid backup JSON.');
+        }
+      });
     }
 
     const saveSettingsPinBtn = document.getElementById('saveSettingsPinBtn');
