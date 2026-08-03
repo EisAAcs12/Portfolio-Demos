@@ -54,6 +54,38 @@ body{
   line-height:1.3;
 }
 
+.notif-bell{
+  position:relative;
+  background:none;border:none;cursor:pointer;
+  font-size:18px;padding:6px;margin-left:auto;
+  color:var(--ink);line-height:1;
+}
+.notif-badge{
+  position:absolute;top:0;right:0;
+  background:var(--danger);color:#fff;
+  font-size:10px;font-weight:700;
+  min-width:16px;height:16px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 3px;
+}
+.notif-panel{
+  position:absolute;top:60px;right:16px;
+  width:300px;max-width:calc(100vw - 32px);
+  max-height:360px;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  z-index:900;
+}
+.notif-panel.hidden{display:none;}
+.notif-item{
+  padding:12px 14px;border-bottom:1px solid var(--border);
+}
+.notif-item:last-child{border-bottom:none;}
+.notif-item__msg{font-size:13px;color:var(--ink);line-height:1.4;}
+.notif-item__time{font-size:11px;color:var(--ink-muted);margin-top:4px;font-family:'IBM Plex Mono',monospace;}
+.notif-item--empty{color:var(--ink-muted);font-size:13px;text-align:center;}
+
 .tabs{display:flex;gap:6px;flex-wrap:wrap;}
 .tab{
   font-family:'IBM Plex Sans',sans-serif;
@@ -298,6 +330,7 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
 }
 .cal-legend__swatch--groupA{background:var(--accent);}
 .cal-legend__swatch--groupB{background:var(--teal);}
+.cal-legend__swatch--holiday{background:var(--danger);}
 
 .cal-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;margin-bottom:4px;}
 .cal-grid--labels{margin-bottom:6px;}
@@ -316,6 +349,7 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
 .cal-cell:hover{border-color:var(--accent-bright);filter:brightness(1.12);}
 .cal-cell--blank{background:transparent;border:none;cursor:default;}
 .cal-cell--weekend{background:transparent;border:1px dashed var(--border);color:var(--ink-muted);}
+.cal-cell--holiday{background:rgba(180,82,93,0.28);border-color:var(--danger);color:var(--ink);}
 .cal-cell--groupA{background:rgba(119, 178, 59, 0.32);}
 .cal-cell--groupB{background:rgba(76, 145, 134, 0.32);}
 .cal-cell--today{border:2px solid var(--accent-bright);font-weight:700;}
@@ -396,7 +430,11 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
     <div class="brand">
       <img class="brand-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAjMAAACDCAMAAABP2WqsAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAwBQTFRFvtmgwdum5/Hcn8hymMNqoMh1xd2r2OjG8ffquteamsRrttWUosp4pcl9uNaYrtCK2+rLtdSSstKPmMRptNOSs9KQvNie7PTjh7tQw92pY2RmvNic6/Tjt9aWnsZxnMZu2enI1ObBj71Zd7I7tNKR0eW9wNqjirxTo8l6ncVv5e/YutaZp8x/pct7////o8l5sbGyu9idiouM3ezO2NjZgLdH5fHazOK1i7xU9fX1qs+FbW5w9vrzxMXFkcBglMFjj75bmMNp6+zsnp6ggIGDk8BhmcVsibtRk8Bid3d53evNg7hJ4uLiosh4hblLlJWWmsRsh7lOncZyqKipn8Z0jr5akL5dzs7Puru8kL5coch3jLxXirtTirtSlcFlhrlMjLxWl8Nnm8VvgrdIibtQgbdHiLpPmcRrnsZznMVw7vXmm8VukL9ek8Bgjb1Yjb1XksBfh7lNlcFkjb1Zl8NohrlNmsRti7xVncZxoMd1iLxUosh5oMh2kL9dn8Zzjr5Z3OvNlsJmnMVxqcyBf7ZFmcRs+fz31OfC9/v0iLpOkcBfkb9egLdFhLlK6PLdgLdG6fLferM/+Pv1lsFm+Pv0+fv2l8Jn6/Pi6vPgf7ZElsFl7PTklsJnfbVDlcJmmMNojLxVnsZyhblOm8Vtoch2oMd26fLe6vPhs9SR3OrN2unKn8d19/rzhLlLfrVE3OvMiLtSksBg1+jFlMFksNGN6PLe7fTl+fz2msVqjr1X6/Phjb1W3OrMoch4kL9bm8Vwf7ZH9/vzhLhKlcJklsJl1ufDjb5an8d0grhLmcRqnsZvoMhz9/r01efCosl1msZr2+vMjL1Wjr5bj75a7/bo1+fEosl3m8Ztn8h0kL9cl8Jmqc2Aosl43+3Qm8VsrM+IvNechbpPn8dzp8uAnsdynsdwn8dy2unJ7fXl5fDZ5vHairxWlcFjtNOQq86Fq86ElMBhsdGOstOO8vfs6vLg7fXkzuO4qc2CqMyBqM2A7fXmnMZtlMFi1ebCncZw////LGSp/QAAAQB0Uk5T////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AFP3ByUAABBxSURBVHja7N15YBTVGQBwWki9UBBRZL3QVGttm2w2kyyTzSa4u8SsLG5ggV2wolwegDUgWghK0SKxBmJQ0VgFq1TwqlbrgWe1Wq3a2vs+bbX3be9WtzM78+5jZ3bXJO1+7y8ys7PHvN98871rGJWHAsVfGQWnAAqYgQJmoIAZKGAGCpiBAgXMQAEzUP63zfxt3OjRR/0QTiSY8Vre+bV7773xxhs3feceOJVgxhuZVwtiNm3acgigATOeyBxeALNpy5arr94LaMCMFzIOmC1XL7PK3i/C2QQzHsjYYApili1ZAmjATJHyjcM3YTCWmCVLZuy9Es4nmNGUuisPISHGFmMVQANmdGTq6u45hAEzY+unTvs3oAEzGjJ1VqRZhsHM2HqaVc48BtCAGQ2ZurpnXiEhxhZz5kUXvQRowIy0xVRzpavmzxaYzzkhxhKzatWsWS9dBycVzIhk3rPsxWcQmkKIscEUxHzs7LNHAxowI5Kxkpi9ONI49yQbjCVm6dJTTgE0YEZCxrojfRmh+Z0tpgCmIOaMMz74MqABMxwZJ+39NkZji3HA2GKmTp36CqABM6T0T52B0t5jMBo7xDhgbDEfPuusbwEaMMOQQWnvMde5aA4uiCmAscScfvoFH/rBNXBqwQwis3Ur6opZteotFGkOJiHGFnPhR+aOBTRgxiGDu2KctPd1FGkOsMF8wgFz4dy506ZN+wCgATMWma+SEOOmvaMxGjvEXFAIMZaY+fPnzQM0YCbf/zjp7Z2F0t6X93XRHHU6AmOLuXRl31XvBzTVbqb/cbq3dylKe7sHXDQHkRBz6cqrus+fPh3QVLmZ/kdJiFlKt6zPx2jsEDOvEGJsMZ2d7f8ENNVspv9RJsQgMHba+8e/uGj2IyFmemd7e/vqhX8H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" alt="Amathuba Hub">
       <span class="brand-tagline">Attendance Ledger</span>
+      <button id="notifBellBtn" class="notif-bell" title="Notifications">
+        🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+      </button>
     </div>
+    <div id="notifPanel" class="notif-panel hidden"></div>
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="clock">Clock In / Out</button>
       <button class="tab" data-tab="swap">Day Swap</button>
@@ -436,11 +474,13 @@ const DEMO_STORE = {};
 // ---------------------------------------------------------------
 // Defaults live in state.settings so the Admin tab can change them
 // at runtime. (Demo build: PINs below are sample values, safe to share.)
+// ---------------------------------------------------------------
 const KEY_EMPLOYEES = "amathuba_employees";
 const KEY_ATTENDANCE = "amathuba_attendance";
 const KEY_SWAPS = "amathuba_swaps";
 const KEY_LEAVE = "amathuba_leave";
 const KEY_SETTINGS = "amathuba_settings";
+const KEY_NOTIFICATIONS = "amathuba_notifications";
 
 const DEFAULT_EMPLOYEES = ["Alex", "Drew", "Morgan", "Casey", "Jordan", "Riley", "Taylor"];
 const GROUP_A = ["Alex", "Jordan", "Taylor", "Morgan"];
@@ -475,7 +515,22 @@ const DEFAULT_SETTINGS = {
   anchorGroupAIsMWF: false,           // on that Monday, was Group A in on Mon/Wed/Fri?
   settingsPin: "0000",
   adminPin: "9999",
-  managers: { "Alex": "1234" }         // name -> PIN, editable from the Admin tab
+  managers: { "Alex": "1234" },    // name -> PIN, editable from the Admin tab
+  publicHolidays: [                   // South Africa 2026 (source: gov.za) — add more from Settings tab
+    { date: "2026-01-01", name: "New Year's Day" },
+    { date: "2026-03-21", name: "Human Rights Day" },
+    { date: "2026-04-03", name: "Good Friday" },
+    { date: "2026-04-06", name: "Family Day" },
+    { date: "2026-04-27", name: "Freedom Day" },
+    { date: "2026-05-01", name: "Workers' Day" },
+    { date: "2026-06-16", name: "Youth Day" },
+    { date: "2026-08-09", name: "National Women's Day" },
+    { date: "2026-08-10", name: "Women's Day observed" },
+    { date: "2026-09-24", name: "Heritage Day" },
+    { date: "2026-12-16", name: "Day of Reconciliation" },
+    { date: "2026-12-25", name: "Christmas Day" },
+    { date: "2026-12-26", name: "Day of Goodwill" }
+  ]
 };
 
 let state = {
@@ -503,6 +558,7 @@ let calendarViewYear = new Date().getFullYear();
 let calendarViewMonth = new Date().getMonth(); // 0-indexed
 let calendarSelectedDate = toISODateLocal(new Date());
 let rawDataViewerOpen = false;
+let notifications = []; // kept separate from `state` — updated locally (demo has no live backend)
 
 const APP_VERSION = "1.6.0";
 
@@ -675,6 +731,26 @@ function isLateNow(){
   const threshold = new Date(now);
   threshold.setHours(h, m, 0, 0);
   return now > threshold;
+}
+
+// ---------------- Weekend / public holiday blocking ----------------
+function isWeekendDate(date){
+  const dow = date.getDay();
+  return dow === 0 || dow === 6;
+}
+function getPublicHoliday(dateStr){
+  return (state.settings.publicHolidays || []).find(h => h.date === dateStr) || null;
+}
+function isNonWorkingDay(date){
+  const dateStr = toISODateLocal(date);
+  return isWeekendDate(date) || !!getPublicHoliday(dateStr);
+}
+function nonWorkingDayLabel(date){
+  const dateStr = toISODateLocal(date);
+  const holiday = getPublicHoliday(dateStr);
+  if(holiday) return `Public Holiday — ${holiday.name}`;
+  if(isWeekendDate(date)) return 'Weekend';
+  return null;
 }
 
 // ---------------- Hybrid schedule helpers ----------------
@@ -886,8 +962,13 @@ function render(){
 // ---------------- Clock In / Out tab ----------------
 function renderScheduleBanner(){
   const today = new Date();
+  const blockedLabel = nonWorkingDayLabel(today);
   const status = officeStatusForDate(today);
   const { inOffice, remote, training, compOff, compBlocked, onLeave } = status;
+
+  if(blockedLabel){
+    return `<div class="schedule-banner"><span class="schedule-banner__label">${escapeHtml(blockedLabel)}</span> — no office rotation today.</div>`;
+  }
 
   if(inOffice.length === 0 && remote.length === 0 && training.length === 0 && onLeave.length === 0){
     return `<div class="schedule-banner"><span class="schedule-banner__label">Weekend</span> — no office rotation today.</div>`;
@@ -919,9 +1000,13 @@ function renderScheduleBanner(){
 function renderClockTab(){
   const empOptions = state.employees.map(n=>`<option value="${escapeHtml(n)}" ${n===selectedEmployee?'selected':''}>${escapeHtml(n)}</option>`).join('');
   const noEmployees = state.employees.length === 0;
+  const today = new Date();
+  const blockedLabel = nonWorkingDayLabel(today);
 
   let actionBlock = '';
-  if(!noEmployees && selectedEmployee){
+  if(blockedLabel){
+    actionBlock = `<p class="training-note">🚫 ${escapeHtml(blockedLabel)} — clock-in/out is disabled today.</p>`;
+  } else if(!noEmployees && selectedEmployee){
     const todayStr = toISODateLocal(new Date());
     const trainingStatus = getTrainingStatus(selectedEmployee, todayStr);
 
@@ -961,7 +1046,7 @@ function renderClockTab(){
       </div>
       ${renderScheduleBanner()}
 
-      ${noEmployees ? `<p class="empty-note">No employees have been added yet. Ask your Owner to add the team under the Owner tab.</p>` : `
+      ${noEmployees ? `<p class="empty-note">No employees have been added yet. Ask your Owner to add the team under the Owner tab.</p>` : blockedLabel ? actionBlock : `
       <div class="field">
         <label for="empSelect">Your name</label>
         <select id="empSelect">
@@ -1012,12 +1097,22 @@ function renderTeamCalendar(){
     const dateStr = toISODateLocal(cellDate);
     const dow = cellDate.getDay();
     const isWeekend = (dow === 0 || dow === 6);
+    const holiday = getPublicHoliday(dateStr);
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === calendarSelectedDate;
 
     if(isWeekend){
       cells += `
         <button class="cal-cell cal-cell--weekend ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}">
+          <span class="cal-cell__num">${day}</span>
+        </button>
+      `;
+      continue;
+    }
+
+    if(holiday){
+      cells += `
+        <button class="cal-cell cal-cell--holiday ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}" title="${escapeHtml(holiday.name)}">
           <span class="cal-cell__num">${day}</span>
         </button>
       `;
@@ -1043,6 +1138,7 @@ function renderTeamCalendar(){
   const selectedStatus = officeStatusForDate(selectedDate);
   const selectedDow = selectedDate.getDay();
   const isSelectedWeekend = (selectedDow === 0 || selectedDow === 6);
+  const selectedHoliday = getPublicHoliday(calendarSelectedDate);
   const selectedLabel = selectedDate.toLocaleDateString('en-ZA', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
 
   return `
@@ -1063,6 +1159,7 @@ function renderTeamCalendar(){
         <span class="cal-legend__item"><span class="cal-dot cal-dot--training"></span>Skills training</span>
         <span class="cal-legend__item"><span class="cal-dot cal-dot--leave"></span>Leave / out of office</span>
         <span class="cal-legend__item"><span class="cal-dot cal-dot--compoff"></span>Comp day off</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--holiday"></span>Public holiday</span>
       </div>
 
       <div class="cal-grid cal-grid--labels">
@@ -1074,7 +1171,7 @@ function renderTeamCalendar(){
 
       <div class="cal-detail">
         <div class="cal-detail__date">${selectedLabel}</div>
-        ${isSelectedWeekend ? `<p class="empty-note">Weekend — no office rotation.</p>` : `
+        ${isSelectedWeekend ? `<p class="empty-note">Weekend — no office rotation.</p>` : selectedHoliday ? `<p class="empty-note">🎉 Public Holiday — ${escapeHtml(selectedHoliday.name)}. No office rotation.</p>` : `
           <div class="cal-detail__row"><span class="schedule-banner__label">In office:</span> ${selectedStatus.inOffice.length ? selectedStatus.inOffice.map(escapeHtml).join(', ') : '—'}</div>
           <div class="cal-detail__row"><span class="schedule-banner__label">Remote:</span> ${selectedStatus.remote.length ? selectedStatus.remote.map(escapeHtml).join(', ') : '—'}</div>
           ${selectedStatus.training.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">In training:</span> ${selectedStatus.training.map(escapeHtml).join(', ')}</div>` : ''}
@@ -1446,6 +1543,31 @@ function renderSettingsTab(){
     </div>
 
     <div class="card">
+      <h2 class="card__title">Public Holidays</h2>
+      <p class="card__sub">Clock-in/out is automatically disabled on weekends and any date listed here. Add next year's dates whenever they're announced.</p>
+      ${state.settings.publicHolidays.slice().sort((a,b)=> a.date.localeCompare(b.date)).map(h=>`
+        <div class="ledger-row">
+          <div class="ledger-row__main">
+            <span class="ledger-row__name">${escapeHtml(h.name)}</span>
+            <span class="ledger-row__meta">${fmtDate(h.date)}</span>
+          </div>
+          <button class="btn btn--danger btn--sm" data-remove-holiday="${escapeHtml(h.date)}">Remove</button>
+        </div>
+      `).join('') || '<p class="empty-note">No holidays configured.</p>'}
+      <div class="field" style="margin-top:14px;">
+        <label for="newHolidayDate">Add a holiday — date (DD/MM/YYYY)</label>
+        <input type="text" id="newHolidayDate" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10">
+      </div>
+      <div class="field">
+        <label for="newHolidayName">Holiday name</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="newHolidayName" placeholder="e.g. Special election holiday" style="flex:1;">
+          <button class="btn btn--primary" id="addHolidayBtn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2 class="card__title">Approvals &amp; Log</h2>
       ${renderApprovalsAndLog()}
     </div>
@@ -1703,6 +1825,59 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ---------------- Notifications (live, in-app only) ----------------
+const LAST_SEEN_NOTIF_KEY = 'amathuba_last_seen_notif';
+
+async function pushNotification(message){
+  const notif = { id: uid(), message, createdAt: new Date().toISOString() };
+  const updated = [...notifications, notif].slice(-50); // keep the last 50
+  await setData(KEY_NOTIFICATIONS, updated);
+  notifications = updated; // demo has no live listener, so update local state directly
+  updateNotifBadge();
+  const panel = document.getElementById('notifPanel');
+  if(panel && !panel.classList.contains('hidden')) renderNotifPanel();
+}
+
+function getLastSeenNotif(){
+  try{ return localStorage.getItem(LAST_SEEN_NOTIF_KEY) || '1970-01-01T00:00:00.000Z'; }
+  catch(e){ return '1970-01-01T00:00:00.000Z'; }
+}
+function setLastSeenNotifNow(){
+  try{ localStorage.setItem(LAST_SEEN_NOTIF_KEY, new Date().toISOString()); }
+  catch(e){ /* localStorage unavailable — badge just won't persist across reloads */ }
+}
+
+function updateNotifBadge(){
+  const badge = document.getElementById('notifBadge');
+  if(!badge) return;
+  const lastSeen = getLastSeenNotif();
+  const unread = notifications.filter(n => n.createdAt > lastSeen).length;
+  if(unread > 0){
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderNotifPanel(){
+  const panel = document.getElementById('notifPanel');
+  if(!panel) return;
+  const sorted = notifications.slice().sort((a,b)=> b.createdAt.localeCompare(a.createdAt)).slice(0, 20);
+  panel.innerHTML = sorted.length ? sorted.map(n=>`
+    <div class="notif-item">
+      <div class="notif-item__msg">${escapeHtml(n.message)}</div>
+      <div class="notif-item__time">${fmtDateTime(n.createdAt)}</div>
+    </div>
+  `).join('') : `<div class="notif-item notif-item--empty">No notifications yet.</div>`;
+}
+
+// Demo build has no real backend, so there's no live cross-device listener —
+// notifications just update locally the moment they're triggered (see pushNotification above).
+function startNotificationsListener(){
+  updateNotifBadge();
+}
+
 // ---------------- Event handlers (delegated per-tab) ----------------
 function attachHandlers(){
   if(activeTab === 'clock'){
@@ -1806,6 +1981,7 @@ function attachHandlers(){
           status: 'pending', requestedAt: new Date().toISOString()
         });
         await setData(KEY_SWAPS, state.swaps);
+        await pushNotification(`${name} requested a day swap: off ${fmtDate(from)} → in ${fmtDate(to)}`);
         swapEmployee = name;
         render();
       });
@@ -1849,6 +2025,8 @@ function attachHandlers(){
           submittedAt: new Date().toISOString()
         });
         await setData(KEY_LEAVE, state.leave);
+        const rangeLabel = from === to ? fmtDate(from) : `${fmtDate(from)} → ${fmtDate(to)}`;
+        await pushNotification(`${name} logged leave: ${rangeLabel}`);
         leaveEmployee = name;
         render();
       });
@@ -1945,6 +2123,43 @@ function attachHandlers(){
         render();
       });
     }
+
+    const newHolidayDateEl = document.getElementById('newHolidayDate');
+    if(newHolidayDateEl) applyDateMask(newHolidayDateEl);
+    const addHolidayBtn = document.getElementById('addHolidayBtn');
+    if(addHolidayBtn){
+      addHolidayBtn.addEventListener('click', async ()=>{
+        const dateRaw = document.getElementById('newHolidayDate').value;
+        const name = document.getElementById('newHolidayName').value.trim();
+        if(!dateRaw || !name){
+          await showAlert('Please enter both a date and a name for the holiday.');
+          return;
+        }
+        const parsed = parseDDMMYYYY(dateRaw);
+        if(!parsed){
+          await showAlert('Please enter the date as DD/MM/YYYY (e.g. 24/09/2026).');
+          return;
+        }
+        if(!state.settings.publicHolidays) state.settings.publicHolidays = [];
+        if(state.settings.publicHolidays.some(h=>h.date===parsed)){
+          await showAlert('That date is already in the list.');
+          return;
+        }
+        state.settings.publicHolidays.push({ date: parsed, name });
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    }
+    document.querySelectorAll('[data-remove-holiday]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const dateVal = btn.dataset.removeHoliday;
+        if(!(await askConfirm('Remove this holiday from the list?', 'Remove'))) return;
+        state.settings.publicHolidays = state.settings.publicHolidays.filter(h=>h.date!==dateVal);
+        await setData(KEY_SETTINGS, state.settings);
+        render();
+      });
+    });
+
     attachApprovalHandlers();
   }
 
@@ -2225,8 +2440,11 @@ function attachApprovalHandlers(){
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.approveSwap;
       const rec = state.swaps.find(s=>s.id===id);
-      if(rec) rec.status = 'approved';
-      await setData(KEY_SWAPS, state.swaps);
+      if(rec){
+        rec.status = 'approved';
+        await setData(KEY_SWAPS, state.swaps);
+        await pushNotification(`${rec.name}'s day swap (off ${fmtDate(rec.fromDate)} → in ${fmtDate(rec.toDate)}) was approved`);
+      }
       render();
     });
   });
@@ -2234,8 +2452,11 @@ function attachApprovalHandlers(){
     btn.addEventListener('click', async ()=>{
       const id = btn.dataset.rejectSwap;
       const rec = state.swaps.find(s=>s.id===id);
-      if(rec) rec.status = 'rejected';
-      await setData(KEY_SWAPS, state.swaps);
+      if(rec){
+        rec.status = 'rejected';
+        await setData(KEY_SWAPS, state.swaps);
+        await pushNotification(`${rec.name}'s day swap (off ${fmtDate(rec.fromDate)} → in ${fmtDate(rec.toDate)}) was rejected`);
+      }
       render();
     });
   });
@@ -2261,10 +2482,32 @@ document.getElementById('modalInput').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ closeModal(document.getElementById('modalInput').value); }
 });
 
+document.getElementById('notifBellBtn').addEventListener('click', ()=>{
+  const panel = document.getElementById('notifPanel');
+  const isHidden = panel.classList.contains('hidden');
+  if(isHidden){
+    renderNotifPanel();
+    panel.classList.remove('hidden');
+    setLastSeenNotifNow();
+    updateNotifBadge();
+  } else {
+    panel.classList.add('hidden');
+  }
+});
+document.addEventListener('click', (e)=>{
+  const panel = document.getElementById('notifPanel');
+  const bell = document.getElementById('notifBellBtn');
+  if(!panel || panel.classList.contains('hidden')) return;
+  if(!panel.contains(e.target) && !bell.contains(e.target)){
+    panel.classList.add('hidden');
+  }
+});
+
 (async function init(){
   await loadState();
   tickClock();
   render();
+  startNotificationsListener();
 })();
 </script>
 </body>
