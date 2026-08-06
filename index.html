@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enziano Isaacs — Portfolio</title>
+<meta name="description" content="Frontend developer portfolio — interactive PWA demos and web apps." />
+<meta name="theme-color" content="#0b0d10" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #14171b;
+    --surface-alt: #1b1f24;
+    --line: #262b31;
+    --ink: #f2f0ea;
+    --ink-mute: #9aa0a6;
+    --accent: #ff6b4a;
+    --accent-dim: #cc5539;
+    --font-display: "Space Grotesk", sans-serif;
+    --font-body: "Inter", -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.5;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 64px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 56px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 44px);
+    font-weight: 700;
+    margin: 0 0 14px;
+    letter-spacing: -0.5px;
+  }
+
+  .lede {
+    font-size: 16px;
+    color: var(--ink-mute);
+    max-width: 540px;
+    margin: 0;
+  }
+
+  .links {
+    display: flex;
+    gap: 10px;
+    margin-top: 22px;
+  }
+  .links a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 16px;
+    text-decoration: none;
+    transition: border-color .15s, color .15s;
+  }
+  .links a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .section-label {
+    font-family: var(--font-display);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--ink-mute);
+    margin-bottom: 20px;
+  }
+
+  .projects {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) {
+    .projects { grid-template-columns: 1fr 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover { border-color: var(--accent-dim); transform: translateY(-2px); }
+
+  .card-tag {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .card h2 {
+    font-family: var(--font-display);
+    font-size: 19px;
+    margin: 0 0 8px;
+    font-weight: 600;
+  }
+
+  .card p {
+    font-size: 13.5px;
+    color: var(--ink-mute);
+    margin: 0 0 16px;
+    flex: 1;
+  }
+
+  .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .stack span {
+    font-size: 10.5px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    color: var(--ink-mute);
+    background: var(--surface-alt);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 3px 7px;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 9px 12px;
+    border-radius: 8px;
+    transition: filter .15s;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.primary { background: var(--accent); color: #16110d; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+
+  .empty-note {
+    font-size: 13px;
+    color: var(--ink-mute);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-mute);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Portfolio</div>
+    <h1>Enziano</h1>
+    <p class="lede">Frontend developer building interactive web apps and installable PWAs — from data extraction to finished, deployable product.</p>
+    <div class="links">
+      <a href="https://github.com/EisAAcs12" target="_blank" rel="noopener">GitHub Profile</a>
+    </div>
+  </header>
+
+  <div class="section-label">Projects</div>
+
+  <div class="projects">
+
+    <div class="card">
+      <div class="card-tag">PWA · Locator</div>
+      <h2>Kopano Media — OOH Site Locator</h2>
+      <p>An installable billboard locator PWA — interactive map of real inventory sites with photo previews, filtering, and an offline-ready app shell.</p>
+      <div class="stack">
+        <span>Leaflet</span><span>Vanilla JS</span><span>Service Worker</span>
+      </div>
+      <div class="card-actions">
+        <a class="btn primary" href="./kopano-locator-demo/" target="_blank" rel="noopener">View demo</a>
+        <a class="btn ghost" href="https://github.com/EisAAcs12/Portfolio-Demos/tree/main/kopano-locator-demo" target="_blank" rel="noopener">Code</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-tag">PWA · Ledger</div>
+      <h2>Amathuba — Attendance Ledger</h2>
+      <p>An attendance register ledger web app for tracking and managing records with a clean, installable interface.</p>
+      <div class="stack">
+        <span>PWA</span><span>Vanilla JS</span>
+      </div>
+      <div class="card-actions">
+        <a class="btn primary" href="./amathuba-hub-demo/" target="_blank" rel="noopener">View demo</a>
+        <a class="btn ghost" href="https://github.com/EisAAcs12/Portfolio-Demos/tree/main/amathuba-hub-demo" target="_blank" rel="noopener">Code</a>
+      </div>
+    </div>
+
+    <!--
+      To add a new project: copy one .card block above,
+      update the tag / title / description / stack / links,
+      and place the project's own folder in the repo root
+      the same way as kopano-locator-demo/ and amathuba-hub-demo/.
+    -->
+
+  </div>
+
+  <footer>
+    Built and deployed with GitHub Pages.
+  </footer>
+
+</div>
+</body>
+</html>
