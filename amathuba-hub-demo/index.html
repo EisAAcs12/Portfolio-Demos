@@ -4,32 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Amathuba Hub — Attendance Ledger (Demo)</title>
-<meta name="theme-color" content="#1C1E1F">
+<meta name="theme-color" content="#F5F5F5">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root{
-  --bg: #1C1E1F;
-  --surface: #262829;
-  --surface-alt: #303234;
-  --ink: #EDEDEC;
-  --ink-muted: #9A9C9E;
+  --bg: #F5F5F5;
+  --surface: #FFFFFF;
+  --surface-alt: #ECECEA;
+  --ink: #24262A;
+  --ink-muted: #6B6C70;
   --accent: #77B23B;
   --accent-dark: #4F7E2A;
-  --accent-bright: #8FCB55;
-  --accent-soft: rgba(119, 178, 59, 0.15);
-  --teal: #4C9186;
+  --accent-bright: #3F6621;
+  --accent-soft: #E9F2E0;
+  --teal: #3F7D74;
   --teal-dark: #2E5F58;
-  --danger: #B4525D;
-  --danger-dark: #9B3A44;
-  --border: #38393B;
-  --leave-color: #A183C9;
-  --compoff-color: #D4A54C;
+  --danger: #9B3A44;
+  --danger-dark: #7C2E36;
+  --border: #DADAD7;
+  --leave-color: #7C5FA6;
+  --compoff-color: #B8863A;
+  --swap-color: #4472A8;
   --radius: 10px;
 }
 
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;color-scheme:dark;}
+html,body{margin:0;padding:0;color-scheme:light;}
 body{
   background:var(--bg);
   color:var(--ink);
@@ -315,7 +316,7 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
 /* ---------- Team Calendar ---------- */
 .cal-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
 .cal-nav{display:flex;align-items:center;gap:8px;}
-.cal-nav__label{font-family:'Fraunces',serif;font-weight:700;font-size:14.5px;min-width:130px;text-align:center;}
+.cal-nav__label{font-family:'Fraunces',serif;font-weight:700;font-size:16px;min-width:130px;text-align:center;}
 
 .cal-legend{
   display:flex;flex-wrap:wrap;gap:12px 18px;
@@ -330,47 +331,63 @@ textarea{resize:vertical;min-height:70px;font-family:'IBM Plex Sans',sans-serif;
 }
 .cal-legend__swatch--groupA{background:var(--accent);}
 .cal-legend__swatch--groupB{background:var(--teal);}
-.cal-legend__swatch--holiday{background:var(--danger);}
+.cal-legend__swatch--training{background:var(--danger);}
+.cal-legend__swatch--leave{background:var(--leave-color);}
+.cal-legend__swatch--compoff{background:var(--compoff-color);}
+.cal-legend__swatch--swap{background:var(--swap-color);}
 
-.cal-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;margin-bottom:4px;}
-.cal-grid--labels{margin-bottom:6px;}
+.cal-weekday-row{display:grid;grid-template-columns:repeat(7, 1fr);gap:0;margin-bottom:4px;}
 .cal-weekday{
-  text-align:center;font-size:11px;font-weight:600;color:var(--ink-muted);
-  text-transform:uppercase;letter-spacing:0.3px;padding-bottom:2px;
+  text-align:left;font-size:11px;font-weight:600;color:var(--ink-muted);
+  text-transform:uppercase;letter-spacing:0.3px;padding:0 4px 4px;
 }
-.cal-cell{
-  aspect-ratio:1;border-radius:8px;border:1px solid var(--border);
-  background:var(--surface-alt);color:var(--ink);
-  font-family:'IBM Plex Sans',sans-serif;font-size:13px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  cursor:pointer;transition:border-color .12s, filter .12s;
-  padding:2px;
-}
-.cal-cell:hover{border-color:var(--accent-bright);filter:brightness(1.12);}
-.cal-cell--blank{background:transparent;border:none;cursor:default;}
-.cal-cell--weekend{background:transparent;border:1px dashed var(--border);color:var(--ink-muted);}
-.cal-cell--holiday{background:rgba(180,82,93,0.28);border-color:var(--danger);color:var(--ink);}
-.cal-cell--groupA{background:rgba(119, 178, 59, 0.32);}
-.cal-cell--groupB{background:rgba(76, 145, 134, 0.32);}
-.cal-cell--today{border:2px solid var(--accent-bright);font-weight:700;}
-.cal-cell--selected{outline:2px solid #fff;outline-offset:-3px;}
-.cal-cell__num{line-height:1;}
-.cal-cell__dots{display:flex;gap:2px;min-height:6px;align-items:center;}
-.cal-dot{width:5px;height:5px;border-radius:50%;display:inline-block;}
-.cal-dot--training{background:var(--danger);}
-.cal-dot--leave{background:var(--leave-color);}
-.cal-dot--compoff{background:var(--compoff-color);}
-.cal-legend__item .cal-dot{width:10px;height:10px;}
 
-.cal-detail{
-  margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+.cal-week{border:1px solid var(--border);border-top:none;}
+.cal-week:first-of-type{border-top:1px solid var(--border);}
+.cal-week__daynums{display:grid;grid-template-columns:repeat(7, 1fr);}
+.cal-daynum{
+  min-height:34px;
+  border-right:1px solid var(--border);
+  padding:5px 6px 2px;
+  font-family:'IBM Plex Sans',sans-serif;
+  display:flex;flex-direction:column;
+  background:var(--surface);
 }
-.cal-detail__date{font-family:'Fraunces',serif;font-weight:700;font-size:15px;margin-bottom:10px;}
-.cal-detail__row{font-size:13.5px;margin-bottom:6px;}
+.cal-daynum:last-child{border-right:none;}
+.cal-daynum__num{font-size:17px;font-weight:700;color:var(--ink);line-height:1;}
+.cal-daynum--otherMonth .cal-daynum__num{color:var(--ink-muted);opacity:0.4;}
+.cal-daynum--weekend{background:#FBF6E3;}
+.cal-daynum--holiday{background:#FBF6E3;}
+.cal-daynum--holiday .cal-daynum__num{color:var(--danger-dark);}
+.cal-daynum__holiday-label{font-size:10px;color:var(--danger-dark);font-weight:600;margin-top:2px;line-height:1.2;}
+.cal-daynum--today{box-shadow:inset 0 0 0 2px var(--accent-dark);}
+
+.cal-week__events{
+  display:grid;grid-template-columns:repeat(7, 1fr);
+  grid-auto-rows:21px;
+  gap:2px 0;
+  padding:2px 0;
+}
+.cal-event-bar{
+  font-size:10.5px;font-weight:500;color:#fff;
+  padding:2px 7px;margin:0 1px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;align-items:center;height:19px;
+}
+.cal-event-bar--training{background:var(--danger);}
+.cal-event-bar--leave{background:var(--leave-color);}
+.cal-event-bar--compoff{background:var(--compoff-color);color:#3D2D06;}
+.cal-event-bar--swap{background:var(--swap-color);}
+.cal-event-bar--groupA{background:var(--accent);}
+.cal-event-bar--groupB{background:var(--teal);}
+.cal-event-bar--pending{
+  background-image:repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 6px, transparent 6px 12px);
+}
 
 @media (max-width: 560px){
-  .cal-cell{font-size:11.5px;}
-  .cal-nav__label{min-width:100px;font-size:13px;}
+  .cal-daynum__num{font-size:15px;}
+  .cal-event-bar{font-size:9.5px;}
+  .cal-nav__label{min-width:100px;font-size:14px;}
   .cal-legend{gap:8px 12px;}
   .cal-legend__item{font-size:11px;}
 }
@@ -556,7 +573,6 @@ let leaveEmployee = "";
 let pendingLateDraft = false; // whether the "late reason" panel is open
 let calendarViewYear = new Date().getFullYear();
 let calendarViewMonth = new Date().getMonth(); // 0-indexed
-let calendarSelectedDate = toISODateLocal(new Date());
 let rawDataViewerOpen = false;
 let notifications = []; // kept separate from `state` — updated locally (demo has no live backend)
 
@@ -605,7 +621,7 @@ function uid(){
 function captureLocationOnce(){
   return new Promise((resolve)=>{
     if(!('geolocation' in navigator)){ resolve(null); return; }
-    const timer = setTimeout(()=> resolve(null), 8000);
+    const timer = setTimeout(()=> resolve(null), 12000);
     navigator.geolocation.getCurrentPosition(
       (pos)=>{
         clearTimeout(timer);
@@ -616,7 +632,7 @@ function captureLocationOnce(){
         });
       },
       ()=>{ clearTimeout(timer); resolve(null); },
-      { enableHighAccuracy: false, timeout: 7500, maximumAge: 60000 }
+      { enableHighAccuracy: false, timeout: 11000, maximumAge: 60000 }
     );
   });
 }
@@ -1068,16 +1084,97 @@ function renderClockTab(){
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const WEEKDAY_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-function calendarDayInfo(date){
-  const base = officeGroupsForDate(date); // base hybrid rotation, before training/leave overlays
-  const overrides = officeStatusForDate(date);
-  const isGroupADay = base.inOffice.some(n => GROUP_A.includes(n));
-  return {
-    isGroupADay,
-    hasTraining: overrides.training.length > 0,
-    hasLeave: overrides.onLeave.length > 0,
-    hasCompOff: overrides.compOff.length > 0
-  };
+// Splits a sorted array of "YYYY-MM-DD" strings into runs of consecutive
+// calendar days, so a training block like Fri,Mon,Tue,Wed (skipping the
+// weekend) becomes two separate segments instead of one bar spanning through
+// the weekend.
+function splitIntoContiguousRuns(dates){
+  const runs = [];
+  let runStart = dates[0], prev = dates[0];
+  for(let i=1; i<dates.length; i++){
+    const prevDate = new Date(prev + "T00:00:00");
+    const expectedNext = new Date(prevDate);
+    expectedNext.setDate(expectedNext.getDate() + 1);
+    if(toISODateLocal(expectedNext) !== dates[i]){
+      runs.push({ start: runStart, end: prev });
+      runStart = dates[i];
+    }
+    prev = dates[i];
+  }
+  runs.push({ start: runStart, end: prev });
+  return runs;
+}
+
+// Builds a flat list of {startDate, endDate, label, colorClass, pending}
+// events for the currently visible calendar range (with some padding).
+function buildCalendarEvents(rangeStart, rangeEnd){
+  const events = [];
+
+  // Hybrid office rotation, shown as a bar per working day — same treatment
+  // as training, just tagged isGroupEvent so it always claims the top lane.
+  let d = new Date(rangeStart + "T00:00:00");
+  const endD = new Date(rangeEnd + "T00:00:00");
+  while(d <= endD){
+    if(!isNonWorkingDay(d)){
+      const ds = toISODateLocal(d);
+      const base = officeGroupsForDate(d);
+      const isGroupA = base.inOffice.some(n => GROUP_A.includes(n));
+      events.push({
+        startDate: ds, endDate: ds,
+        label: isGroupA ? 'Group A' : 'Group B',
+        colorClass: isGroupA ? 'groupA' : 'groupB',
+        pending: false, isGroupEvent: true
+      });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+
+  SKILLS_BLOCKS.forEach(block=>{
+    splitIntoContiguousRuns(block.group1Dates).forEach(run=>{
+      if(run.end >= rangeStart && run.start <= rangeEnd){
+        events.push({ startDate:run.start, endDate:run.end, label:'Group 1 Training', colorClass:'training', pending:false });
+      }
+    });
+    splitIntoContiguousRuns(block.group2Dates).forEach(run=>{
+      if(run.end >= rangeStart && run.start <= rangeEnd){
+        events.push({ startDate:run.start, endDate:run.end, label:'Group 2 Training', colorClass:'training', pending:false });
+      }
+    });
+    const g1CompDay = block.group2Dates[0];
+    if(g1CompDay >= rangeStart && g1CompDay <= rangeEnd){
+      events.push({ startDate:g1CompDay, endDate:g1CompDay, label:'Group 1 Comp Off', colorClass:'compoff', pending:false });
+    }
+    const g2CompDay = nextWeekday(block.group2Dates[block.group2Dates.length-1]);
+    if(g2CompDay >= rangeStart && g2CompDay <= rangeEnd && hasCoverageExcluding(g2CompDay, SKILLS_GROUP_2)){
+      events.push({ startDate:g2CompDay, endDate:g2CompDay, label:'Group 2 Comp Off', colorClass:'compoff', pending:false });
+    }
+  });
+
+  state.leave.forEach(l=>{
+    if(l.endDate >= rangeStart && l.startDate <= rangeEnd){
+      events.push({ startDate:l.startDate, endDate:l.endDate, label:l.name, colorClass:'leave', pending:false });
+    }
+  });
+
+  state.swaps.forEach(s=>{
+    if(s.status === 'rejected') return;
+    if(s.toDate >= rangeStart && s.toDate <= rangeEnd){
+      events.push({ startDate:s.toDate, endDate:s.toDate, label:`${s.name} (Swap)`, colorClass:'swap', pending: s.status==='pending' });
+    }
+  });
+
+  return events;
+}
+
+// Greedy interval-lane assignment so overlapping bars stack, non-overlapping share a row.
+function assignLanes(weekEvents){
+  const lanes = []; // lanes[i] = end colIndex of the last event placed in that lane
+  return weekEvents.map(ev=>{
+    let lane = lanes.findIndex(endCol => endCol <= ev.colStart);
+    if(lane === -1){ lane = lanes.length; lanes.push(ev.colEnd); }
+    else{ lanes[lane] = ev.colEnd; }
+    return Object.assign({}, ev, { lane });
+  });
 }
 
 function renderTeamCalendar(){
@@ -1087,59 +1184,80 @@ function renderTeamCalendar(){
   const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday = 0
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = toISODateLocal(new Date());
+  const thisMonth = month;
 
-  let cells = '';
-  for(let i=0; i<startOffset; i++){
-    cells += `<div class="cal-cell cal-cell--blank"></div>`;
-  }
-  for(let day=1; day<=daysInMonth; day++){
-    const cellDate = new Date(year, month, day);
-    const dateStr = toISODateLocal(cellDate);
-    const dow = cellDate.getDay();
-    const isWeekend = (dow === 0 || dow === 6);
-    const holiday = getPublicHoliday(dateStr);
-    const isToday = dateStr === todayStr;
-    const isSelected = dateStr === calendarSelectedDate;
-
-    if(isWeekend){
-      cells += `
-        <button class="cal-cell cal-cell--weekend ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}">
-          <span class="cal-cell__num">${day}</span>
-        </button>
-      `;
-      continue;
+  // Build the full grid of weeks (each a 7-day array), including
+  // leading/trailing days from adjacent months for a complete grid.
+  const gridStart = new Date(year, month, 1 - startOffset);
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+  const weeks = [];
+  for(let w=0; w<totalCells/7; w++){
+    const week = [];
+    for(let d=0; d<7; d++){
+      const date = new Date(gridStart);
+      date.setDate(gridStart.getDate() + w*7 + d);
+      week.push(date);
     }
-
-    if(holiday){
-      cells += `
-        <button class="cal-cell cal-cell--holiday ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}" title="${escapeHtml(holiday.name)}">
-          <span class="cal-cell__num">${day}</span>
-        </button>
-      `;
-      continue;
-    }
-
-    const info = calendarDayInfo(cellDate);
-    const groupClass = info.isGroupADay ? 'cal-cell--groupA' : 'cal-cell--groupB';
-    const dots = `
-      ${info.hasTraining ? '<span class="cal-dot cal-dot--training" title="Training"></span>' : ''}
-      ${info.hasLeave ? '<span class="cal-dot cal-dot--leave" title="Leave"></span>' : ''}
-      ${info.hasCompOff ? '<span class="cal-dot cal-dot--compoff" title="Comp day off"></span>' : ''}
-    `;
-    cells += `
-      <button class="cal-cell ${groupClass} ${isToday ? 'cal-cell--today' : ''} ${isSelected ? 'cal-cell--selected' : ''}" data-cal-date="${dateStr}">
-        <span class="cal-cell__num">${day}</span>
-        <span class="cal-cell__dots">${dots}</span>
-      </button>
-    `;
+    weeks.push(week);
   }
 
-  const selectedDate = new Date(calendarSelectedDate + "T00:00:00");
-  const selectedStatus = officeStatusForDate(selectedDate);
-  const selectedDow = selectedDate.getDay();
-  const isSelectedWeekend = (selectedDow === 0 || selectedDow === 6);
-  const selectedHoliday = getPublicHoliday(calendarSelectedDate);
-  const selectedLabel = selectedDate.toLocaleDateString('en-ZA', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  const rangeStart = toISODateLocal(weeks[0][0]);
+  const rangeEnd = toISODateLocal(weeks[weeks.length-1][6]);
+  const allEvents = buildCalendarEvents(rangeStart, rangeEnd);
+
+  const weeksHtml = weeks.map(week=>{
+    const weekStart = toISODateLocal(week[0]);
+    const weekEnd = toISODateLocal(week[6]);
+
+    const daynumsHtml = week.map(date=>{
+      const dateStr = toISODateLocal(date);
+      const dow = date.getDay();
+      const isWeekend = (dow === 0 || dow === 6);
+      const holiday = getPublicHoliday(dateStr);
+      const isOtherMonth = date.getMonth() !== thisMonth;
+      const isToday = dateStr === todayStr;
+      let classes = 'cal-daynum';
+      if(isOtherMonth) classes += ' cal-daynum--otherMonth';
+      if(isToday) classes += ' cal-daynum--today';
+      if(holiday) classes += ' cal-daynum--holiday';
+      else if(isWeekend) classes += ' cal-daynum--weekend';
+      return `
+        <div class="${classes}">
+          <span class="cal-daynum__num">${date.getDate()}</span>
+          ${holiday ? `<span class="cal-daynum__holiday-label">${escapeHtml(holiday.name)}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    const weekEvents = allEvents
+      .filter(ev => ev.endDate >= weekStart && ev.startDate <= weekEnd)
+      .map(ev=>{
+        const clippedStart = ev.startDate < weekStart ? weekStart : ev.startDate;
+        const clippedEnd = ev.endDate > weekEnd ? weekEnd : ev.endDate;
+        const colStart = Math.round((new Date(clippedStart+"T00:00:00") - week[0]) / 86400000);
+        const colEnd = Math.round((new Date(clippedEnd+"T00:00:00") - week[0]) / 86400000) + 1;
+        return Object.assign({}, ev, { colStart, colEnd });
+      })
+      .sort((a,b)=> (b.isGroupEvent?1:0) - (a.isGroupEvent?1:0) || a.colStart - b.colStart);
+
+    const laned = assignLanes(weekEvents);
+    const maxLane = laned.reduce((m,ev)=> Math.max(m, ev.lane), -1);
+
+    const eventsHtml = laned.map(ev=>`
+      <div class="cal-event-bar cal-event-bar--${ev.colorClass} ${ev.pending ? 'cal-event-bar--pending' : ''}"
+           style="grid-column:${ev.colStart+1} / ${ev.colEnd+1}; grid-row:${ev.lane+1};"
+           title="${escapeHtml(ev.label)}${ev.pending ? ' (pending)' : ''}">
+        ${escapeHtml(ev.label)}${ev.pending ? ' (pending)' : ''}
+      </div>
+    `).join('');
+
+    return `
+      <div class="cal-week">
+        <div class="cal-week__daynums">${daynumsHtml}</div>
+        ${maxLane >= 0 ? `<div class="cal-week__events" style="grid-template-rows:repeat(${maxLane+1}, 21px);">${eventsHtml}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 
   return `
     <div class="card">
@@ -1156,29 +1274,16 @@ function renderTeamCalendar(){
       <div class="cal-legend">
         <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--groupA"></span>Alex, Jordan, Taylor, Morgan</span>
         <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--groupB"></span>Casey, Riley, Drew</span>
-        <span class="cal-legend__item"><span class="cal-dot cal-dot--training"></span>Skills training</span>
-        <span class="cal-legend__item"><span class="cal-dot cal-dot--leave"></span>Leave / out of office</span>
-        <span class="cal-legend__item"><span class="cal-dot cal-dot--compoff"></span>Comp day off</span>
-        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--holiday"></span>Public holiday</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--training"></span>Skills training</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--leave"></span>Leave / out of office</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--compoff"></span>Comp day off</span>
+        <span class="cal-legend__item"><span class="cal-legend__swatch cal-legend__swatch--swap"></span>Day swap</span>
       </div>
 
-      <div class="cal-grid cal-grid--labels">
+      <div class="cal-weekday-row">
         ${WEEKDAY_LABELS.map(l=>`<div class="cal-weekday">${l}</div>`).join('')}
       </div>
-      <div class="cal-grid">
-        ${cells}
-      </div>
-
-      <div class="cal-detail">
-        <div class="cal-detail__date">${selectedLabel}</div>
-        ${isSelectedWeekend ? `<p class="empty-note">Weekend — no office rotation.</p>` : selectedHoliday ? `<p class="empty-note">🎉 Public Holiday — ${escapeHtml(selectedHoliday.name)}. No office rotation.</p>` : `
-          <div class="cal-detail__row"><span class="schedule-banner__label">In office:</span> ${selectedStatus.inOffice.length ? selectedStatus.inOffice.map(escapeHtml).join(', ') : '—'}</div>
-          <div class="cal-detail__row"><span class="schedule-banner__label">Remote:</span> ${selectedStatus.remote.length ? selectedStatus.remote.map(escapeHtml).join(', ') : '—'}</div>
-          ${selectedStatus.training.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">In training:</span> ${selectedStatus.training.map(escapeHtml).join(', ')}</div>` : ''}
-          ${selectedStatus.compOff.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">Comp day off:</span> ${selectedStatus.compOff.map(escapeHtml).join(', ')}</div>` : ''}
-          ${selectedStatus.onLeave.length ? `<div class="cal-detail__row"><span class="schedule-banner__label">On leave:</span> ${selectedStatus.onLeave.map(escapeHtml).join(', ')}</div>` : ''}
-        `}
-      </div>
+      ${weeksHtml}
     </div>
   `;
 }
@@ -1886,6 +1991,11 @@ function attachHandlers(){
       empSelect.addEventListener('change', (e)=>{
         selectedEmployee = e.target.value;
         render();
+        // Warm up location now (triggers the permission prompt early, with no
+        // time pressure) so the actual clock-in/out click resolves fast.
+        if('geolocation' in navigator){
+          navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
+        }
       });
     }
     const actionBtn = document.getElementById('clockActionBtn');
@@ -1947,16 +2057,9 @@ function attachHandlers(){
         const today = new Date();
         calendarViewYear = today.getFullYear();
         calendarViewMonth = today.getMonth();
-        calendarSelectedDate = toISODateLocal(today);
         render();
       });
     }
-    document.querySelectorAll('[data-cal-date]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        calendarSelectedDate = btn.dataset.calDate;
-        render();
-      });
-    });
   }
 
   if(activeTab === 'swap'){
