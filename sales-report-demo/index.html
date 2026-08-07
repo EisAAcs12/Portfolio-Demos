@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Crestline Motors — Sales Sheet (Demo)</title>
+<meta name="description" content="A dealership sales-tracking sheet: daily rep report, customer log and sales report, with CSV export and editable columns. Portfolio demo — data is sample only and stored locally in your browser.">
+<meta name="theme-color" content="#2f5597">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%232f5597'/%3E%3Ctext x='50' y='66' font-size='58' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-weight='bold'%3ECM%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#ffffff;
+    --grid:#c9c9c9;
+    --header-bg:#eef1f5;
+    --header-text:#2a2a2a;
+    --text:#1c1c1c;
+    --text-dim:#6b6b6b;
+    --blue:#2f5597;
+    --blue-dark:#233f70;
+    --green-bg:#c6efce; --green-text:#006100;
+    --yellow-bg:#ffeb9c; --yellow-text:#9c6500;
+    --red-bg:#ffc7ce; --red-text:#9c0006;
+    --row-alt:#f7f9fb;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#e9edf2;
+    color:var(--text);
+    font-family:Calibri,Arial,'Segoe UI',sans-serif;
+    font-size:14px;
+  }
+  #app{max-width:1400px;margin:0 auto;padding:14px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;}
+  .title{font-size:17px;font-weight:700;color:var(--blue-dark);}
+  .title span{font-weight:400;color:var(--text-dim);font-size:12.5px;margin-left:8px;display:block;}
+  .icon-round{
+    width:38px;height:38px;border-radius:8px;background:#fff;border:1px solid var(--grid);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-dim);
+  }
+  .icon-round:hover{border-color:var(--blue);color:var(--blue);}
+
+  .tabs{display:flex;gap:2px;}
+  .tab{
+    padding:9px 18px;background:#d9dee5;color:#4a4a4a;font-weight:600;font-size:13px;
+    cursor:pointer;border-radius:6px 6px 0 0;border:1px solid var(--grid);border-bottom:none;
+  }
+  .tab.active{background:#fff;color:var(--blue-dark);}
+
+  .sheet{background:#fff;border:1px solid var(--grid);border-radius:0 8px 8px 8px;padding:14px;}
+
+  .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .toolbar label{font-size:12px;color:var(--text-dim);margin-right:5px;font-weight:600;}
+  .toolbar select{border:1px solid var(--grid);border-radius:5px;padding:7px 8px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--text);min-height:36px;}
+  .btn{background:var(--blue);color:#fff;border:none;padding:8px 14px;border-radius:5px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit;min-height:36px;}
+  .btn:hover{background:var(--blue-dark);}
+  .btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+  .btn.small{padding:5px 10px;font-size:11.5px;min-height:30px;}
+  .btn.danger{background:#fff;color:#b3000d;border:1px solid #d99;}
+  .spacer{margin-left:auto;font-size:12px;color:var(--text-dim);}
+
+  table{border-collapse:collapse;width:100%;}
+  th,td{border:1px solid var(--grid);padding:7px 8px;text-align:center;font-size:13.5px;}
+  th{background:var(--header-bg);color:var(--header-text);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.02em;}
+  td.rownum{background:var(--header-bg);color:var(--text-dim);font-weight:600;width:30px;}
+  td.left{text-align:left;}
+  tbody tr:nth-child(even) td:not(.status-cell){background:var(--row-alt);}
+  .total-row td{font-weight:700;background:#dfe6ef !important;border-top:2px solid #9fb0c8;}
+  .target-row td{font-weight:700;background:#fff6d9 !important;font-size:12px;}
+  .target-header{font-size:10px;color:var(--text-dim);font-weight:600;display:block;margin-top:2px;}
+  .target-input{width:44px;border:1px solid var(--grid);border-radius:4px;padding:3px;font-size:11.5px;text-align:center;min-height:26px;}
+
+  .cell-good{background:var(--green-bg) !important;color:var(--green-text);font-weight:700;}
+  .cell-mid{background:var(--yellow-bg) !important;color:var(--yellow-text);font-weight:700;}
+  .cell-bad{background:var(--red-bg) !important;color:var(--red-text);font-weight:700;}
+  .cell-dash{color:#aaa;}
+
+  .cell-input{width:56px;border:1px solid transparent;background:transparent;text-align:center;font-family:inherit;font-size:14px;color:var(--text);border-radius:4px;padding:6px 3px;min-height:34px;}
+  .cell-input:hover{border-color:#bcd;}
+  .cell-input:focus{outline:none;border-color:var(--blue);background:#fff;}
+
+  .wide-input{width:100%;border:1px solid transparent;background:transparent;font-family:inherit;font-size:14px;padding:6px 5px;border-radius:4px;color:var(--text);min-height:34px;}
+  .wide-input:hover{border-color:#bcd;}
+  .wide-input:focus{outline:none;border-color:var(--blue);background:#fff;}
+  select.wide-input{cursor:pointer;}
+
+  .corner-date{
+    background:transparent;border:1px solid transparent;color:var(--header-text);
+    font-weight:700;font-size:13px;text-align:center;width:100%;padding:5px 2px;border-radius:4px;
+    font-family:inherit;cursor:pointer;min-height:32px;
+  }
+  .corner-date:hover{border-color:var(--blue);}
+  .corner-date:focus{outline:none;border-color:var(--blue);background:#fff;}
+  .corner-gran{
+    background:transparent;border:1px solid var(--grid);border-radius:4px;font-size:10.5px;
+    margin-top:3px;padding:2px;color:var(--text-dim);cursor:pointer;width:100%;
+  }
+
+  .sold-yes{background:var(--green-bg);color:var(--green-text);font-weight:700;border-radius:4px;}
+  .sold-no{background:#f0f0f0;color:#777;border-radius:4px;}
+
+  .del-btn{background:none;border:none;color:#b3000d;cursor:pointer;font-size:15px;padding:4px 6px;min-height:30px;}
+  .del-btn:hover{color:#800;}
+  .col-del{background:none;border:none;color:#b3000d;cursor:pointer;font-size:11px;padding:0 0 0 4px;vertical-align:middle;}
+  .col-del:hover{color:#800;}
+  .add-col-btn{background:#fff;border:1px dashed var(--blue);color:var(--blue);border-radius:5px;font-size:16px;font-weight:700;cursor:pointer;width:32px;height:32px;line-height:1;}
+  .add-col-btn:hover{background:#eef3fb;}
+
+  .editable-header{outline:none;display:inline-block;min-width:16px;border-radius:3px;padding:1px 3px;cursor:text;}
+  .editable-header:hover{background:rgba(255,255,255,0.5);}
+  .editable-header:focus{background:#fff;color:var(--text);box-shadow:0 0 0 1px var(--blue);}
+  .editable-name{outline:none;display:inline-block;min-width:20px;border-radius:3px;padding:2px 4px;cursor:text;}
+  .editable-name:hover{background:#eef3fb;}
+  .editable-name:focus{background:#fff;box-shadow:0 0 0 1px var(--blue);}
+
+  .editable-metric{cursor:text;}
+  .editable-metric:hover{box-shadow:inset 0 0 0 1px var(--blue);}
+  .editable-metric:focus{outline:none;background:#fff !important;color:var(--text) !important;box-shadow:inset 0 0 0 1px var(--blue);}
+  .editable-metric.is-override::after{content:'✎';font-size:9px;vertical-align:super;margin-left:2px;opacity:.55;}
+
+  .empty-msg{padding:24px;text-align:center;color:#999;font-style:italic;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .footer-note{margin-top:12px;font-size:11.5px;color:#999;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(20,25,35,0.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .modal{background:#fff;border-radius:10px;padding:22px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;}
+  .modal h3{margin:0 0 14px 0;color:var(--blue-dark);font-size:16px;}
+  .modal-section{margin-bottom:18px;}
+  .modal-section h4{margin:0 0 8px 0;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;}
+  .roster-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .roster-row input{flex:1;border:1px solid var(--grid);border-radius:5px;padding:8px;font-family:inherit;min-height:36px;}
+  .target-field{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px;}
+  .target-field input{width:64px;border:1px solid var(--grid);border-radius:5px;padding:6px 8px;text-align:center;min-height:34px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+  @media (max-width:640px){
+    body{font-size:15px;}
+    #app{padding:8px;}
+    .title{font-size:15px;}
+    th,td{padding:8px 6px;font-size:13px;}
+    .wide-input,.cell-input{font-size:16px;}
+    .toolbar{gap:8px;}
+    .btn{width:100%;justify-content:center;}
+    .toolbar > div{width:100%;}
+  }
+
+  @media print{
+    body{background:#fff;}
+    .toolbar, .tabs, .icon-round, .del-btn, .col-del, .add-col-btn{display:none;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ====== SUPABASE CONFIG ======
+// This portfolio demo intentionally ships with no backend configured —
+// it runs entirely on local browser storage so anyone can try it with
+// no setup. In production, a Project URL + anon key would go here.
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+// ==============================
+
+const supabaseConfigured = SUPABASE_URL.startsWith('https://') && SUPABASE_URL.includes('.supabase.co') && SUPABASE_ANON_KEY.length > 20;
+let sb = null;
+if(supabaseConfigured && window.supabase){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// Falls back to Claude's storage when running inside a Claude chat,
+// and to the browser's own localStorage as a last resort.
+const hasClaudeStorage = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
+const localFallback = {
+  async get(key){ try{ const v=localStorage.getItem(key); return v===null?null:{key,value:v}; }catch(e){ return null; } },
+  async set(key,value){ try{ localStorage.setItem(key,value); return {key,value}; }catch(e){ return null; } },
+  async delete(key){ try{ localStorage.removeItem(key); return {key,deleted:true}; }catch(e){ return null; } }
+};
+
+const storage = sb ? {
+  async get(key){
+    const {data,error} = await sb.from('app_data').select('value').eq('key',key).maybeSingle();
+    if(error){ console.error('Supabase get error:', error); return null; }
+    return data ? {key, value: data.value} : null;
+  },
+  async set(key,value){
+    const {error} = await sb.from('app_data').upsert({key, value, updated_at:new Date().toISOString()});
+    if(error){ console.error('Supabase set error:', error); return null; }
+    return {key,value};
+  },
+  async delete(key){
+    const {error} = await sb.from('app_data').delete().eq('key',key);
+    if(error){ console.error('Supabase delete error:', error); return null; }
+    return {key,deleted:true};
+  }
+} : (hasClaudeStorage ? window.storage : localFallback);
+
+// If Supabase is live, listen for changes made from other devices and refresh automatically.
+if(sb){
+  sb.channel('app_data_changes')
+    .on('postgres_changes', {event:'*', schema:'public', table:'app_data'}, ()=>{ if(state.loaded) loadData(); })
+    .subscribe();
+}
+
+const K_SALESMEN='demo_salesmen_v2';
+const K_DAILY='demo_daily_v2';
+const K_LOG='demo_log_v2';
+const K_SETTINGS='demo_settings_v2';
+const K_REPORT_COLS='demo_report_cols_v2';
+const K_LOG_COLS='demo_log_cols_v2';
+const K_SALES_REPORT='demo_sales_report_v1';
+const K_SALES_REPORT_COLS='demo_sales_report_cols_v1';
+const K_REPORT_HEADERS='demo_report_headers_v1';
+const K_LOG_HEADERS='demo_log_headers_v1';
+const K_SALES_REPORT_HEADERS='demo_sales_report_headers_v1';
+const K_REPORT_OVERRIDES='demo_report_overrides_v1';
+const K_SEEDED='demo_seeded_v1';
+
+let state={
+  loaded:false,
+  tab:'report',
+  salesmen:[],
+  dailyStats:{},
+  log:[],
+  salesReport:[],
+  settings:{orderTarget:50, deliveryTarget:50},
+  reportExtraCols:[],
+  logExtraCols:[],
+  salesReportExtraCols:[],
+  reportHeaders:{},
+  logHeaders:{},
+  salesReportHeaders:{},
+  reportOverrides:{},
+  reportDate: todayISO(),
+  logFilterDate: todayISO(),
+  logGranularity: 'month', // day | week | month | year | all
+  logSalesmanFilter:'',
+  salesReportFilterDate: todayISO(),
+  salesReportGranularity: 'month',
+  salesReportSalesmanFilter:'',
+  settingsOpen:false
+};
+
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function pad(n){return n.toString().padStart(2,'0');}
+function monthOf(dateStr){return dateStr.slice(0,7);}
+function yearOf(dateStr){return dateStr.slice(0,4);}
+function monthLabel(mk){const [y,m]=mk.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});}
+function getWeekRange(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const day = date.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = (day===0 ? -6 : 1-day);
+  const monday = new Date(date); monday.setDate(date.getDate()+diffToMonday);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const fmt = dt => dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+  return {start: fmt(monday), end: fmt(sunday)};
+}
+function weekLabel(range){
+  const [sy,sm,sd]=range.start.split('-').map(Number);
+  const [ey,em,ed]=range.end.split('-').map(Number);
+  const s=new Date(sy,sm-1,sd), e=new Date(ey,em-1,ed);
+  const sameMonth = sm===em;
+  const opts1 = sameMonth ? {month:'short',day:'numeric'} : {month:'short',day:'numeric'};
+  return s.toLocaleDateString('en-US',opts1) + ' – ' + e.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function inRange(dateStr, range){ return dateStr >= range.start && dateStr <= range.end; }
+function uid(){return 'id_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
+
+const VEHICLE_MODELS = ['Pulse Hatch','Pulse EV','Nova Compact EV','Nova Cross SUV','Voyager Sedan','Voyager GT','Terra SUV','Terra Hybrid','Horizon 7-Seater','Ridge Pickup'];
+
+// Reference data for the Sales Report's Car Series / Colour suggestions — one entry per model above.
+// (Fictional demo lineup — not tied to any real manufacturer.)
+const CAR_MODEL_INFO = {
+  'Pulse Hatch': {series:['Comfort','Dynamic'], colours:['Arctic White','Storm Grey','Crimson Red']},
+  'Pulse EV': {series:['Comfort','Premium'], colours:['Ocean Blue','Arctic White','Midnight Black']},
+  'Nova Compact EV': {series:['Standard Range','Extended Range'], colours:['Boulder Grey','Midnight Black','Ski White','Surf Blue']},
+  'Nova Cross SUV': {series:['Comfort','Premium AWD'], colours:['Time Grey','Arctic White','Midnight Black','Slate Grey']},
+  'Voyager Sedan': {series:['Comfort','Dynamic'], colours:['Cream White','Obsidian Black','Surf Blue']},
+  'Voyager GT': {series:['Performance','Performance AWD'], colours:['Sunset Orange','Obsidian Black','Snowy White']},
+  'Terra SUV': {series:['Premium','Performance'], colours:['Outback Orange','Obsidian Black','Snowy White','Atlantis Grey']},
+  'Terra Hybrid': {series:['Comfort','Dynamic'], colours:['Atlantis Grey','Obsidian Black','Snow White']},
+  'Horizon 7-Seater': {series:['Premium','Performance'], colours:['Aurora White','Urban Grey','Cosmos Black']},
+  'Ridge Pickup': {series:['Standard','Extended Range'], colours:['Arctic Blue','Atlantic Grey','Aurora White','Cosmos Black']}
+};
+// Flattened, de-duplicated suggestion lists spanning every model — used for the Car Series / Colour datalists.
+const SERIES_ALL = [...new Set(Object.values(CAR_MODEL_INFO).flatMap(m=>m.series))];
+const COLOUR_ALL = [...new Set(Object.values(CAR_MODEL_INFO).flatMap(m=>m.colours))];
+
+const HEADER_DEFAULTS = {
+  report: {salesman:'Salesman', dailyWalkins:'Daily Walk-ins', weeklyWalkins:'Weekly Walk-ins', monthlyWalkins:'Monthly Walk-ins', ordersDaily:'Orders Daily', deliveriesDaily:'Deliveries Daily', weeklyOrders:'Weekly Orders', weeklyDeliveries:'Weekly Deliveries', ordersMonthly:'Orders Monthly', monthlyDeliveries:'Monthly Deliveries'},
+  log: {date:'Date', salesman:'Salesman', vehicle:'Vehicle', source:'Source', returning:'Returning Customer', visits:'Times Visited', customer:'Customer', phone:'Phone', timeIn:'Time In', timeOut:'Time Out', duration:'Duration', sold:'Sold'},
+  salesReport: {date:'Date', salesman:'Salesman', carModel:'Car Model', carSeries:'Car Series', colour:'Colour', quantity:'Quantity'}
+};
+function headerStore(scope){ return scope==='report'?state.reportHeaders : scope==='log'?state.logHeaders : state.salesReportHeaders; }
+function headerText(scope,key){ const store=headerStore(scope); return (store&&store[key]) || HEADER_DEFAULTS[scope][key]; }
+function editableHeader(scope,key){
+  return `<span class="editable-header" contenteditable="true" spellcheck="false" data-scope="${scope}" data-key="${key}">${headerText(scope,key)}</span>`;
+}
+
+async function loadData(){
+  try{const r=await storage.get(K_SALESMEN); if(r&&r.value) state.salesmen=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_DAILY); if(r&&r.value) state.dailyStats=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_LOG); if(r&&r.value) state.log=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_SETTINGS); if(r&&r.value) state.settings={...state.settings,...JSON.parse(r.value)};}catch(e){}
+  try{const r=await storage.get(K_REPORT_COLS); if(r&&r.value) state.reportExtraCols=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_LOG_COLS); if(r&&r.value) state.logExtraCols=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_SALES_REPORT); if(r&&r.value) state.salesReport=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_SALES_REPORT_COLS); if(r&&r.value) state.salesReportExtraCols=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_REPORT_HEADERS); if(r&&r.value) state.reportHeaders=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_LOG_HEADERS); if(r&&r.value) state.logHeaders=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_SALES_REPORT_HEADERS); if(r&&r.value) state.salesReportHeaders=JSON.parse(r.value);}catch(e){}
+  try{const r=await storage.get(K_REPORT_OVERRIDES); if(r&&r.value) state.reportOverrides=JSON.parse(r.value);}catch(e){}
+
+  let alreadySeeded=false;
+  try{const r=await storage.get(K_SEEDED); alreadySeeded = !!(r&&r.value);}catch(e){}
+  if(!alreadySeeded && state.salesmen.length===0){
+    await seedDemoData();
+    await saveAll();
+    try{await storage.set(K_SEEDED, '1');}catch(e){}
+  }
+
+  state.loaded=true;
+  render();
+}
+
+async function clearAllData(){
+  const keys=[K_SALESMEN,K_DAILY,K_LOG,K_SETTINGS,K_REPORT_COLS,K_LOG_COLS,K_SALES_REPORT,K_SALES_REPORT_COLS,K_REPORT_HEADERS,K_LOG_HEADERS,K_SALES_REPORT_HEADERS,K_REPORT_OVERRIDES];
+  await Promise.all(keys.map(k=>{ try{ return storage.delete(k); }catch(e){ return Promise.resolve(); } }));
+  state.salesmen=[]; state.dailyStats={}; state.log=[]; state.salesReport=[];
+  state.settings={orderTarget:50, deliveryTarget:50};
+  state.reportExtraCols=[]; state.logExtraCols=[]; state.salesReportExtraCols=[];
+  state.reportHeaders={}; state.logHeaders={}; state.salesReportHeaders={};
+  state.reportOverrides={};
+}
+
+// Populates the sheet with a realistic, self-consistent set of sample data (team roster,
+// a month of customer-log visits, matching daily order/delivery counts, and sales-report
+// rows) so the demo looks lived-in the moment someone opens it. Dates are generated
+// relative to "today" so the demo stays current whenever it's viewed.
+async function seedDemoData(){
+  const names=['Amara Ndlovu','Jordan Pillay','Liam Cortez','Sipho Mahlangu','Priya Naidoo'];
+  const salesmen = names.map(name=>({id:uid(), name, extra:{}}));
+  state.salesmen = salesmen;
+
+  const sources=['Walk-in','Walk-in','Walk-in','Call','Referral','Other'];
+  const customerFirst=['Thabo','Nomsa','Ryan','Zanele','Kevin','Lindiwe','Grace','Michael','Palesa','Andre','Fatima','Sean','Bongani','Chloe','Devan'];
+  const customerLast=['Khumalo','van Wyk','Botha','Dlamini','Reddy','Fourie','Sithole','Adams','Molefe','Govender'];
+
+  const today = new Date();
+  const log=[]; const dailyStats={}; const salesReport=[];
+
+  for(let dayOffset=27; dayOffset>=0; dayOffset--){
+    const d = new Date(today); d.setDate(today.getDate()-dayOffset);
+    const dateStr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    const dow = d.getDay();
+    if(dow===0) continue; // showroom closed Sundays
+
+    const visitsToday = 2 + Math.floor(Math.random()*5); // 2-6 walk-ins/calls per day across the team
+    for(let v=0; v<visitsToday; v++){
+      const s = salesmen[Math.floor(Math.random()*salesmen.length)];
+      const vehicle = VEHICLE_MODELS[Math.floor(Math.random()*VEHICLE_MODELS.length)];
+      const source = sources[Math.floor(Math.random()*sources.length)];
+      const hour = 9 + Math.floor(Math.random()*8);
+      const minIn = Math.floor(Math.random()*60);
+      const durMins = 15 + Math.floor(Math.random()*75);
+      const timeIn = pad(hour)+':'+pad(minIn);
+      const outTotal = hour*60+minIn+durMins;
+      const timeOut = pad(Math.floor(outTotal/60)%24)+':'+pad(outTotal%60);
+      const sold = Math.random() < 0.18 ? 'Yes' : 'No';
+      log.push({
+        id:uid(), date:dateStr, salesmanId:s.id, vehicle, source,
+        returning: Math.random()<0.25?'Yes':'No',
+        visitCount: Math.random()<0.25 ? (2+Math.floor(Math.random()*3)) : 1,
+        customer: customerFirst[Math.floor(Math.random()*customerFirst.length)]+' '+customerLast[Math.floor(Math.random()*customerLast.length)],
+        phone: '08'+(1+Math.floor(Math.random()*8))+' '+(100+Math.floor(Math.random()*900))+' '+(1000+Math.floor(Math.random()*9000)),
+        timeIn, timeOut, sold, extra:{}
+      });
+
+      if(sold==='Yes'){
+        const model = CAR_MODEL_INFO[vehicle];
+        salesReport.push({
+          id:uid(), date:dateStr, salesmanId:s.id, carModel:vehicle,
+          carSeries: model.series[Math.floor(Math.random()*model.series.length)],
+          colour: model.colours[Math.floor(Math.random()*model.colours.length)],
+          quantity: 1, extra:{}
+        });
+      }
+    }
+
+    // Daily orders/deliveries per salesman, loosely tied to that day's activity.
+    salesmen.forEach(s=>{
+      if(Math.random() < 0.5) return; // not every rep logs a number every day
+      const key = dateStr+'|'+s.id;
+      dailyStats[key] = { orders: Math.random()<0.4?1:0, deliveries: Math.random()<0.3?1:0 };
+    });
+  }
+
+  state.log = log;
+  state.salesReport = salesReport;
+  state.dailyStats = dailyStats;
+  state.settings = {orderTarget:50, deliveryTarget:35};
+}
+async function saveSalesmen(){try{await storage.set(K_SALESMEN, JSON.stringify(state.salesmen));}catch(e){console.error(e);}}
+async function saveDaily(){try{await storage.set(K_DAILY, JSON.stringify(state.dailyStats));}catch(e){console.error(e);}}
+async function saveLog(){try{await storage.set(K_LOG, JSON.stringify(state.log));}catch(e){console.error(e);}}
+async function saveSettings(){try{await storage.set(K_SETTINGS, JSON.stringify(state.settings));}catch(e){console.error(e);}}
+async function saveReportCols(){try{await storage.set(K_REPORT_COLS, JSON.stringify(state.reportExtraCols));}catch(e){console.error(e);}}
+async function saveLogCols(){try{await storage.set(K_LOG_COLS, JSON.stringify(state.logExtraCols));}catch(e){console.error(e);}}
+async function saveSalesReport(){try{await storage.set(K_SALES_REPORT, JSON.stringify(state.salesReport));}catch(e){console.error(e);}}
+async function saveSalesReportCols(){try{await storage.set(K_SALES_REPORT_COLS, JSON.stringify(state.salesReportExtraCols));}catch(e){console.error(e);}}
+async function saveReportHeaders(){try{await storage.set(K_REPORT_HEADERS, JSON.stringify(state.reportHeaders));}catch(e){console.error(e);}}
+async function saveLogHeaders(){try{await storage.set(K_LOG_HEADERS, JSON.stringify(state.logHeaders));}catch(e){console.error(e);}}
+async function saveSalesReportHeaders(){try{await storage.set(K_SALES_REPORT_HEADERS, JSON.stringify(state.salesReportHeaders));}catch(e){console.error(e);}}
+async function saveReportOverrides(){try{await storage.set(K_REPORT_OVERRIDES, JSON.stringify(state.reportOverrides));}catch(e){console.error(e);}}
+
+async function saveAll(){
+  await Promise.all([saveSalesmen(), saveDaily(), saveLog(), saveSettings(), saveReportCols(), saveLogCols(), saveSalesReport(), saveSalesReportCols(), saveReportHeaders(), saveLogHeaders(), saveSalesReportHeaders(), saveReportOverrides()]);
+}
+
+function salesmanName(id){const s=state.salesmen.find(x=>x.id===id);return s?s.name:'—';}
+
+function walkinsForDate(salesmanId, date){return state.log.filter(e=>e.salesmanId===salesmanId && e.date===date).length;}
+function walkinsForMonth(salesmanId, mk){return state.log.filter(e=>e.salesmanId===salesmanId && monthOf(e.date)===mk).length;}
+function walkinsForWeek(salesmanId, range){return state.log.filter(e=>e.salesmanId===salesmanId && inRange(e.date,range)).length;}
+function weeklyOrders(salesmanId, range){
+  let total=0;
+  Object.keys(state.dailyStats).forEach(k=>{const [d,sid]=k.split('|'); if(sid===salesmanId && inRange(d,range)) total += Number(state.dailyStats[k].orders)||0;});
+  return total;
+}
+function weeklyDeliveries(salesmanId, range){
+  let total=0;
+  Object.keys(state.dailyStats).forEach(k=>{const [d,sid]=k.split('|'); if(sid===salesmanId && inRange(d,range)) total += Number(state.dailyStats[k].deliveries)||0;});
+  return total;
+}
+function statsForDate(salesmanId, date){const key=date+'|'+salesmanId; return state.dailyStats[key] || {orders:0, deliveries:0};}
+// Manual overrides let a person type over an auto-calculated report cell (walk-ins, weekly/monthly totals).
+// Clearing the cell reverts it back to the auto-calculated value.
+function overrideKey(sid, period, metric){ return sid+'|'+period+'|'+metric; }
+function getOverride(sid, period, metric){
+  const k = overrideKey(sid, period, metric);
+  const v = state.reportOverrides[k];
+  return (v===undefined || v===null) ? undefined : v;
+}
+function effValue(sid, period, metric, computed){
+  const o = getOverride(sid, period, metric);
+  return o===undefined ? computed : o;
+}
+function isOverridden(sid, period, metric){ return getOverride(sid, period, metric) !== undefined; }
+function monthlyOrders(salesmanId, mk){
+  let total=0;
+  Object.keys(state.dailyStats).forEach(k=>{const [d,sid]=k.split('|'); if(sid===salesmanId && monthOf(d)===mk) total += Number(state.dailyStats[k].orders)||0;});
+  return total;
+}
+function monthlyDeliveries(salesmanId, mk){
+  let total=0;
+  Object.keys(state.dailyStats).forEach(k=>{const [d,sid]=k.split('|'); if(sid===salesmanId && monthOf(d)===mk) total += Number(state.dailyStats[k].deliveries)||0;});
+  return total;
+}
+function colorClassFor(value, kind, target){
+  if(kind==='target'){
+    if(!value) return 'cell-bad';
+    if(value >= target) return 'cell-good';
+    return 'cell-mid';
+  }
+  return '';
+}
+// Daily walk-ins: 1-4 red, 5-9 yellow, 10+ green
+function colorDailyWalkin(value){
+  value = Number(value)||0;
+  if(!value) return 'cell-dash';
+  if(value <= 4) return 'cell-bad';
+  if(value <= 9) return 'cell-mid';
+  return 'cell-good';
+}
+// Monthly walk-ins: 1-9 yellow, 10+ green
+function colorMonthlyWalkin(value){
+  value = Number(value)||0;
+  if(!value) return 'cell-dash';
+  if(value <= 9) return 'cell-mid';
+  return 'cell-good';
+}
+// Monthly orders: 0 red, 1-2 yellow, 3+ green
+function colorMonthlyOrders(value){
+  value = Number(value)||0;
+  if(!value) return 'cell-bad';
+  if(value <= 2) return 'cell-mid';
+  return 'cell-good';
+}
+function durationStr(timeIn, timeOut){
+  if(!timeIn || !timeOut) return '';
+  const [h1,m1]=timeIn.split(':').map(Number);
+  const [h2,m2]=timeOut.split(':').map(Number);
+  let mins=(h2*60+m2)-(h1*60+m1);
+  if(mins<0) mins += 24*60;
+  return Math.floor(mins/60)+':'+pad(mins%60);
+}
+function csvEscape(v){
+  v = (v===undefined||v===null) ? '' : String(v);
+  if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"';
+  return v;
+}
+function downloadCSV(filename, headers, rows){
+  const lines = [headers.map(csvEscape).join(',')].concat(rows.map(r=>r.map(csvEscape).join(',')));
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Full data backup: everything needed to restore the sheet exactly, on any device.
+// Email this file to yourself, then use the ⬆ Import button on the other device.
+function exportAllData(){
+  const backup = {
+    salesmen: state.salesmen,
+    dailyStats: state.dailyStats,
+    log: state.log,
+    salesReport: state.salesReport,
+    settings: state.settings,
+    reportExtraCols: state.reportExtraCols,
+    logExtraCols: state.logExtraCols,
+    salesReportExtraCols: state.salesReportExtraCols,
+    reportHeaders: state.reportHeaders,
+    logHeaders: state.logHeaders,
+    salesReportHeaders: state.salesReportHeaders,
+    reportOverrides: state.reportOverrides,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `crestline-sales-backup-${todayISO()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importAllData(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const backup = JSON.parse(reader.result);
+      if(!confirm('This will replace all current data on this device with the data from the backup file. Continue?')) { ev.target.value=''; return; }
+      state.salesmen = backup.salesmen || [];
+      state.dailyStats = backup.dailyStats || {};
+      state.log = backup.log || [];
+      state.salesReport = backup.salesReport || [];
+      state.settings = {...state.settings, ...(backup.settings||{})};
+      state.reportExtraCols = backup.reportExtraCols || [];
+      state.logExtraCols = backup.logExtraCols || [];
+      state.salesReportExtraCols = backup.salesReportExtraCols || [];
+      state.reportHeaders = backup.reportHeaders || {};
+      state.logHeaders = backup.logHeaders || {};
+      state.salesReportHeaders = backup.salesReportHeaders || {};
+      state.reportOverrides = backup.reportOverrides || {};
+      await saveAll();
+      ev.target.value='';
+      render();
+      alert('Data imported successfully.');
+    }catch(err){
+      alert('Could not read that file — make sure it\'s a backup file exported from this sheet.');
+      ev.target.value='';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(!state.loaded){ app.innerHTML=`<div style="padding:60px;text-align:center;color:#888;">Loading sheet…</div>`; return; }
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="title">Crestline Motors Sales Sheet <span>${state.tab==='report'?'Daily Report':state.tab==='log'?'Customer Log':'Sales Report'} · demo data, saved only in this browser</span></div>
+      <div style="display:flex;gap:8px;">
+        <div class="icon-round" id="btn-reset-demo" title="Reset to sample demo data">↺</div>
+        <div class="icon-round" id="btn-export-data" title="Export data backup (to email/share)">⬇</div>
+        <div class="icon-round" id="btn-import-data" title="Import data backup">⬆</div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none;">
+        <div class="icon-round" id="btn-print" title="Print">🖨</div>
+        <div class="icon-round" id="btn-settings" title="Settings">⚙</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab ${state.tab==='report'?'active':''}" data-tab="report">Daily Report</div>
+      <div class="tab ${state.tab==='log'?'active':''}" data-tab="log">Customer Log</div>
+      <div class="tab ${state.tab==='salesreport'?'active':''}" data-tab="salesreport">Sales Report</div>
+    </div>
+    <div class="sheet" id="sheet"></div>
+  `;
+  document.getElementById('btn-print').addEventListener('click',()=>window.print());
+  document.getElementById('btn-settings').addEventListener('click',()=>{state.settingsOpen=true; renderSettingsModal();});
+  document.getElementById('btn-reset-demo').addEventListener('click', async ()=>{
+    if(!confirm('Reset this demo back to the original sample data? Any changes you made will be lost.')) return;
+    await clearAllData();
+    await seedDemoData();
+    await saveAll();
+    await storage.set(K_SEEDED, '1');
+    render();
+  });
+  document.getElementById('btn-export-data').addEventListener('click', exportAllData);
+  document.getElementById('btn-import-data').addEventListener('click', ()=>document.getElementById('import-file-input').click());
+  document.getElementById('import-file-input').addEventListener('change', importAllData);
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{state.tab=t.dataset.tab; render();}));
+
+  const sheet=document.getElementById('sheet');
+  sheet.innerHTML = state.tab==='report' ? renderReport() : state.tab==='log' ? renderLog() : renderSalesReport();
+
+  attachHandlers();
+  renderSettingsModal();
+}
+
+function renderReport(){
+  const date = state.reportDate;
+  const mk = monthOf(date);
+  const wk = getWeekRange(date);
+  const salesmen = state.salesmen;
+  const extraCols = state.reportExtraCols;
+
+  let rows='';
+  let totals={daily_wi:0, weekly_wi:0, monthly_wi:0, daily_o:0, daily_d:0, weekly_o:0, weekly_d:0, monthly_o:0, monthly_d:0};
+
+  salesmen.forEach((s,i)=>{
+    if(!s.extra) s.extra={};
+    const wPeriod='w:'+wk.start, mPeriod='m:'+mk, dPeriod='d:'+date;
+    const dw=effValue(s.id,dPeriod,'dailyWalkins', walkinsForDate(s.id,date));
+    const ww=effValue(s.id,wPeriod,'weeklyWalkins', walkinsForWeek(s.id,wk));
+    const mw=effValue(s.id,mPeriod,'monthlyWalkins', walkinsForMonth(s.id,mk));
+    const ds=statsForDate(s.id,date);
+    const wo=effValue(s.id,wPeriod,'weeklyOrders', weeklyOrders(s.id,wk));
+    const wd=effValue(s.id,wPeriod,'weeklyDeliveries', weeklyDeliveries(s.id,wk));
+    const mo=effValue(s.id,mPeriod,'monthlyOrders', monthlyOrders(s.id,mk));
+    const md=effValue(s.id,mPeriod,'monthlyDeliveries', monthlyDeliveries(s.id,mk));
+    totals.daily_wi+=dw; totals.weekly_wi+=ww; totals.monthly_wi+=mw;
+    totals.daily_o+=Number(ds.orders)||0; totals.daily_d+=Number(ds.deliveries)||0;
+    totals.weekly_o+=wo; totals.weekly_d+=wd;
+    totals.monthly_o+=mo; totals.monthly_d+=md;
+
+    const extraCells = extraCols.map(c=>`<td><input type="text" class="wide-input extra-cell" data-scope="report" data-sid="${s.id}" data-col="${c.id}" value="${(s.extra[c.id]||'').toString().replace(/"/g,'&quot;')}"></td>`).join('');
+
+    const metricCell = (value, metric, period, colorClass)=>{
+      const ov = isOverridden(s.id,period,metric) ? ' is-override' : '';
+      return `<td class="editable-metric${colorClass?' '+colorClass:''}${ov}" contenteditable="true" spellcheck="false" data-sid="${s.id}" data-period="${period}" data-metric="${metric}">${value||''}</td>`;
+    };
+
+    rows += `<tr>
+      <td class="rownum">${i+1}</td>
+      <td class="left"><span class="editable-name" contenteditable="true" spellcheck="false" data-id="${s.id}">${s.name}</span></td>
+      ${metricCell(dw,'dailyWalkins',dPeriod,colorDailyWalkin(dw))}
+      ${metricCell(ww,'weeklyWalkins',wPeriod,'')}
+      ${metricCell(mw,'monthlyWalkins',mPeriod,colorMonthlyWalkin(mw))}
+      <td><input type="number" min="0" class="cell-input orders-daily" data-sid="${s.id}" value="${ds.orders||''}" placeholder="0"></td>
+      <td><input type="number" min="0" class="cell-input deliveries-daily" data-sid="${s.id}" value="${ds.deliveries||''}" placeholder="0"></td>
+      ${metricCell(wo,'weeklyOrders',wPeriod,'')}
+      ${metricCell(wd,'weeklyDeliveries',wPeriod,'')}
+      ${metricCell(mo,'monthlyOrders',mPeriod,colorMonthlyOrders(mo))}
+      ${metricCell(md,'monthlyDeliveries',mPeriod,colorClassFor(md,'target',state.settings.deliveryTarget))}
+      ${extraCells}
+      <td><button class="del-btn del-salesman-row" data-id="${s.id}" title="Delete row">✕</button></td>
+    </tr>`;
+  });
+
+  const targetRemainO = Math.max(0, state.settings.orderTarget - totals.monthly_o);
+  const targetRemainD = Math.max(0, state.settings.deliveryTarget - totals.monthly_d);
+  const extraTotalBlanks = extraCols.map(()=>'<td>—</td>').join('');
+
+  const extraHeaders = extraCols.map(c=>`<th rowspan="2">${c.name}<button class="col-del" data-scope="report" data-id="${c.id}" title="Remove column">✕</button></th>`).join('');
+
+  return `
+    <div class="toolbar">
+      <button class="btn" id="btn-add-salesman-row">+ Add Row</button>
+      <button class="btn ghost small" id="btn-manage-salesmen">+ Manage Salesmen</button>
+      <button class="btn ghost small" id="btn-export-report">⬇ Export CSV</button>
+      <div class="spacer">Week shown: <strong>${weekLabel(wk)}</strong> · Month shown: <strong>${monthLabel(mk)}</strong></div>
+    </div>
+    ${salesmen.length===0 ? `<div class="empty-msg">No salesmen yet. Click "+ Add Row" or "Manage Salesmen" above to add your team.</div>` : `
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2"><input type="date" id="report-date-corner" class="corner-date" value="${date}"></th>
+          <th rowspan="2">${editableHeader('report','salesman')}</th>
+          <th rowspan="2">${editableHeader('report','dailyWalkins')}</th>
+          <th rowspan="2">${editableHeader('report','weeklyWalkins')}</th>
+          <th rowspan="2">${editableHeader('report','monthlyWalkins')}</th>
+          <th rowspan="2">${editableHeader('report','ordersDaily')}</th>
+          <th rowspan="2">${editableHeader('report','deliveriesDaily')}</th>
+          <th rowspan="2">${editableHeader('report','weeklyOrders')}</th>
+          <th rowspan="2">${editableHeader('report','weeklyDeliveries')}</th>
+          <th>${editableHeader('report','ordersMonthly')}<span class="target-header">Target: <input type="number" class="target-input" id="target-order" value="${state.settings.orderTarget}"></span></th>
+          <th>${editableHeader('report','monthlyDeliveries')}<span class="target-header">Target: <input type="number" class="target-input" id="target-delivery" value="${state.settings.deliveryTarget}"></span></th>
+          ${extraHeaders}
+          <th rowspan="2"><button class="add-col-btn" id="btn-add-report-col" title="Add column">+</button></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr class="total-row">
+          <td colspan="2" class="left">TOTAL</td>
+          <td>${totals.daily_wi}</td><td>${totals.weekly_wi}</td><td>${totals.monthly_wi}</td>
+          <td>${totals.daily_o}</td><td>${totals.daily_d}</td>
+          <td>${totals.weekly_o}</td><td>${totals.weekly_d}</td>
+          <td>${totals.monthly_o}</td><td>${totals.monthly_d}</td>
+          ${extraTotalBlanks}<td></td>
+        </tr>
+        <tr class="target-row">
+          <td colspan="2" class="left">TARGET REMAINING</td>
+          <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+          <td>${targetRemainO}</td><td>${targetRemainD}</td>
+          ${extraTotalBlanks}<td></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="footer-note">Click the date in the top-left cell to jump to any day — the whole report updates for that day, its week (Mon–Sun), and its month. Walk-ins, weekly and monthly totals are counted automatically from the Customer Log — click any of those cells to type over the number by hand (a small ✎ marks a manually-edited cell); clear the cell to go back to the automatic count. Orders/Deliveries are typed in here directly. Click any heading or salesman name to rename it. Weekly columns aren't colour-coded (no bracket rules were set for them) — say the word if you'd like some.</div>
+    `}
+  `;
+}
+
+function renderLog(){
+  const extraCols = state.logExtraCols;
+  let entries=[...state.log];
+  const filterDate = state.logFilterDate || todayISO();
+  if(state.logGranularity==='day') entries = entries.filter(e=>e.date===filterDate);
+  else if(state.logGranularity==='week') { const wk=getWeekRange(filterDate); entries = entries.filter(e=>inRange(e.date,wk)); }
+  else if(state.logGranularity==='month') entries = entries.filter(e=>monthOf(e.date)===monthOf(filterDate));
+  else if(state.logGranularity==='year') entries = entries.filter(e=>yearOf(e.date)===yearOf(filterDate));
+  if(state.logSalesmanFilter) entries = entries.filter(e=>e.salesmanId===state.logSalesmanFilter);
+  entries.sort((a,b)=> b.date.localeCompare(a.date) || (b.timeIn||'').localeCompare(a.timeIn||''));
+
+  const extraHeaders = extraCols.map(c=>`<th>${c.name}<button class="col-del" data-scope="log" data-id="${c.id}" title="Remove column">✕</button></th>`).join('');
+
+  let rows = entries.map((e,i)=>{
+    if(!e.extra) e.extra={};
+    const extraCells = extraCols.map(c=>`<td><input type="text" class="wide-input extra-cell" data-scope="log" data-id="${e.id}" data-col="${c.id}" value="${(e.extra[c.id]||'').toString().replace(/"/g,'&quot;')}"></td>`).join('');
+    return `
+    <tr>
+      <td class="rownum">${i+1}</td>
+      <td><input type="date" class="wide-input log-field" data-id="${e.id}" data-field="date" value="${e.date}"></td>
+      <td>
+        <select class="wide-input log-field" data-id="${e.id}" data-field="salesmanId">
+          <option value="">—</option>
+          ${state.salesmen.map(s=>`<option value="${s.id}" ${e.salesmanId===s.id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="wide-input log-field" data-id="${e.id}" data-field="vehicle">
+          <option value="">—</option>
+          ${VEHICLE_MODELS.map(v=>`<option value="${v}" ${e.vehicle===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="wide-input log-field" data-id="${e.id}" data-field="source">
+          <option value="Walk-in" ${e.source==='Walk-in'?'selected':''}>Walk-in</option>
+          <option value="Call" ${e.source==='Call'?'selected':''}>Call</option>
+          <option value="Referral" ${e.source==='Referral'?'selected':''}>Referral</option>
+          <option value="Other" ${e.source==='Other'?'selected':''}>Other</option>
+        </select>
+      </td>
+      <td>
+        <select class="wide-input log-field ${e.returning==='Yes'?'sold-yes':'sold-no'}" data-id="${e.id}" data-field="returning">
+          <option value="No" ${e.returning==='No'||!e.returning?'selected':''}>No</option>
+          <option value="Yes" ${e.returning==='Yes'?'selected':''}>Yes</option>
+        </select>
+      </td>
+      <td><input type="number" min="0" class="cell-input log-field" data-id="${e.id}" data-field="visitCount" value="${e.visitCount||''}" placeholder="0"></td>
+      <td><input type="text" class="wide-input log-field" data-id="${e.id}" data-field="customer" value="${e.customer||''}" placeholder="Name"></td>
+      <td><input type="text" class="wide-input log-field" data-id="${e.id}" data-field="phone" value="${e.phone||''}" placeholder="083…"></td>
+      <td><input type="time" class="wide-input log-field" data-id="${e.id}" data-field="timeIn" value="${e.timeIn||''}"></td>
+      <td><input type="time" class="wide-input log-field" data-id="${e.id}" data-field="timeOut" value="${e.timeOut||''}"></td>
+      <td>${durationStr(e.timeIn,e.timeOut)||'—'}</td>
+      <td>
+        <select class="wide-input log-field ${e.sold==='Yes'?'sold-yes':'sold-no'}" data-id="${e.id}" data-field="sold">
+          <option value="No" ${e.sold==='No'||!e.sold?'selected':''}>No</option>
+          <option value="Yes" ${e.sold==='Yes'?'selected':''}>Yes</option>
+        </select>
+      </td>
+      ${extraCells}
+      <td><button class="del-btn del-log" data-id="${e.id}" title="Delete row">✕</button></td>
+    </tr>
+  `;}).join('');
+
+  const colCount = 14 + extraCols.length;
+  if(entries.length===0) rows = `<tr><td colspan="${colCount}" class="empty-msg">No entries for this view yet. Click "+ Add Row" to log a visit.</td></tr>`;
+
+  return `
+    <div class="toolbar">
+      <div><label>Salesman</label>
+        <select id="log-salesman-filter">
+          <option value="">All</option>
+          ${state.salesmen.map(s=>`<option value="${s.id}" ${state.logSalesmanFilter===s.id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn" id="btn-add-row">+ Add Row</button>
+      <button class="btn ghost small" id="btn-export-log">⬇ Export CSV</button>
+      <div class="spacer">${entries.length} entries</div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr>
+        <th style="min-width:110px;">
+          <input type="date" id="log-date-corner" class="corner-date" value="${filterDate}">
+          <select id="log-granularity" class="corner-gran">
+            <option value="day" ${state.logGranularity==='day'?'selected':''}>Day</option>
+            <option value="week" ${state.logGranularity==='week'?'selected':''}>Week</option>
+            <option value="month" ${state.logGranularity==='month'?'selected':''}>Month</option>
+            <option value="year" ${state.logGranularity==='year'?'selected':''}>Year</option>
+            <option value="all" ${state.logGranularity==='all'?'selected':''}>All</option>
+          </select>
+        </th>
+        <th>${editableHeader('log','date')}</th><th>${editableHeader('log','salesman')}</th><th>${editableHeader('log','vehicle')}</th><th>${editableHeader('log','source')}</th><th>${editableHeader('log','returning')}</th><th>${editableHeader('log','visits')}</th><th>${editableHeader('log','customer')}</th>
+        <th>${editableHeader('log','phone')}</th><th>${editableHeader('log','timeIn')}</th><th>${editableHeader('log','timeOut')}</th><th>${editableHeader('log','duration')}</th><th>${editableHeader('log','sold')}</th>
+        ${extraHeaders}
+        <th><button class="add-col-btn" id="btn-add-log-col" title="Add column">+</button></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="footer-note">Click the date in the top-left cell to jump to a different day — use the Day/Week/Month/Year/All dropdown underneath it to control how much of the log shows. Click any heading to rename it.</div>
+  `;
+}
+
+function renderSalesReport(){
+  const extraCols = state.salesReportExtraCols;
+  let entries=[...state.salesReport];
+  const filterDate = state.salesReportFilterDate || todayISO();
+  if(state.salesReportGranularity==='day') entries = entries.filter(e=>e.date===filterDate);
+  else if(state.salesReportGranularity==='week'){ const wk=getWeekRange(filterDate); entries = entries.filter(e=>inRange(e.date,wk)); }
+  else if(state.salesReportGranularity==='month') entries = entries.filter(e=>monthOf(e.date)===monthOf(filterDate));
+  else if(state.salesReportGranularity==='year') entries = entries.filter(e=>yearOf(e.date)===yearOf(filterDate));
+  if(state.salesReportSalesmanFilter) entries = entries.filter(e=>e.salesmanId===state.salesReportSalesmanFilter);
+  entries.sort((a,b)=> b.date.localeCompare(a.date));
+
+  const extraHeaders = extraCols.map(c=>`<th>${c.name}<button class="col-del" data-scope="salesReport" data-id="${c.id}" title="Remove column">✕</button></th>`).join('');
+
+  let rows = entries.map((e,i)=>{
+    if(!e.extra) e.extra={};
+    const extraCells = extraCols.map(c=>`<td><input type="text" class="wide-input extra-cell" data-scope="salesReport" data-id="${e.id}" data-col="${c.id}" value="${(e.extra[c.id]||'').toString().replace(/"/g,'&quot;')}"></td>`).join('');
+    return `
+    <tr>
+      <td class="rownum">${i+1}</td>
+      <td><input type="date" class="wide-input salesreport-field" data-id="${e.id}" data-field="date" value="${e.date}"></td>
+      <td>
+        <select class="wide-input salesreport-field" data-id="${e.id}" data-field="salesmanId">
+          <option value="">—</option>
+          ${state.salesmen.map(s=>`<option value="${s.id}" ${e.salesmanId===s.id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="text" class="wide-input salesreport-field" data-id="${e.id}" data-field="carModel" value="${e.carModel||''}" placeholder="e.g. Nova Cross SUV" list="vehicle-suggestions-sr"></td>
+      <td><input type="text" class="wide-input salesreport-field" data-id="${e.id}" data-field="carSeries" value="${e.carSeries||''}" placeholder="e.g. Premium" list="series-suggestions-sr"></td>
+      <td><input type="text" class="wide-input salesreport-field" data-id="${e.id}" data-field="colour" value="${e.colour||''}" placeholder="e.g. White" list="colour-suggestions-sr"></td>
+      <td><input type="number" min="0" class="cell-input salesreport-field" data-id="${e.id}" data-field="quantity" value="${e.quantity||''}" placeholder="0"></td>
+      ${extraCells}
+      <td><button class="del-btn del-salesreport" data-id="${e.id}" title="Delete row">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const colCount = 8 + extraCols.length;
+  if(entries.length===0) rows = `<tr><td colspan="${colCount}" class="empty-msg">No sales logged for this view yet. Click "+ Add Row" to log one.</td></tr>`;
+
+  return `
+    <datalist id="vehicle-suggestions-sr">${VEHICLE_MODELS.map(m=>`<option value="${m}">`).join('')}</datalist>
+    <datalist id="series-suggestions-sr">${SERIES_ALL.map(s=>`<option value="${s}">`).join('')}</datalist>
+    <datalist id="colour-suggestions-sr">${COLOUR_ALL.map(c=>`<option value="${c}">`).join('')}</datalist>
+    <div class="toolbar">
+      <div><label>Salesman</label>
+        <select id="salesreport-salesman-filter">
+          <option value="">All</option>
+          ${state.salesmen.map(s=>`<option value="${s.id}" ${state.salesReportSalesmanFilter===s.id?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn" id="btn-add-salesreport-row">+ Add Row</button>
+      <button class="btn ghost small" id="btn-export-salesreport">⬇ Export CSV</button>
+      <div class="spacer">${entries.length} entries</div>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead><tr>
+        <th style="min-width:110px;">
+          <input type="date" id="salesreport-date-corner" class="corner-date" value="${filterDate}">
+          <select id="salesreport-granularity" class="corner-gran">
+            <option value="day" ${state.salesReportGranularity==='day'?'selected':''}>Day</option>
+            <option value="week" ${state.salesReportGranularity==='week'?'selected':''}>Week</option>
+            <option value="month" ${state.salesReportGranularity==='month'?'selected':''}>Month</option>
+            <option value="year" ${state.salesReportGranularity==='year'?'selected':''}>Year</option>
+            <option value="all" ${state.salesReportGranularity==='all'?'selected':''}>All</option>
+          </select>
+        </th>
+        <th>${editableHeader('salesReport','date')}</th>
+        <th>${editableHeader('salesReport','salesman')}</th>
+        <th>${editableHeader('salesReport','carModel')}</th>
+        <th>${editableHeader('salesReport','carSeries')}</th>
+        <th>${editableHeader('salesReport','colour')}</th>
+        <th>${editableHeader('salesReport','quantity')}</th>
+        ${extraHeaders}
+        <th><button class="add-col-btn" id="btn-add-salesreport-col" title="Add column">+</button></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="footer-note">Click the date in the top-left cell to jump to a different day — use the Day/Week/Month/Year/All dropdown underneath it. Click any heading to rename it. Car Model, Car Series and Colour all suggest values as you type (covering the demo lineup) — you can still type anything else by hand.</div>
+  `;
+}
+
+function renderSettingsModal(){
+  const existing=document.getElementById('modal-root');
+  if(existing) existing.remove();
+  if(!state.settingsOpen) return;
+  const div=document.createElement('div');
+  div.id='modal-root'; div.className='modal-overlay';
+  div.innerHTML=`
+    <div class="modal">
+      <h3>Settings</h3>
+      <div class="modal-section">
+        <h4>Salesmen</h4>
+        <div id="roster-list">
+          ${state.salesmen.map(s=>`
+            <div class="roster-row">
+              <input type="text" class="roster-name" data-id="${s.id}" value="${s.name}">
+              <button class="del-btn del-salesman" data-id="${s.id}">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="roster-row" style="margin-top:8px;">
+          <input type="text" id="new-salesman-name" placeholder="Add salesman name…">
+          <button class="btn small" id="btn-add-salesman">Add</button>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4>Targets &amp; Colour Cues</h4>
+        <div class="target-field"><span>Monthly order target (team)</span><input type="number" id="set-order-target" value="${state.settings.orderTarget}"></div>
+        <div class="target-field"><span>Monthly delivery target (team)</span><input type="number" id="set-delivery-target" value="${state.settings.deliveryTarget}"></div>
+        <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px;line-height:1.5;">
+          Walk-in &amp; order colours are fixed: Daily Walk-ins 1–4 red, 5–9 yellow, 10+ green · Monthly Walk-ins 1–9 yellow, 10+ green · Monthly Orders 0 red, 1–2 yellow, 3+ green.
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost small" id="modal-close">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  div.addEventListener('click',(ev)=>{if(ev.target===div){state.settingsOpen=false; renderSettingsModal();}});
+  document.getElementById('modal-close').addEventListener('click',()=>{state.settingsOpen=false; renderSettingsModal();});
+
+  document.getElementById('btn-add-salesman').addEventListener('click', async ()=>{
+    const input=document.getElementById('new-salesman-name');
+    const name=input.value.trim();
+    if(!name) return;
+    state.salesmen.push({id:uid(), name, extra:{}});
+    await saveSalesmen(); render(); state.settingsOpen=true; renderSettingsModal();
+  });
+  document.querySelectorAll('.del-salesman').forEach(b=>b.addEventListener('click', async ()=>{
+    if(confirm('Remove this salesman? Their past entries will keep showing until reassigned.')){
+      state.salesmen = state.salesmen.filter(s=>s.id!==b.dataset.id);
+      await saveSalesmen(); render(); state.settingsOpen=true; renderSettingsModal();
+    }
+  }));
+  document.querySelectorAll('.roster-name').forEach(inp=>inp.addEventListener('change', async ()=>{
+    const s=state.salesmen.find(x=>x.id===inp.dataset.id);
+    if(s){ s.name=inp.value.trim()||s.name; await saveSalesmen(); render(); state.settingsOpen=true; renderSettingsModal(); }
+  }));
+  document.getElementById('set-order-target').addEventListener('change', async (e)=>{state.settings.orderTarget=Number(e.target.value)||0; await saveSettings(); render(); state.settingsOpen=true; renderSettingsModal();});
+  document.getElementById('set-delivery-target').addEventListener('change', async (e)=>{state.settings.deliveryTarget=Number(e.target.value)||0; await saveSettings(); render(); state.settingsOpen=true; renderSettingsModal();});
+}
+
+function attachHandlers(){
+  document.querySelectorAll('.editable-header').forEach(el=>{
+    el.addEventListener('blur', async ()=>{
+      const scope=el.dataset.scope, key=el.dataset.key;
+      const text = el.textContent.trim() || HEADER_DEFAULTS[scope][key];
+      el.textContent = text;
+      const store = headerStore(scope);
+      store[key]=text;
+      if(scope==='report') await saveReportHeaders();
+      else if(scope==='log') await saveLogHeaders();
+      else await saveSalesReportHeaders();
+    });
+    el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } });
+  });
+
+  const reportDateCorner=document.getElementById('report-date-corner');
+  if(reportDateCorner) reportDateCorner.addEventListener('change',(e)=>{state.reportDate=e.target.value; render();});
+
+  const btnManage=document.getElementById('btn-manage-salesmen');
+  if(btnManage) btnManage.addEventListener('click',()=>{state.settingsOpen=true; renderSettingsModal();});
+
+  const btnAddSalesmanRow=document.getElementById('btn-add-salesman-row');
+  if(btnAddSalesmanRow) btnAddSalesmanRow.addEventListener('click', async ()=>{
+    const name=prompt('Salesman name:');
+    if(!name||!name.trim()) return;
+    state.salesmen.push({id:uid(), name:name.trim(), extra:{}});
+    await saveSalesmen(); render();
+  });
+  document.querySelectorAll('.del-salesman-row').forEach(b=>b.addEventListener('click', async ()=>{
+    if(confirm('Remove this salesman row? Their past Daily Report entries stay in history.')){
+      state.salesmen = state.salesmen.filter(s=>s.id!==b.dataset.id);
+      await saveSalesmen(); render();
+    }
+  }));
+  document.querySelectorAll('.editable-name').forEach(el=>{
+    el.addEventListener('blur', async ()=>{
+      const s=state.salesmen.find(x=>x.id===el.dataset.id);
+      if(!s) return;
+      const t=el.textContent.trim();
+      if(t){ s.name=t; await saveSalesmen(); } else { el.textContent=s.name; }
+    });
+    el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } });
+  });
+
+  document.querySelectorAll('.editable-metric').forEach(el=>{
+    el.addEventListener('blur', async ()=>{
+      const sid=el.dataset.sid, period=el.dataset.period, metric=el.dataset.metric;
+      const key=overrideKey(sid,period,metric);
+      const raw=el.textContent.trim();
+      if(raw===''){
+        delete state.reportOverrides[key];
+      } else {
+        const num=Number(raw.replace(/[^0-9.\-]/g,''));
+        if(!isNaN(num)) state.reportOverrides[key]=num;
+      }
+      await saveReportOverrides();
+      render();
+    });
+    el.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } });
+  });
+
+  const targetOrder=document.getElementById('target-order');
+  if(targetOrder) targetOrder.addEventListener('change', async (e)=>{state.settings.orderTarget=Number(e.target.value)||0; await saveSettings(); render();});
+  const targetDelivery=document.getElementById('target-delivery');
+  if(targetDelivery) targetDelivery.addEventListener('change', async (e)=>{state.settings.deliveryTarget=Number(e.target.value)||0; await saveSettings(); render();});
+
+  document.querySelectorAll('.orders-daily').forEach(inp=>inp.addEventListener('change', async (e)=>{
+    const key=state.reportDate+'|'+inp.dataset.sid;
+    if(!state.dailyStats[key]) state.dailyStats[key]={orders:0,deliveries:0};
+    state.dailyStats[key].orders = Number(e.target.value)||0;
+    await saveDaily(); render();
+  }));
+  document.querySelectorAll('.deliveries-daily').forEach(inp=>inp.addEventListener('change', async (e)=>{
+    const key=state.reportDate+'|'+inp.dataset.sid;
+    if(!state.dailyStats[key]) state.dailyStats[key]={orders:0,deliveries:0};
+    state.dailyStats[key].deliveries = Number(e.target.value)||0;
+    await saveDaily(); render();
+  }));
+
+  const btnExportReport=document.getElementById('btn-export-report');
+  if(btnExportReport) btnExportReport.addEventListener('click', ()=>{
+    const date=state.reportDate, mk=monthOf(date), wk=getWeekRange(date);
+    const wPeriod='w:'+wk.start, mPeriod='m:'+mk, dPeriod='d:'+date;
+    const headers=['Salesman','Daily Walk-ins','Weekly Walk-ins','Monthly Walk-ins','Orders Daily','Deliveries Daily','Weekly Orders','Weekly Deliveries','Orders Monthly','Monthly Deliveries', ...state.reportExtraCols.map(c=>c.name)];
+    const rows = state.salesmen.map(s=>{
+      const ds=statsForDate(s.id,date);
+      return [
+        s.name,
+        effValue(s.id,dPeriod,'dailyWalkins', walkinsForDate(s.id,date)),
+        effValue(s.id,wPeriod,'weeklyWalkins', walkinsForWeek(s.id,wk)),
+        effValue(s.id,mPeriod,'monthlyWalkins', walkinsForMonth(s.id,mk)),
+        ds.orders||0, ds.deliveries||0,
+        effValue(s.id,wPeriod,'weeklyOrders', weeklyOrders(s.id,wk)),
+        effValue(s.id,wPeriod,'weeklyDeliveries', weeklyDeliveries(s.id,wk)),
+        effValue(s.id,mPeriod,'monthlyOrders', monthlyOrders(s.id,mk)),
+        effValue(s.id,mPeriod,'monthlyDeliveries', monthlyDeliveries(s.id,mk)),
+        ...state.reportExtraCols.map(c=>(s.extra&&s.extra[c.id])||'')
+      ];
+    });
+    downloadCSV(`daily-report-${date}.csv`, headers, rows);
+  });
+
+  const btnAddReportCol=document.getElementById('btn-add-report-col');
+  if(btnAddReportCol) btnAddReportCol.addEventListener('click', async ()=>{
+    const name=prompt('New column name:');
+    if(!name||!name.trim()) return;
+    state.reportExtraCols.push({id:uid(), name:name.trim()});
+    await saveReportCols(); render();
+  });
+
+  const logDateCorner=document.getElementById('log-date-corner');
+  if(logDateCorner) logDateCorner.addEventListener('change',(e)=>{state.logFilterDate=e.target.value; render();});
+  const logGranularity=document.getElementById('log-granularity');
+  if(logGranularity) logGranularity.addEventListener('change',(e)=>{state.logGranularity=e.target.value; render();});
+  const logSalesmanFilter=document.getElementById('log-salesman-filter');
+  if(logSalesmanFilter) logSalesmanFilter.addEventListener('change',(e)=>{state.logSalesmanFilter=e.target.value; render();});
+
+  const btnAddRow=document.getElementById('btn-add-row');
+  if(btnAddRow) btnAddRow.addEventListener('click', async ()=>{
+    state.log.push({id:uid(), date:todayISO(), salesmanId:'', vehicle:'', source:'Walk-in', returning:'No', visitCount:'', customer:'', phone:'', timeIn:'', timeOut:'', sold:'No', extra:{}});
+    await saveLog(); render();
+  });
+
+  document.querySelectorAll('.log-field').forEach(el=>el.addEventListener('change', async ()=>{
+    const entry = state.log.find(x=>x.id===el.dataset.id);
+    if(!entry) return;
+    entry[el.dataset.field] = el.value;
+    await saveLog(); render();
+  }));
+  document.querySelectorAll('.del-log').forEach(b=>b.addEventListener('click', async ()=>{
+    state.log = state.log.filter(e=>e.id!==b.dataset.id);
+    await saveLog(); render();
+  }));
+
+  document.querySelectorAll('.extra-cell').forEach(el=>el.addEventListener('change', async ()=>{
+    if(el.dataset.scope==='report'){
+      const s=state.salesmen.find(x=>x.id===el.dataset.sid);
+      if(s){ if(!s.extra) s.extra={}; s.extra[el.dataset.col]=el.value; await saveSalesmen(); render(); }
+    }else if(el.dataset.scope==='log'){
+      const entry=state.log.find(x=>x.id===el.dataset.id);
+      if(entry){ if(!entry.extra) entry.extra={}; entry.extra[el.dataset.col]=el.value; await saveLog(); render(); }
+    }else if(el.dataset.scope==='salesReport'){
+      const entry=state.salesReport.find(x=>x.id===el.dataset.id);
+      if(entry){ if(!entry.extra) entry.extra={}; entry.extra[el.dataset.col]=el.value; await saveSalesReport(); render(); }
+    }
+  }));
+
+  const btnAddLogCol=document.getElementById('btn-add-log-col');
+  if(btnAddLogCol) btnAddLogCol.addEventListener('click', async ()=>{
+    const name=prompt('New column name:');
+    if(!name||!name.trim()) return;
+    state.logExtraCols.push({id:uid(), name:name.trim()});
+    await saveLogCols(); render();
+  });
+
+  document.querySelectorAll('.col-del').forEach(b=>b.addEventListener('click', async (ev)=>{
+    ev.stopPropagation();
+    if(!confirm('Remove this column? Data in it will no longer be shown.')) return;
+    if(b.dataset.scope==='report'){
+      state.reportExtraCols = state.reportExtraCols.filter(c=>c.id!==b.dataset.id);
+      await saveReportCols();
+    }else if(b.dataset.scope==='log'){
+      state.logExtraCols = state.logExtraCols.filter(c=>c.id!==b.dataset.id);
+      await saveLogCols();
+    }else if(b.dataset.scope==='salesReport'){
+      state.salesReportExtraCols = state.salesReportExtraCols.filter(c=>c.id!==b.dataset.id);
+      await saveSalesReportCols();
+    }
+    render();
+  }));
+
+  const btnExportLog=document.getElementById('btn-export-log');
+  if(btnExportLog) btnExportLog.addEventListener('click', ()=>{
+    let entries=[...state.log];
+    const filterDate = state.logFilterDate || todayISO();
+    if(state.logGranularity==='day') entries = entries.filter(e=>e.date===filterDate);
+    else if(state.logGranularity==='week') { const wk=getWeekRange(filterDate); entries = entries.filter(e=>inRange(e.date,wk)); }
+    else if(state.logGranularity==='month') entries = entries.filter(e=>monthOf(e.date)===monthOf(filterDate));
+    else if(state.logGranularity==='year') entries = entries.filter(e=>yearOf(e.date)===yearOf(filterDate));
+    if(state.logSalesmanFilter) entries = entries.filter(e=>e.salesmanId===state.logSalesmanFilter);
+    entries.sort((a,b)=> a.date.localeCompare(b.date) || (a.timeIn||'').localeCompare(b.timeIn||''));
+    const headers=['Date','Salesman','Vehicle','Source','Returning Customer','Times Visited','Customer','Phone','Time In','Time Out','Duration','Sold', ...state.logExtraCols.map(c=>c.name)];
+    const rows = entries.map(e=>{
+      return [e.date, salesmanName(e.salesmanId), e.vehicle||'', e.source||'', e.returning||'No', e.visitCount||'', e.customer||'', e.phone||'', e.timeIn||'', e.timeOut||'', durationStr(e.timeIn,e.timeOut), e.sold||'No', ...state.logExtraCols.map(c=>(e.extra&&e.extra[c.id])||'')];
+    });
+    downloadCSV(`customer-log-${filterDate}.csv`, headers, rows);
+  });
+
+  document.querySelectorAll('.salesreport-field').forEach(el=>el.addEventListener('change', async ()=>{
+    const entry = state.salesReport.find(x=>x.id===el.dataset.id);
+    if(!entry) return;
+    entry[el.dataset.field] = el.value;
+    await saveSalesReport(); render();
+  }));
+  document.querySelectorAll('.del-salesreport').forEach(b=>b.addEventListener('click', async ()=>{
+    state.salesReport = state.salesReport.filter(e=>e.id!==b.dataset.id);
+    await saveSalesReport(); render();
+  }));
+  const btnAddSalesReportRow=document.getElementById('btn-add-salesreport-row');
+  if(btnAddSalesReportRow) btnAddSalesReportRow.addEventListener('click', async ()=>{
+    state.salesReport.push({id:uid(), date:todayISO(), salesmanId:'', carModel:'', carSeries:'', colour:'', quantity:'', extra:{}});
+    await saveSalesReport(); render();
+  });
+  const srDateCorner=document.getElementById('salesreport-date-corner');
+  if(srDateCorner) srDateCorner.addEventListener('change',(e)=>{state.salesReportFilterDate=e.target.value; render();});
+  const srGranularity=document.getElementById('salesreport-granularity');
+  if(srGranularity) srGranularity.addEventListener('change',(e)=>{state.salesReportGranularity=e.target.value; render();});
+  const srSalesmanFilter=document.getElementById('salesreport-salesman-filter');
+  if(srSalesmanFilter) srSalesmanFilter.addEventListener('change',(e)=>{state.salesReportSalesmanFilter=e.target.value; render();});
+  const btnAddSalesReportCol=document.getElementById('btn-add-salesreport-col');
+  if(btnAddSalesReportCol) btnAddSalesReportCol.addEventListener('click', async ()=>{
+    const name=prompt('New column name:');
+    if(!name||!name.trim()) return;
+    state.salesReportExtraCols.push({id:uid(), name:name.trim()});
+    await saveSalesReportCols(); render();
+  });
+  const btnExportSalesReport=document.getElementById('btn-export-salesreport');
+  if(btnExportSalesReport) btnExportSalesReport.addEventListener('click', ()=>{
+    let entries=[...state.salesReport];
+    const filterDate = state.salesReportFilterDate || todayISO();
+    if(state.salesReportGranularity==='day') entries = entries.filter(e=>e.date===filterDate);
+    else if(state.salesReportGranularity==='week'){ const wk=getWeekRange(filterDate); entries = entries.filter(e=>inRange(e.date,wk)); }
+    else if(state.salesReportGranularity==='month') entries = entries.filter(e=>monthOf(e.date)===monthOf(filterDate));
+    else if(state.salesReportGranularity==='year') entries = entries.filter(e=>yearOf(e.date)===yearOf(filterDate));
+    if(state.salesReportSalesmanFilter) entries = entries.filter(e=>e.salesmanId===state.salesReportSalesmanFilter);
+    entries.sort((a,b)=> a.date.localeCompare(b.date));
+    const headers=['Date','Salesman','Car Model','Car Series','Colour','Quantity', ...state.salesReportExtraCols.map(c=>c.name)];
+    const rows = entries.map(e=>[e.date, salesmanName(e.salesmanId), e.carModel||'', e.carSeries||'', e.colour||'', e.quantity||'', ...state.salesReportExtraCols.map(c=>(e.extra&&e.extra[c.id])||'')]);
+    downloadCSV(`sales-report-${filterDate}.csv`, headers, rows);
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
