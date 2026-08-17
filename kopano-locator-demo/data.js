@@ -1,6 +1,17 @@
 // Kopano Media — OOH Sites Inventory, March 2026
 // Parsed from Kopano_Media_OOH_Inventory_March_2026.pptx
 
+// ---------------------------------------------------------------
+// LIVE AVAILABILITY SYNC (demo)
+// Paste the "Publish to web" CSV link of a Google Sheet here to
+// show the live-sync feature working. Leave "" to run on static
+// demo data only. See LIVE_SYNC_SETUP.md for how this works.
+// ---------------------------------------------------------------
+const CONFIG = {
+  SHEET_CSV_URL: "",
+  REFRESH_SECONDS: 45,
+};
+
 const CONTACT = {
   name: "Demo Contact",
   role: "Sales Enquiries (placeholder)",
