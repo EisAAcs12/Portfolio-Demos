@@ -20,8 +20,21 @@ function fmtDate(iso) {
   return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function isAvailableNow(iso) {
-  return new Date(iso + "T00:00:00") <= TODAY;
+function isAvailableNow(site) {
+  if (site.liveStatus === "booked") return false;
+  if (site.liveStatus === "available") return true;
+  return new Date(site.availability + "T00:00:00") <= TODAY;
+}
+
+function availabilityBadge(site) {
+  if (site.liveStatus === "booked") {
+    const until = site.availability ? ` until ${fmtDate(site.availability)}` : "";
+    return `<span class="avail-badge booked">● booked${until}</span>`;
+  }
+  if (isAvailableNow(site)) {
+    return `<span class="avail-badge now">● available now</span>`;
+  }
+  return `<span class="avail-badge soon">● opens ${fmtDate(site.availability)}</span>`;
 }
 
 function uniqueSizes() {
@@ -43,7 +56,7 @@ function matchesFilters(site) {
   if (state.size !== "all" && site.size !== state.size) return false;
   if (state.illuminated === "yes" && !site.illuminated) return false;
   if (state.illuminated === "no" && site.illuminated) return false;
-  if (state.availableNow && !isAvailableNow(site.availability)) return false;
+  if (state.availableNow && !isAvailableNow(site)) return false;
   return true;
 }
 
@@ -141,14 +154,14 @@ function illuminatedIconSvg(on) {
 }
 
 function siteCardHTML(site, expanded) {
-  const now = isAvailableNow(site.availability);
-  const badge = now
-    ? `<span class="avail-badge now">● available now</span>`
-    : `<span class="avail-badge soon">● opens ${fmtDate(site.availability)}</span>`;
+  const badge = availabilityBadge(site);
+
+  const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
 
   const detail = expanded ? `
     <div class="site-detail">
       <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
+      ${noteRow}
       <p>${site.description}</p>
       <div class="detail-grid">
         <div class="detail-field"><dt>LSM / SEM</dt><dd>${site.lsm}</dd></div>
@@ -347,6 +360,94 @@ contactModal.addEventListener("click", (e) => {
   if (e.target === contactModal) closeContactModal();
 });
 
+// ---------- live availability sync (Google Sheet, published as CSV) ----------
+
+const syncStatusEl = document.getElementById("sync-status");
+
+function parseCsv(text) {
+  // minimal CSV parser: handles quoted fields containing commas
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (field !== "" || row.length) { row.push(field); rows.push(row); }
+        row = []; field = "";
+        if (c === "\r" && text[i + 1] === "\n") i++;
+      } else field += c;
+    }
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(cell => cell.trim() !== ""));
+}
+
+function setSyncStatus(text, ok) {
+  if (!syncStatusEl) return;
+  syncStatusEl.textContent = text;
+  syncStatusEl.classList.toggle("ok", !!ok);
+}
+
+async function fetchLiveAvailability() {
+  if (!CONFIG.SHEET_CSV_URL) {
+    setSyncStatus("Static data — no live sheet connected", false);
+    return;
+  }
+  try {
+    const res = await fetch(CONFIG.SHEET_CSV_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const rows = parseCsv(text);
+    if (rows.length < 2) throw new Error("Empty sheet");
+
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const iCode = header.indexOf("code");
+    const iStatus = header.indexOf("status");
+    const iAvail = header.indexOf("availablefrom");
+    const iNote = header.indexOf("note");
+    if (iCode === -1 || iStatus === -1) throw new Error("Missing Code/Status columns");
+
+    const byCode = new Map();
+    for (let r = 1; r < rows.length; r++) {
+      const cells = rows[r];
+      const code = (cells[iCode] || "").trim();
+      if (!code) continue;
+      byCode.set(code, {
+        status: (cells[iStatus] || "").trim().toLowerCase(),
+        availableFrom: iAvail !== -1 ? (cells[iAvail] || "").trim() : "",
+        note: iNote !== -1 ? (cells[iNote] || "").trim() : "",
+      });
+    }
+
+    let matched = 0;
+    SITES.forEach(site => {
+      const row = byCode.get(site.code);
+      if (!row) return;
+      matched++;
+      if (row.status === "booked" || row.status === "available") {
+        site.liveStatus = row.status;
+      } else {
+        site.liveStatus = null;
+      }
+      if (row.availableFrom) site.availability = row.availableFrom;
+      site.liveNote = row.note || "";
+    });
+
+    const now = new Date().toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+    setSyncStatus(`Live — synced ${now} (${matched}/${SITES.length} sites)`, true);
+    renderList();
+    rebuildMarkers();
+  } catch (err) {
+    setSyncStatus("Live sheet unreachable — showing last known data", false);
+  }
+}
+
 // ---------- init ----------
 
 function populateSelects() {
@@ -377,6 +478,10 @@ populateContactStatic();
 initMap();
 renderList();
 rebuildMarkers();
+fetchLiveAvailability();
+if (CONFIG.SHEET_CSV_URL) {
+  setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
+}
 
 // ---------- PWA install prompt ----------
 
