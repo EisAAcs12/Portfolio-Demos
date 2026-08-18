@@ -8,7 +8,7 @@
 // demo data only. See LIVE_SYNC_SETUP.md for how this works.
 // ---------------------------------------------------------------
 const CONFIG = {
-  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv",
+  SHEET_CSV_URL: "",
   REFRESH_SECONDS: 45,
 };
 
