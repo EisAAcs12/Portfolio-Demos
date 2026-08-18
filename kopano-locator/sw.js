@@ -1,4 +1,4 @@
-const CACHE_NAME = "kopano-locator-v1";
+const CACHE_NAME = "kopano-locator-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -26,27 +26,15 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first everywhere: always try to get the freshest copy first
+// (site content, the app shell, map tiles, fonts, the CSV feed — all of it).
+// Only fall back to whatever's cached when there's no network at all.
+// This trades a few ms on repeat loads for never silently going stale,
+// which matters here since data.js/app.js can change without a version bump.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
-  // App shell: cache-first
-  const url = new URL(request.url);
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        }).catch(() => caches.match("./index.html"));
-      })
-    );
-    return;
-  }
-
-  // Map tiles / fonts / leaflet CDN: network-first, fall back to cache for offline reuse
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -54,6 +42,12 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          const url = new URL(request.url);
+          if (url.origin === self.location.origin) return caches.match("./index.html");
+        })
+      )
   );
 });
