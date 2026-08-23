@@ -63,10 +63,10 @@ function availabilityBadge(site) {
     return `<span class="avail-badge available">● ${meta.label}</span>`;
   }
 
-  const date = resolveStatusDate(site);
-  const until = date ? ` until ${fmtDate(date)}` : "";
+  // Booked/Optioned dates are intentionally not shown publicly — dates live
+  // in the Google Sheet for staff reference only.
   const client = site.liveClient ? ` — ${site.liveClient}` : "";
-  return `<span class="avail-badge ${meta.cls}">● ${meta.label}${until}${client}</span>`;
+  return `<span class="avail-badge ${meta.cls}">● ${meta.label}${client}</span>`;
 }
 
 function uniqueSizes() {
@@ -368,7 +368,12 @@ document.getElementById("avail-toggle").addEventListener("click", (e) => {
 const contactModal = document.getElementById("contact-modal");
 const contactSubtitle = document.getElementById("contact-subtitle");
 const contactEmailLink = document.getElementById("contact-email-link");
-const contactPhoneLink = document.getElementById("contact-phone-link");
+const contactWhatsappLink = document.getElementById("contact-whatsapp-link");
+
+function waNumber() {
+  // wa.me needs digits only, no + or spaces
+  return CONTACT.phoneHref.replace(/[^\d]/g, "");
+}
 
 function openContactModal(site) {
   if (site) {
@@ -378,11 +383,16 @@ function openContactModal(site) {
       `Hi Peter,\n\nPlease could you send me the current rate card for ${site.code} — ${site.title} (${site.area})?\n\nThanks`
     );
     contactEmailLink.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
+    const waText = encodeURIComponent(
+      `Hi, I'd like the current rate card for ${site.code} — ${site.title} (${site.area}).`
+    );
+    contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
   } else {
     contactSubtitle.textContent = "Get today's rate card for any Kopano Media site";
     contactEmailLink.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Rate card enquiry")}`;
+    const waText = encodeURIComponent("Hi, I'd like a rate card for a Kopano Media site.");
+    contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
   }
-  contactPhoneLink.href = `tel:${CONTACT.phoneHref}`;
   contactModal.classList.add("show");
 }
 
@@ -515,7 +525,7 @@ function populateSelects() {
 function populateContactStatic() {
   document.getElementById("contact-name").textContent = CONTACT.name;
   document.getElementById("contact-role").textContent = CONTACT.role;
-  document.getElementById("contact-phone-display").textContent = CONTACT.phone;
+  document.getElementById("contact-whatsapp-display").textContent = CONTACT.phone;
   document.getElementById("contact-email-display").textContent = CONTACT.email;
 }
 
