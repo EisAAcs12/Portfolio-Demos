@@ -207,7 +207,7 @@ function siteCardHTML(site, expanded) {
       </div>
       <div class="gps-row">
         <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
-        <button class="copy-btn" data-copy="${site.lat},${site.lng}">Copy GPS</button>
+        <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
       </div>
     </div>` : "";
 
@@ -296,13 +296,9 @@ function selectSite(code, opts = {}) {
 // ---------- events ----------
 
 listEl.addEventListener("click", (e) => {
-  const copyBtn = e.target.closest(".copy-btn");
-  if (copyBtn) {
+  if (e.target.closest(".copy-btn")) {
     e.stopPropagation();
-    navigator.clipboard?.writeText(copyBtn.dataset.copy);
-    copyBtn.textContent = "Copied";
-    setTimeout(() => (copyBtn.textContent = "Copy GPS"), 1200);
-    return;
+    return; // let the link's default navigation happen, just don't also toggle the card
   }
   const enquireBtn = e.target.closest(".enquire-btn");
   if (enquireBtn) {
