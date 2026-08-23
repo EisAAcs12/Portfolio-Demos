@@ -702,7 +702,7 @@ input, select { font-family: inherit; }
   transition: filter .15s;
 }
 .modal-action-btn:hover { filter: brightness(1.08); }
-.modal-action-btn.phone { background: var(--amber); color: var(--asphalt-900); }
+.modal-action-btn.whatsapp { background: #25D366; color: #08360f; }
 .modal-action-btn.email { background: var(--asphalt-700); color: var(--text-hi); border: 1px solid var(--line); }
 .modal-action-btn span { font-family: var(--font-mono); font-weight: 400; opacity: 0.9; }
 
