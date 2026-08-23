@@ -21,20 +21,52 @@ function fmtDate(iso) {
 }
 
 function isAvailableNow(site) {
-  if (site.liveStatus === "booked") return false;
-  if (site.liveStatus === "available") return true;
-  return new Date(site.availability + "T00:00:00") <= TODAY;
+  return resolveStatus(site) === "available";
+}
+
+// Resolves the effective status for a site: "available" | "optioned" | "booked"
+// Sheet-driven status wins when present; otherwise falls back to the static
+// availability date (past/today = available, future = booked).
+function resolveStatus(site) {
+  if (site.liveStatus === "available" || site.liveStatus === "optioned" || site.liveStatus === "booked") {
+    return site.liveStatus;
+  }
+  return new Date(site.availability + "T00:00:00") <= TODAY ? "available" : "booked";
+}
+
+// The date to show alongside a non-available status: prefer the sheet's
+// NextAvailableDate, fall back to AvailableFrom.
+function resolveStatusDate(site) {
+  return site.liveNextAvailable || site.availability || "";
+}
+
+const STATUS_META = {
+  available: { label: "Available now", cls: "available" },
+  optioned:  { label: "Optioned",       cls: "optioned" },
+  booked:    { label: "Booked",         cls: "booked" },
+};
+
+function trafficLightHTML(status) {
+  return `
+    <span class="signal" title="${STATUS_META[status].label}">
+      <span class="signal-light red${status === "booked" ? " on" : ""}"></span>
+      <span class="signal-light amber${status === "optioned" ? " on" : ""}"></span>
+      <span class="signal-light green${status === "available" ? " on" : ""}"></span>
+    </span>`;
 }
 
 function availabilityBadge(site) {
-  if (site.liveStatus === "booked") {
-    const until = site.availability ? ` until ${fmtDate(site.availability)}` : "";
-    return `<span class="avail-badge booked">● booked${until}</span>`;
+  const status = resolveStatus(site);
+  const meta = STATUS_META[status];
+
+  if (status === "available") {
+    return `<span class="avail-badge available">● ${meta.label}</span>`;
   }
-  if (isAvailableNow(site)) {
-    return `<span class="avail-badge now">● available now</span>`;
-  }
-  return `<span class="avail-badge soon">● opens ${fmtDate(site.availability)}</span>`;
+
+  const date = resolveStatusDate(site);
+  const until = date ? ` until ${fmtDate(date)}` : "";
+  const client = site.liveClient ? ` — ${site.liveClient}` : "";
+  return `<span class="avail-badge ${meta.cls}">● ${meta.label}${until}${client}</span>`;
 }
 
 function uniqueSizes() {
@@ -120,6 +152,7 @@ function rebuildMarkers() {
       <img class="popup-img" src="${cover.thumb}" alt="${cover.code}" loading="lazy" />
       <div class="popup-title">${cover.code} — ${cover.title}</div>
       <div class="popup-sub">${cover.area} · ${cover.size}</div>
+      <div class="popup-signal">${trafficLightHTML(resolveStatus(cover))}</div>
       ${extra}
     `, { maxWidth: 220 });
     marker.bindTooltip(`
@@ -154,7 +187,9 @@ function illuminatedIconSvg(on) {
 }
 
 function siteCardHTML(site, expanded) {
+  const status = resolveStatus(site);
   const badge = availabilityBadge(site);
+  const signal = trafficLightHTML(status);
 
   const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
 
@@ -190,6 +225,7 @@ function siteCardHTML(site, expanded) {
         </span>
       </div>
       <div class="site-card-bottom">
+        ${signal}
         ${badge}
         <button class="enquire-btn" data-enquire="${site.code}">Contact for pricing</button>
       </div>
@@ -406,11 +442,17 @@ async function fetchLiveAvailability() {
     const rows = parseCsv(text);
     if (rows.length < 2) throw new Error("Empty sheet");
 
-    const header = rows[0].map(h => h.trim().toLowerCase());
+    // normalize header names: lowercase, strip spaces, so "Next Available Date"
+    // and "NextAvailableDate" both resolve to the same column key
+    const header = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, ""));
     const iCode = header.indexOf("code");
     const iStatus = header.indexOf("status");
     const iAvail = header.indexOf("availablefrom");
     const iNote = header.indexOf("note");
+    const iClient = header.indexOf("client");
+    const iNextAvail = header.indexOf("nextavailabledate");
+    // "area" column is intentionally not consumed — it's there purely so
+    // staff editing the sheet can see which site a row refers to.
     if (iCode === -1 || iStatus === -1) throw new Error("Missing Code/Status columns");
 
     const byCode = new Map();
@@ -421,7 +463,9 @@ async function fetchLiveAvailability() {
       byCode.set(code, {
         status: (cells[iStatus] || "").trim().toLowerCase(),
         availableFrom: iAvail !== -1 ? (cells[iAvail] || "").trim() : "",
+        nextAvailable: iNextAvail !== -1 ? (cells[iNextAvail] || "").trim() : "",
         note: iNote !== -1 ? (cells[iNote] || "").trim() : "",
+        client: iClient !== -1 ? (cells[iClient] || "").trim() : "",
       });
     }
 
@@ -430,13 +474,15 @@ async function fetchLiveAvailability() {
       const row = byCode.get(site.code);
       if (!row) return;
       matched++;
-      if (row.status === "booked" || row.status === "available") {
+      if (row.status === "booked" || row.status === "optioned" || row.status === "available") {
         site.liveStatus = row.status;
       } else {
         site.liveStatus = null;
       }
       if (row.availableFrom) site.availability = row.availableFrom;
+      site.liveNextAvailable = row.nextAvailable || "";
       site.liveNote = row.note || "";
+      site.liveClient = row.client || "";
     });
 
     const now = new Date().toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
