@@ -503,12 +503,14 @@ input, select { font-family: inherit; }
   color: var(--text-mid);
 }
 .copy-btn {
+  display: inline-block;
   background: var(--asphalt-800);
   border: 1px solid var(--line);
   color: var(--text-mid);
   border-radius: 4px;
   padding: 3px 8px;
   font-size: 10.5px;
+  text-decoration: none;
 }
 .copy-btn:hover { color: var(--text-hi); border-color: var(--teal); }
 
