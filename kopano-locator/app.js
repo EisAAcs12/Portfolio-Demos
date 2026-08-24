@@ -15,6 +15,10 @@ const TODAY = new Date(); // real "today" for availability comparisons
 
 // ---------- helpers ----------
 
+function fmtMoney(n) {
+  return "R" + Math.round(n).toLocaleString("en-ZA");
+}
+
 function fmtDate(iso) {
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
@@ -156,9 +160,9 @@ function rebuildMarkers() {
       ${extra}
     `, { maxWidth: 220 });
     marker.bindTooltip(`
-      <img class="tip-img" src="${cover.thumb}" alt="${cover.code}" loading="lazy" />
-      <div class="tip-cap">${cover.code}${sites.length > 1 ? ` +${sites.length - 1}` : ""}</div>
-    `, { direction: "top", offset: [0, -26], opacity: 1, className: "kop-tooltip" });
+      <img class="tip-img" src="${cover.image}" alt="${cover.code}" loading="lazy" />
+      <div class="tip-cap">${cover.code} — ${cover.title}${sites.length > 1 ? ` (+${sites.length - 1} more)` : ""}</div>
+    `, { direction: "top", offset: [0, -34], opacity: 1, className: "kop-tooltip" });
     marker.on("click", () => {
       selectSite(sites[0].code, { fromMap: true });
     });
@@ -193,6 +197,20 @@ function siteCardHTML(site, expanded) {
 
   const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
 
+  const durations = [1, 3, 6, 12];
+  const calcBlock = `
+    <div class="calc-block">
+      <div class="calc-head">Estimate a campaign cost</div>
+      <div class="calc-durations">
+        ${durations.map(m => `<button class="duration-btn${m === 1 ? " active" : ""}" data-code="${site.code}" data-months="${m}">${m} mo</button>`).join("")}
+      </div>
+      <div class="calc-total">
+        <span class="calc-total-label">Estimated total</span>
+        <span class="calc-total-figure" data-calc-total="${site.code}">${fmtMoney(site.suggestedRate * 1 + site.production)}</span>
+      </div>
+      <p class="calc-disclaimer">Estimate only — suggested rate × months + production. Final pricing confirmed via Contact for pricing.</p>
+    </div>`;
+
   const detail = expanded ? `
     <div class="site-detail">
       <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
@@ -205,6 +223,7 @@ function siteCardHTML(site, expanded) {
         <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
         <div class="detail-field" style="grid-column: 1 / -1;"><dt>Traffic flow</dt><dd>${site.trafficFlow}</dd></div>
       </div>
+      ${calcBlock}
       <div class="gps-row">
         <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
         <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
@@ -223,6 +242,10 @@ function siteCardHTML(site, expanded) {
         <span class="illum-icon ${site.illuminated ? "on" : "off"}" title="${site.illuminated ? "Illuminated" : "Not illuminated"}">
           ${illuminatedIconSvg(site.illuminated)}
         </span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-figure">Suggested from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
+        <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
       </div>
       <div class="site-card-bottom">
         ${signal}
@@ -299,6 +322,18 @@ listEl.addEventListener("click", (e) => {
   if (e.target.closest(".copy-btn")) {
     e.stopPropagation();
     return; // let the link's default navigation happen, just don't also toggle the card
+  }
+  const durationBtn = e.target.closest(".duration-btn");
+  if (durationBtn) {
+    e.stopPropagation();
+    const site = SITES.find(s => s.code === durationBtn.dataset.code);
+    const months = parseInt(durationBtn.dataset.months, 10);
+    const total = site.suggestedRate * months + site.production;
+    const calcBlock = durationBtn.closest(".calc-block");
+    calcBlock.querySelectorAll(".duration-btn").forEach(b => b.classList.toggle("active", b === durationBtn));
+    const totalEl = calcBlock.querySelector(".calc-total-figure");
+    if (totalEl) totalEl.textContent = fmtMoney(total);
+    return;
   }
   const enquireBtn = e.target.closest(".enquire-btn");
   if (enquireBtn) {
@@ -521,7 +556,6 @@ function populateSelects() {
 function populateContactStatic() {
   document.getElementById("contact-name").textContent = CONTACT.name;
   document.getElementById("contact-role").textContent = CONTACT.role;
-  document.getElementById("contact-whatsapp-display").textContent = CONTACT.phone;
   document.getElementById("contact-email-display").textContent = CONTACT.email;
 }
 
