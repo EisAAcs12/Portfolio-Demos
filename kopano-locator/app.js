@@ -103,7 +103,7 @@ function filteredSites() {
 // ---------- map ----------
 
 let map, markerLayer;
-const markersByCoord = new Map(); // coordKey -> {marker, codes:[]}
+const markersByCode = new Map(); // site code -> Leaflet marker
 
 function initMap() {
   map = L.map("map", { zoomControl: false, attributionControl: true }).setView([-26.13, 27.99], 10);
@@ -129,12 +129,11 @@ function initMap() {
   }, { passive: false });
 }
 
-function pinIcon(count, selected) {
-  const label = count > 1 ? count : "";
+function pinIcon(selected) {
   return L.divIcon({
     className: "kop-pin-wrap",
     html: `<div class="kop-pin${selected ? " selected" : ""}">
-             <div class="kop-pin-board">${label}</div>
+             <div class="kop-pin-board"></div>
              <div class="kop-pin-post"></div>
            </div>`,
     iconSize: [26, 26],
@@ -145,9 +144,13 @@ function pinIcon(count, selected) {
 
 function rebuildMarkers() {
   markerLayer.clearLayers();
-  markersByCoord.clear();
+  markersByCode.clear();
 
   const visible = filteredSites();
+
+  // Group only to detect sites that share (near-identical) coordinates, so
+  // each one can be nudged into its own spot — every site always gets its
+  // own marker, never merged, so hover/click always shows the exact site.
   const groups = new Map();
   visible.forEach(site => {
     const key = siteKey(site);
@@ -155,40 +158,52 @@ function rebuildMarkers() {
     groups.get(key).push(site);
   });
 
-  groups.forEach((sites, key) => {
-    const [lat, lng] = key.split(",").map(Number);
-    const codes = sites.map(s => s.code);
-    const selected = state.selectedCode && codes.includes(state.selectedCode);
-    const marker = L.marker([lat, lng], { icon: pinIcon(sites.length, selected) });
-    const cover = sites[0];
-    const extra = sites.length > 1 ? `<div class="popup-more">+${sites.length - 1} more board${sites.length > 2 ? "s" : ""} at this spot</div>` : "";
-    marker.bindPopup(`
-      <img class="popup-img" src="${cover.thumb}" alt="${cover.code}" loading="lazy" />
-      <div class="popup-title">${cover.code} — ${cover.title}</div>
-      <div class="popup-sub">${cover.area} · ${cover.size}</div>
-      <div class="popup-signal">${trafficLightHTML(resolveStatus(cover))}</div>
-      ${extra}
-    `, { maxWidth: 220 });
-    const mapSize = map.getSize();
-    const tipW = Math.round(mapSize.x * 0.8);
-    const tipH = Math.round(mapSize.y * 0.8);
-    marker.bindTooltip(`
-      <img class="tip-img" style="width:${tipW}px;height:${tipH}px;" src="${cover.image}" alt="${cover.code}" loading="lazy" />
-      <div class="tip-cap" style="width:${tipW}px;">${cover.code} — ${cover.title}${sites.length > 1 ? ` (+${sites.length - 1} more)` : ""}</div>
-    `, { direction: "top", offset: [0, -34], opacity: 1, className: "kop-tooltip" });
-    marker.on("click", () => {
-      selectSite(sites[0].code, { fromMap: true });
+  const mapSize = map.getSize();
+  const tipW = Math.round(mapSize.x * 0.8);
+  const tipH = Math.round(mapSize.y * 0.8);
+
+  groups.forEach((sites) => {
+    const n = sites.length;
+    sites.forEach((site, i) => {
+      let lat = site.lat, lng = site.lng;
+      if (n > 1) {
+        // spread sites sharing a spot evenly around it in a small ring so
+        // every pin is individually visible and clickable
+        const angle = (2 * Math.PI * i) / n;
+        const radiusDeg = 0.00018 + (n > 4 ? 0.00006 : 0);
+        const latRad = (site.lat * Math.PI) / 180;
+        lat += radiusDeg * Math.sin(angle);
+        lng += (radiusDeg / Math.cos(latRad)) * Math.cos(angle);
+      }
+
+      const selected = state.selectedCode === site.code;
+      const marker = L.marker([lat, lng], { icon: pinIcon(selected) });
+
+      marker.bindPopup(`
+        <img class="popup-img" src="${site.thumb}" alt="${site.code}" loading="lazy" />
+        <div class="popup-title">${site.code} — ${site.title}</div>
+        <div class="popup-sub">${site.area} · ${site.size}</div>
+        <div class="popup-signal">${trafficLightHTML(resolveStatus(site))}</div>
+      `, { maxWidth: 220 });
+
+      marker.bindTooltip(`
+        <img class="tip-img" style="width:${tipW}px;height:${tipH}px;" src="${site.image}" alt="${site.code}" loading="lazy" />
+        <div class="tip-cap" style="width:${tipW}px;">${site.code} — ${site.title}</div>
+      `, { direction: "top", offset: [0, -34], opacity: 1, className: "kop-tooltip" });
+
+      marker.on("click", () => {
+        selectSite(site.code, { fromMap: true });
+      });
+      marker.addTo(markerLayer);
+      markersByCode.set(site.code, marker);
     });
-    marker.addTo(markerLayer);
-    markersByCoord.set(key, { marker, codes });
   });
 }
 
 function flyToSite(site) {
   map.flyTo([site.lat, site.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
-  const key = siteKey(site);
-  const entry = markersByCoord.get(key);
-  if (entry) entry.marker.openPopup();
+  const marker = markersByCode.get(site.code);
+  if (marker) marker.openPopup();
 }
 
 // ---------- rendering ----------
@@ -257,7 +272,7 @@ function siteCardHTML(site, expanded) {
         </span>
       </div>
       <div class="rate-row">
-        <span class="rate-figure">Suggested from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
+        <span class="rate-figure">Media Rate from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
         <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
       </div>
       <div class="site-card-bottom">
