@@ -117,6 +117,16 @@ function initMap() {
   }).addTo(map);
 
   markerLayer = L.layerGroup().addTo(map);
+
+  // Prevent trackpad-pinch and mobile-pinch gestures over the map from
+  // zooming the whole browser page instead of just the map. Leaflet handles
+  // its own zoom fine, but a ctrl+wheel (trackpad pinch) or a touch pinch
+  // can still leak through to the browser's native page zoom unless we
+  // explicitly stop it here.
+  const mapEl = document.getElementById("map");
+  mapEl.addEventListener("wheel", (e) => {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
 }
 
 function pinIcon(count, selected) {
@@ -159,9 +169,12 @@ function rebuildMarkers() {
       <div class="popup-signal">${trafficLightHTML(resolveStatus(cover))}</div>
       ${extra}
     `, { maxWidth: 220 });
+    const mapSize = map.getSize();
+    const tipW = Math.round(mapSize.x * 0.8);
+    const tipH = Math.round(mapSize.y * 0.8);
     marker.bindTooltip(`
-      <img class="tip-img" src="${cover.image}" alt="${cover.code}" loading="lazy" />
-      <div class="tip-cap">${cover.code} — ${cover.title}${sites.length > 1 ? ` (+${sites.length - 1} more)` : ""}</div>
+      <img class="tip-img" style="width:${tipW}px;height:${tipH}px;" src="${cover.image}" alt="${cover.code}" loading="lazy" />
+      <div class="tip-cap" style="width:${tipW}px;">${cover.code} — ${cover.title}${sites.length > 1 ? ` (+${sites.length - 1} more)` : ""}</div>
     `, { direction: "top", offset: [0, -34], opacity: 1, className: "kop-tooltip" });
     marker.on("click", () => {
       selectSite(sites[0].code, { fromMap: true });
@@ -559,6 +572,14 @@ function populateContactStatic() {
   document.getElementById("contact-email-display").textContent = CONTACT.email;
 }
 
+function debounce(fn, wait) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+
 populateSelects();
 populateContactStatic();
 initMap();
@@ -568,6 +589,10 @@ fetchLiveAvailability();
 if (CONFIG.SHEET_CSV_URL) {
   setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
 }
+
+// Re-bind marker tooltips on resize so the 80%-of-map preview size stays
+// accurate (e.g. rotating a phone, or resizing a browser window).
+window.addEventListener("resize", debounce(rebuildMarkers, 200));
 
 // ---------- PWA install prompt ----------
 
