@@ -7,9 +7,17 @@
 // Leave as "" to run on static data only (no live updates).
 // See LIVE_SYNC_SETUP.md for how to set this up.
 // ---------------------------------------------------------------
+// MAP TILES
+// CARTO now requires a free API key for their basemap tiles (this changed
+// recently — it's not something we broke). Get one in under a minute,
+// no account needed, at https://carto.com/basemaps/apikey and paste it
+// below. Free for up to 5 million tile loads/month. Leave "" and the map
+// will still work but shows a "API KEY REQUIRED" watermark.
+// ---------------------------------------------------------------
 const CONFIG = {
   SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv",
   REFRESH_SECONDS: 45,
+  CARTO_API_KEY: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_2kmy_1_abed039dd0f9e2ce493f22ff",
 };
 
 const CONTACT = {
