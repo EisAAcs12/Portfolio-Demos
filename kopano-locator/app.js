@@ -110,7 +110,8 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  const cartoKey = CONFIG.CARTO_API_KEY ? `?key=${CONFIG.CARTO_API_KEY}` : "";
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoKey}`, {
     attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: "abcd",
     maxZoom: 19,
