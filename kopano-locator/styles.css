@@ -197,14 +197,70 @@ input, select { font-family: inherit; }
   .layout { flex-direction: row; }
 }
 
-#map {
+.map-wrap {
+  position: relative;
   flex: 1 1 48vh;
   min-height: 260px;
+}
+@media (min-width: 900px) {
+  .map-wrap { flex: 1 1 auto; order: 2; }
+}
+
+#map {
+  position: absolute;
+  inset: 0;
   background: var(--asphalt-900);
   touch-action: none; /* stop pinch/trackpad-zoom on the map from also zooming the whole page */
 }
-@media (min-width: 900px) {
-  #map { flex: 1 1 auto; order: 2; }
+
+/* Hover/tap site preview — a fixed overlay centered inside the map itself
+   (not anchored to the pin's screen position), so it's always fully visible
+   at a consistent size on both desktop hover and mobile tap, with no need
+   to scroll or move the cursor to see the whole photo. */
+.map-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 500;
+  padding: 24px;
+}
+.map-preview.show { opacity: 1; }
+.map-preview img {
+  width: 80%;
+  height: 80%;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 3px solid var(--asphalt-700);
+  box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
+  background: var(--asphalt-800);
+}
+.map-preview-cap {
+  position: absolute;
+  bottom: calc(10% - 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  box-sizing: border-box;
+  text-align: center;
+  background: var(--asphalt-700);
+  border: 3px solid var(--asphalt-700);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: 8px 14px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-hi);
+}
+.map-preview-cap span:first-child { color: var(--amber); font-weight: 700; margin-right: 6px; }
+.map-preview-line2 {
+  color: var(--text-mid);
+  font-size: 11px;
+  margin-top: 3px;
 }
 
 .panel {
@@ -515,8 +571,6 @@ input, select { font-family: inherit; }
 .avail-badge.optioned { background: rgba(245,166,35,0.1); color: var(--amber); }
 .avail-badge.booked { background: rgba(232,88,63,0.12); color: var(--red-signal); }
 
-.popup-signal { margin: 8px 12px 2px; }
-
 .live-note {
   background: rgba(245,166,35,0.08);
   border-left: 2px solid var(--amber);
@@ -640,51 +694,6 @@ input, select { font-family: inherit; }
   overflow: hidden;
 }
 .leaflet-popup-tip { background: var(--asphalt-700); }
-.leaflet-popup-content { font-family: var(--font-body); font-size: 12.5px; margin: 0; width: 220px !important; }
-.popup-img {
-  display: block;
-  width: 100%;
-  height: 110px;
-  object-fit: cover;
-  background: var(--asphalt-800);
-}
-.popup-title { font-weight: 600; margin: 9px 12px 2px; }
-.popup-sub { color: var(--text-mid); font-size: 11.5px; margin: 0 12px; }
-.popup-more { color: var(--teal); font-size: 11px; margin: 6px 12px 10px; }
-
-/* Hover-preview tooltip on map pins */
-.kop-tooltip {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-}
-.kop-tooltip::before { display: none; }
-.tip-img {
-  display: block;
-  /* actual width/height set inline per-marker in JS, computed as 80% of the
-     real map element's current size — these are just safety fallbacks */
-  max-width: 90vw;
-  max-height: 70vh;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 3px solid var(--asphalt-700);
-  box-shadow: 0 16px 48px -8px rgba(0,0,0,0.75);
-}
-.tip-cap {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-hi);
-  background: var(--asphalt-700);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  margin-top: -6px;
-  padding: 8px 14px 10px;
-  border: 3px solid var(--asphalt-700);
-  border-top: none;
-  white-space: normal;
-  box-sizing: border-box;
-}
 
 /* ---------- Contact modal ---------- */
 .modal-overlay {
