@@ -17,7 +17,7 @@
 const CONFIG = {
   SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv",
   REFRESH_SECONDS: 45,
-  CARTO_API_KEY: "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_2kmy_1_abed039dd0f9e2ce493f22ff",
+  CARTO_API_KEY: "cb1_2kmy_1_abed039dd0f9e2ce493f22ff",
 };
 
 const CONTACT = {
