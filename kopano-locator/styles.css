@@ -216,7 +216,11 @@ input, select { font-family: inherit; }
 /* Hover/tap site preview — a fixed overlay centered inside the map itself
    (not anchored to the pin's screen position), so it's always fully visible
    at a consistent size on both desktop hover and mobile tap, with no need
-   to scroll or move the cursor to see the whole photo. */
+   to scroll or move the cursor to see the whole photo. The image and its
+   caption are both sized against the same .map-preview-frame box (rather
+   than one being a flex item and the other position:absolute against a
+   different reference box), so they always line up edge-to-edge with no
+   gap or size mismatch between them. */
 .map-preview {
   position: absolute;
   inset: 0;
@@ -227,24 +231,28 @@ input, select { font-family: inherit; }
   opacity: 0;
   transition: opacity .15s;
   z-index: 500;
-  padding: 24px;
 }
 .map-preview.show { opacity: 1; }
-.map-preview img {
+.map-preview-frame {
   width: 80%;
   height: 80%;
+  display: flex;
+  flex-direction: column;
+}
+.map-preview-frame img {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   object-fit: cover;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   border: 3px solid var(--asphalt-700);
+  border-bottom: none;
   box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
   background: var(--asphalt-800);
 }
 .map-preview-cap {
-  position: absolute;
-  bottom: calc(10% - 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
+  flex-shrink: 0;
+  width: 100%;
   box-sizing: border-box;
   text-align: center;
   background: var(--asphalt-700);
