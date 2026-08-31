@@ -54,16 +54,38 @@
     </select>
     <button class="toggle-chip" id="illum-toggle">☀ Any lighting</button>
     <button class="toggle-chip" id="avail-toggle">Available now</button>
+    <button class="toggle-chip" id="curate-toggle">👤 Curate for client</button>
+  </div>
+
+  <div id="client-view-banner" class="client-view-banner">
+    <span id="client-view-text"></span>
+    <button id="client-view-clear">View full inventory</button>
   </div>
 
   <div class="layout">
-    <div id="map"></div>
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div class="map-preview" id="map-preview">
+        <div class="map-preview-frame">
+          <img id="map-preview-img" src="" alt="" />
+          <div class="map-preview-cap">
+            <div class="map-preview-line1"><span id="map-preview-code"></span><span id="map-preview-title"></span></div>
+            <div class="map-preview-line2" id="map-preview-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <aside class="panel">
       <div class="panel-header">
         <div class="panel-title">Boards by <strong>area</strong> — tap a card to locate it</div>
         <div class="sync-line" id="sync-status">Loading availability…</div>
       </div>
       <div class="site-list" id="site-list"></div>
+      <div id="share-bar" class="share-bar">
+        <span id="share-count">0 selected</span>
+        <button id="share-clear-btn" class="share-clear-btn">Clear</button>
+        <button id="share-link-btn" class="share-link-btn">Share link</button>
+      </div>
     </aside>
   </div>
 
