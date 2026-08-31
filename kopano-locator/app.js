@@ -9,6 +9,9 @@ const state = {
   availableNow: false,
   selectedCode: null,
   collapsedAreas: new Set(),
+  curateMode: false,
+  picked: new Set(),      // codes checked while building a client link
+  clientView: null,       // Set of codes when viewing a shared link, else null
 };
 
 const TODAY = new Date(); // real "today" for availability comparisons
@@ -83,6 +86,7 @@ function siteKey(site) {
 }
 
 function matchesFilters(site) {
+  if (state.clientView && !state.clientView.has(site.code)) return false;
   const q = state.search.trim().toLowerCase();
   if (q) {
     const hay = (site.code + " " + site.title + " " + site.area + " " + site.description).toLowerCase();
@@ -277,6 +281,7 @@ function siteCardHTML(site, expanded) {
   return `
     <div class="site-card${state.selectedCode === site.code ? " selected" : ""}" data-code="${site.code}">
       <div class="site-card-top">
+        ${state.curateMode ? `<input type="checkbox" class="pick-check" data-pick="${site.code}" ${state.picked.has(site.code) ? "checked" : ""} />` : ""}
         <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" />
         <div class="site-title-line">
           <span class="site-shield">${site.code}</span>
@@ -302,7 +307,8 @@ function siteCardHTML(site, expanded) {
 
 function renderList() {
   const visible = filteredSites();
-  resultCountEl.textContent = `${visible.length} of ${SITES.length} boards`;
+  const total = state.clientView ? state.clientView.size : SITES.length;
+  resultCountEl.textContent = `${visible.length} of ${total} boards`;
 
   if (visible.length === 0) {
     listEl.innerHTML = `<div class="empty-state">No boards match those filters.<br>Try clearing search or the area filter.</div>`;
@@ -368,6 +374,15 @@ listEl.addEventListener("click", (e) => {
   if (e.target.closest(".copy-btn")) {
     e.stopPropagation();
     return; // let the link's default navigation happen, just don't also toggle the card
+  }
+  const pickCheck = e.target.closest(".pick-check");
+  if (pickCheck) {
+    e.stopPropagation();
+    const code = pickCheck.dataset.pick;
+    if (pickCheck.checked) state.picked.add(code);
+    else state.picked.delete(code);
+    updateShareBar();
+    return;
   }
   const durationBtn = e.target.closest(".duration-btn");
   if (durationBtn) {
@@ -436,6 +451,87 @@ document.getElementById("avail-toggle").addEventListener("click", (e) => {
   const btn = e.currentTarget;
   state.availableNow = !state.availableNow;
   btn.classList.toggle("active", state.availableNow);
+  renderList();
+  rebuildMarkers();
+});
+
+// ---------- curate & share (send a filtered set of sites to a client) ----------
+
+const curateToggleBtn = document.getElementById("curate-toggle");
+const shareBar = document.getElementById("share-bar");
+const shareCountEl = document.getElementById("share-count");
+const shareLinkBtn = document.getElementById("share-link-btn");
+const shareClearBtn = document.getElementById("share-clear-btn");
+const clientViewBanner = document.getElementById("client-view-banner");
+const clientViewText = document.getElementById("client-view-text");
+const clientViewClearBtn = document.getElementById("client-view-clear");
+
+function updateShareBar() {
+  shareCountEl.textContent = `${state.picked.size} selected`;
+  shareBar.classList.toggle("show", state.curateMode && state.picked.size > 0);
+}
+
+curateToggleBtn.addEventListener("click", () => {
+  state.curateMode = !state.curateMode;
+  curateToggleBtn.classList.toggle("active", state.curateMode);
+  updateShareBar();
+  renderList();
+});
+
+shareClearBtn.addEventListener("click", () => {
+  state.picked.clear();
+  updateShareBar();
+  renderList();
+});
+
+shareLinkBtn.addEventListener("click", async () => {
+  const codes = [...state.picked];
+  if (codes.length === 0) return;
+  const url = new URL(location.href);
+  url.search = "";
+  url.searchParams.set("sites", codes.join(","));
+  const shareUrl = url.toString();
+  const shareText = `${codes.length} Kopano Media billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Kopano Media — selected sites", text: shareText, url: shareUrl });
+      return;
+    } catch (err) {
+      // user cancelled the native share sheet — fall through to clipboard
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    const original = shareLinkBtn.textContent;
+    shareLinkBtn.textContent = "Link copied!";
+    setTimeout(() => (shareLinkBtn.textContent = original), 1600);
+  } catch (err) {
+    prompt("Copy this link to send to your client:", shareUrl);
+  }
+});
+
+function applyClientViewFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const sitesParam = params.get("sites");
+  if (!sitesParam) return;
+  const codes = sitesParam.split(",").map(s => s.trim()).filter(Boolean);
+  const valid = codes.filter(c => SITES.some(s => s.code === c));
+  if (valid.length === 0) return;
+
+  state.clientView = new Set(valid);
+  curateToggleBtn.style.display = "none";
+  clientViewText.textContent = `Viewing ${valid.length} board${valid.length === 1 ? "" : "s"} hand-picked by Kopano Media`;
+  clientViewBanner.classList.add("show");
+}
+
+clientViewClearBtn.addEventListener("click", () => {
+  state.clientView = null;
+  const url = new URL(location.href);
+  url.searchParams.delete("sites");
+  history.replaceState(null, "", url.toString());
+  curateToggleBtn.style.display = "";
+  clientViewBanner.classList.remove("show");
   renderList();
   rebuildMarkers();
 });
@@ -607,6 +703,7 @@ function populateContactStatic() {
 
 populateSelects();
 populateContactStatic();
+applyClientViewFromUrl();
 initMap();
 renderList();
 rebuildMarkers();
