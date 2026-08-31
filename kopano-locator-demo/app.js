@@ -9,6 +9,9 @@ const state = {
   availableNow: false,
   selectedCode: null,
   collapsedAreas: new Set(),
+  curateMode: false,
+  picked: new Set(),      // codes checked while building a client link
+  clientView: null,       // Set of codes when viewing a shared link, else null
 };
 
 const TODAY = new Date(); // real "today" for availability comparisons
@@ -83,6 +86,7 @@ function siteKey(site) {
 }
 
 function matchesFilters(site) {
+  if (state.clientView && !state.clientView.has(site.code)) return false;
   const q = state.search.trim().toLowerCase();
   if (q) {
     const hay = (site.code + " " + site.title + " " + site.area + " " + site.description).toLowerCase();
@@ -110,7 +114,8 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  const cartoKey = CONFIG.CARTO_API_KEY ? `?key=${CONFIG.CARTO_API_KEY}` : "";
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoKey}`, {
     attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: "abcd",
     maxZoom: 19,
@@ -127,6 +132,11 @@ function initMap() {
   mapEl.addEventListener("wheel", (e) => {
     if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
+
+  // Tapping/clicking empty map area (not a marker) dismisses the preview
+  map.on("click", () => {
+    if (!state.selectedCode) hideMapPreview();
+  });
 }
 
 function pinIcon(selected) {
@@ -158,10 +168,6 @@ function rebuildMarkers() {
     groups.get(key).push(site);
   });
 
-  const mapSize = map.getSize();
-  const tipW = Math.round(mapSize.x * 0.8);
-  const tipH = Math.round(mapSize.y * 0.8);
-
   groups.forEach((sites) => {
     const n = sites.length;
     sites.forEach((site, i) => {
@@ -179,19 +185,13 @@ function rebuildMarkers() {
       const selected = state.selectedCode === site.code;
       const marker = L.marker([lat, lng], { icon: pinIcon(selected) });
 
-      marker.bindPopup(`
-        <img class="popup-img" src="${site.thumb}" alt="${site.code}" loading="lazy" />
-        <div class="popup-title">${site.code} — ${site.title}</div>
-        <div class="popup-sub">${site.area} · ${site.size}</div>
-        <div class="popup-signal">${trafficLightHTML(resolveStatus(site))}</div>
-      `, { maxWidth: 220 });
-
-      marker.bindTooltip(`
-        <img class="tip-img" style="width:${tipW}px;height:${tipH}px;" src="${site.image}" alt="${site.code}" loading="lazy" />
-        <div class="tip-cap" style="width:${tipW}px;">${site.code} — ${site.title}</div>
-      `, { direction: "top", offset: [0, -34], opacity: 1, className: "kop-tooltip" });
-
-      marker.on("click", () => {
+      marker.on("mouseover", () => showMapPreview(site));
+      marker.on("mouseout", () => {
+        if (state.selectedCode !== site.code) hideMapPreview();
+      });
+      marker.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        showMapPreview(site);
         selectSite(site.code, { fromMap: true });
       });
       marker.addTo(markerLayer);
@@ -202,8 +202,28 @@ function rebuildMarkers() {
 
 function flyToSite(site) {
   map.flyTo([site.lat, site.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
-  const marker = markersByCode.get(site.code);
-  if (marker) marker.openPopup();
+  showMapPreview(site);
+}
+
+// ---------- map preview overlay ----------
+
+const mapPreviewEl = document.getElementById("map-preview");
+const mapPreviewImg = document.getElementById("map-preview-img");
+const mapPreviewCode = document.getElementById("map-preview-code");
+const mapPreviewTitle = document.getElementById("map-preview-title");
+const mapPreviewSub = document.getElementById("map-preview-sub");
+
+function showMapPreview(site) {
+  mapPreviewImg.src = site.image;
+  mapPreviewImg.alt = site.code;
+  mapPreviewCode.textContent = site.code;
+  mapPreviewTitle.textContent = " — " + site.title;
+  mapPreviewSub.textContent = `${site.area} · ${site.size}`;
+  mapPreviewEl.classList.add("show");
+}
+
+function hideMapPreview() {
+  mapPreviewEl.classList.remove("show");
 }
 
 // ---------- rendering ----------
@@ -261,6 +281,7 @@ function siteCardHTML(site, expanded) {
   return `
     <div class="site-card${state.selectedCode === site.code ? " selected" : ""}" data-code="${site.code}">
       <div class="site-card-top">
+        ${state.curateMode ? `<input type="checkbox" class="pick-check" data-pick="${site.code}" ${state.picked.has(site.code) ? "checked" : ""} />` : ""}
         <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" />
         <div class="site-title-line">
           <span class="site-shield">${site.code}</span>
@@ -286,7 +307,8 @@ function siteCardHTML(site, expanded) {
 
 function renderList() {
   const visible = filteredSites();
-  resultCountEl.textContent = `${visible.length} of ${SITES.length} boards`;
+  const total = state.clientView ? state.clientView.size : SITES.length;
+  resultCountEl.textContent = `${visible.length} of ${total} boards`;
 
   if (visible.length === 0) {
     listEl.innerHTML = `<div class="empty-state">No boards match those filters.<br>Try clearing search or the area filter.</div>`;
@@ -341,6 +363,8 @@ function selectSite(code, opts = {}) {
       const card = listEl.querySelector(`.site-card[data-code="${code}"]`);
       if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+  } else {
+    hideMapPreview();
   }
 }
 
@@ -350,6 +374,15 @@ listEl.addEventListener("click", (e) => {
   if (e.target.closest(".copy-btn")) {
     e.stopPropagation();
     return; // let the link's default navigation happen, just don't also toggle the card
+  }
+  const pickCheck = e.target.closest(".pick-check");
+  if (pickCheck) {
+    e.stopPropagation();
+    const code = pickCheck.dataset.pick;
+    if (pickCheck.checked) state.picked.add(code);
+    else state.picked.delete(code);
+    updateShareBar();
+    return;
   }
   const durationBtn = e.target.closest(".duration-btn");
   if (durationBtn) {
@@ -418,6 +451,87 @@ document.getElementById("avail-toggle").addEventListener("click", (e) => {
   const btn = e.currentTarget;
   state.availableNow = !state.availableNow;
   btn.classList.toggle("active", state.availableNow);
+  renderList();
+  rebuildMarkers();
+});
+
+// ---------- curate & share (send a filtered set of sites to a client) ----------
+
+const curateToggleBtn = document.getElementById("curate-toggle");
+const shareBar = document.getElementById("share-bar");
+const shareCountEl = document.getElementById("share-count");
+const shareLinkBtn = document.getElementById("share-link-btn");
+const shareClearBtn = document.getElementById("share-clear-btn");
+const clientViewBanner = document.getElementById("client-view-banner");
+const clientViewText = document.getElementById("client-view-text");
+const clientViewClearBtn = document.getElementById("client-view-clear");
+
+function updateShareBar() {
+  shareCountEl.textContent = `${state.picked.size} selected`;
+  shareBar.classList.toggle("show", state.curateMode && state.picked.size > 0);
+}
+
+curateToggleBtn.addEventListener("click", () => {
+  state.curateMode = !state.curateMode;
+  curateToggleBtn.classList.toggle("active", state.curateMode);
+  updateShareBar();
+  renderList();
+});
+
+shareClearBtn.addEventListener("click", () => {
+  state.picked.clear();
+  updateShareBar();
+  renderList();
+});
+
+shareLinkBtn.addEventListener("click", async () => {
+  const codes = [...state.picked];
+  if (codes.length === 0) return;
+  const url = new URL(location.href);
+  url.search = "";
+  url.searchParams.set("sites", codes.join(","));
+  const shareUrl = url.toString();
+  const shareText = `${codes.length} Kopano Media billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Kopano Media — selected sites", text: shareText, url: shareUrl });
+      return;
+    } catch (err) {
+      // user cancelled the native share sheet — fall through to clipboard
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    const original = shareLinkBtn.textContent;
+    shareLinkBtn.textContent = "Link copied!";
+    setTimeout(() => (shareLinkBtn.textContent = original), 1600);
+  } catch (err) {
+    prompt("Copy this link to send to your client:", shareUrl);
+  }
+});
+
+function applyClientViewFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const sitesParam = params.get("sites");
+  if (!sitesParam) return;
+  const codes = sitesParam.split(",").map(s => s.trim()).filter(Boolean);
+  const valid = codes.filter(c => SITES.some(s => s.code === c));
+  if (valid.length === 0) return;
+
+  state.clientView = new Set(valid);
+  curateToggleBtn.style.display = "none";
+  clientViewText.textContent = `Viewing ${valid.length} board${valid.length === 1 ? "" : "s"} hand-picked by Kopano Media`;
+  clientViewBanner.classList.add("show");
+}
+
+clientViewClearBtn.addEventListener("click", () => {
+  state.clientView = null;
+  const url = new URL(location.href);
+  url.searchParams.delete("sites");
+  history.replaceState(null, "", url.toString());
+  curateToggleBtn.style.display = "";
+  clientViewBanner.classList.remove("show");
   renderList();
   rebuildMarkers();
 });
@@ -587,16 +701,9 @@ function populateContactStatic() {
   document.getElementById("contact-email-display").textContent = CONTACT.email;
 }
 
-function debounce(fn, wait) {
-  let t;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
-  };
-}
-
 populateSelects();
 populateContactStatic();
+applyClientViewFromUrl();
 initMap();
 renderList();
 rebuildMarkers();
@@ -604,10 +711,6 @@ fetchLiveAvailability();
 if (CONFIG.SHEET_CSV_URL) {
   setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
 }
-
-// Re-bind marker tooltips on resize so the 80%-of-map preview size stays
-// accurate (e.g. rotating a phone, or resizing a browser window).
-window.addEventListener("resize", debounce(rebuildMarkers, 200));
 
 // ---------- PWA install prompt ----------
 
