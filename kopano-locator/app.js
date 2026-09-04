@@ -109,6 +109,52 @@ function filteredSites() {
 let map, markerLayer;
 const markersByCode = new Map(); // site code -> Leaflet marker
 
+// Landmarks only appear once zoomed in this far — keeps the wide view clean
+// and focused on the billboards themselves.
+const LANDMARK_MIN_ZOOM = 14;
+let landmarkLayer;
+
+const LANDMARK_META = {
+  mall:          { emoji: "🛍️", label: "Shopping" },
+  dining:        { emoji: "🍴", label: "Dining" },
+  entertainment: { emoji: "🎬", label: "Entertainment" },
+  transport:     { emoji: "🚉", label: "Transport" },
+  education:     { emoji: "🎓", label: "Education" },
+  office:        { emoji: "🏢", label: "Office" },
+  fuel:          { emoji: "⛽", label: "Fuel" },
+  landmark:      { emoji: "📍", label: "Landmark" },
+};
+
+function landmarkIcon(category) {
+  const meta = LANDMARK_META[category] || LANDMARK_META.landmark;
+  return L.divIcon({
+    className: "landmark-pin-wrap",
+    html: `<div class="landmark-pin"><span>${meta.emoji}</span></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+}
+
+function rebuildLandmarks() {
+  landmarkLayer.clearLayers();
+  const visibleCodes = new Set(filteredSites().map(s => s.code));
+  LANDMARKS.forEach(lm => {
+    if (!lm.sites.some(code => visibleCodes.has(code))) return;
+    const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
+    const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon(lm.category) });
+    marker.bindPopup(`<div class="landmark-popup"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label}</span></div>`, { maxWidth: 180 });
+    marker.addTo(landmarkLayer);
+  });
+}
+
+function updateLandmarkVisibility() {
+  const shouldShow = map.getZoom() >= LANDMARK_MIN_ZOOM;
+  const isShown = map.hasLayer(landmarkLayer);
+  if (shouldShow && !isShown) map.addLayer(landmarkLayer);
+  if (!shouldShow && isShown) map.removeLayer(landmarkLayer);
+}
+
 function initMap() {
   map = L.map("map", { zoomControl: false, attributionControl: true }).setView([-26.13, 27.99], 10);
 
@@ -122,6 +168,9 @@ function initMap() {
   }).addTo(map);
 
   markerLayer = L.layerGroup().addTo(map);
+  landmarkLayer = L.layerGroup();
+
+  map.on("zoomend", updateLandmarkVisibility);
 
   // Prevent trackpad-pinch and mobile-pinch gestures over the map from
   // zooming the whole browser page instead of just the map. Leaflet handles
@@ -137,6 +186,8 @@ function initMap() {
   map.on("click", () => {
     if (!state.selectedCode) hideMapPreview();
   });
+
+  updateLandmarkVisibility();
 }
 
 function pinIcon(selected) {
@@ -198,6 +249,8 @@ function rebuildMarkers() {
       markersByCode.set(site.code, marker);
     });
   });
+
+  rebuildLandmarks();
 }
 
 function flyToSite(site) {
