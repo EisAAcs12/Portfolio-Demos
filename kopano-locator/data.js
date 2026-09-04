@@ -259,3 +259,44 @@ const SITES = [
     trafficCount: "50 000+ vehicles/day", illuminated: false, lat: -25.905682, lng: 28.097100
   }
 ];
+
+// ---------------------------------------------------------------
+// NEARBY LANDMARKS
+// Real, verified places (malls, entertainment, transport, education,
+// dining) near clusters of billboard sites — coordinates confirmed via
+// Google Places. Shown on the map once zoomed in far enough, scoped to
+// whichever billboard sites are currently visible, to help sell each
+// site by showing the foot/vehicle traffic context around it.
+// ---------------------------------------------------------------
+const LANDMARKS = [
+  { name: "Fourways Mall", category: "mall", lat: -26.0188644, lng: 28.0064222, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Monte Casino", category: "entertainment", lat: -26.0245212, lng: 28.0118433, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Cedar Square", category: "mall", lat: -26.0171174, lng: 27.9993122, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Northgate Shopping Centre", category: "mall", lat: -26.061005, lng: 27.9464571, sites: ["KOP002", "KOP008"] },
+
+  { name: "Mall of Africa", category: "mall", lat: -26.0150679, lng: 28.1055399, sites: ["KOP019", "KOP020"] },
+  { name: "Vodacom World", category: "office", lat: -25.9701557, lng: 28.1285179, sites: ["KOP019", "KOP020"] },
+  { name: "Engen Summit Road", category: "fuel", lat: -25.9522169, lng: 28.1302890, sites: ["KOP019", "KOP020"] },
+
+  { name: "Sandton City", category: "mall", lat: -26.1088467, lng: 28.0527198, sites: ["KOP023"] },
+  { name: "Gautrain Sandton Station", category: "transport", lat: -26.1078845, lng: 28.0572632, sites: ["KOP023"] },
+
+  { name: "Hyde Park Corner", category: "mall", lat: -26.1252748, lng: 28.0330341, sites: ["KOP024"] },
+
+  { name: "44 Stanley", category: "dining", lat: -26.1850934, lng: 28.0187278, sites: ["KOP003", "KOP012", "KOP013", "KOP017"] },
+  { name: "University of the Witwatersrand", category: "education", lat: -26.1928628, lng: 28.0304471, sites: ["KOP011", "KOP027"] },
+  { name: "Nelson Mandela Bridge", category: "landmark", lat: -26.1968697, lng: 28.0342220, sites: ["KOP027"] },
+  { name: "Wimpy Greenside", category: "dining", lat: -26.1614531, lng: 28.0124562, sites: ["KOP017"] },
+
+  { name: "Cradlestone Mall", category: "mall", lat: -26.0603788, lng: 27.8371339, sites: ["KOP005", "KOP004"] },
+  { name: "Silverstar Casino", category: "entertainment", lat: -26.0672798, lng: 27.8284211, sites: ["KOP005", "KOP004"] },
+
+  { name: "Cosmo City Shopping Centre", category: "mall", lat: -26.0222793, lng: 27.9286348, sites: ["KOP015", "KOP016", "KOP025", "KOP026"] },
+
+  { name: "Kagiso Mall", category: "mall", lat: -26.1671809, lng: 27.7813171, sites: ["KOP007", "KOP006", "KOP018"] },
+
+  { name: "FNB Stadium", category: "landmark", lat: -26.2347569, lng: 27.9826554, sites: ["KOP010"] },
+  { name: "Trade Route Mall", category: "mall", lat: -26.3274906, lng: 27.8688145, sites: ["KOP014"] },
+
+  { name: "Shoprite Olievenhoutbosch Corner", category: "mall", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
+];
