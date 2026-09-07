@@ -126,14 +126,16 @@ const LANDMARK_META = {
   landmark:      { emoji: "📍", label: "Landmark" },
 };
 
-function landmarkIcon(category) {
-  const meta = LANDMARK_META[category] || LANDMARK_META.landmark;
+function landmarkIcon(lm) {
+  const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
+  const tierClass = lm.tier === "close" ? "tier-close" : "tier-area";
+  const size = lm.tier === "close" ? 32 : 26;
   return L.divIcon({
     className: "landmark-pin-wrap",
-    html: `<div class="landmark-pin"><span>${meta.emoji}</span></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12],
+    html: `<div class="landmark-pin ${tierClass}"><span>${meta.emoji}</span></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   });
 }
 
@@ -143,8 +145,9 @@ function rebuildLandmarks() {
   LANDMARKS.forEach(lm => {
     if (!lm.sites.some(code => visibleCodes.has(code))) return;
     const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
-    const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon(lm.category) });
-    marker.bindPopup(`<div class="landmark-popup"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label}</span></div>`, { maxWidth: 180 });
+    const tierLabel = lm.tier === "close" ? "Right by the board" : "Nearby area";
+    const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon(lm) });
+    marker.bindPopup(`<div class="landmark-popup landmark-popup-${lm.tier}"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label} · ${tierLabel}</span></div>`, { maxWidth: 190 });
     marker.addTo(landmarkLayer);
   });
 }
