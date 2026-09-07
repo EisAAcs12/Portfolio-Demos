@@ -269,55 +269,55 @@ const SITES = [
 // site by showing the foot/vehicle traffic context around it.
 // ---------------------------------------------------------------
 const LANDMARKS = [
-  { name: "Fourways Mall", category: "mall", lat: -26.0188644, lng: 28.0064222, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
-  { name: "Monte Casino", category: "entertainment", lat: -26.0245212, lng: 28.0118433, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
-  { name: "Cedar Square", category: "mall", lat: -26.0171174, lng: 27.9993122, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
-  { name: "Northgate Shopping Centre", category: "mall", lat: -26.061005, lng: 27.9464571, sites: ["KOP002", "KOP008"] },
+  { name: "Fourways Mall", category: "mall", tier: "area", lat: -26.0188644, lng: 28.0064222, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Monte Casino", category: "entertainment", tier: "area", lat: -26.0245212, lng: 28.0118433, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Cedar Square", category: "mall", tier: "area", lat: -26.0171174, lng: 27.9993122, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
+  { name: "Northgate Shopping Centre", category: "mall", tier: "area", lat: -26.061005, lng: 27.9464571, sites: ["KOP002", "KOP008"] },
 
-  { name: "Mall of Africa", category: "mall", lat: -26.0150679, lng: 28.1055399, sites: ["KOP019", "KOP020"] },
-  { name: "Vodacom World", category: "office", lat: -25.9701557, lng: 28.1285179, sites: ["KOP019", "KOP020"] },
-  { name: "Engen Summit Road", category: "fuel", lat: -25.9522169, lng: 28.1302890, sites: ["KOP019", "KOP020"] },
+  { name: "Mall of Africa", category: "mall", tier: "area", lat: -26.0150679, lng: 28.1055399, sites: ["KOP019", "KOP020"] },
+  { name: "Vodacom World", category: "office", tier: "area", lat: -25.9701557, lng: 28.1285179, sites: ["KOP019", "KOP020"] },
+  { name: "Engen Summit Road", category: "fuel", tier: "area", lat: -25.9522169, lng: 28.1302890, sites: ["KOP019", "KOP020"] },
 
-  { name: "Sandton City", category: "mall", lat: -26.1088467, lng: 28.0527198, sites: ["KOP023"] },
-  { name: "Gautrain Sandton Station", category: "transport", lat: -26.1078845, lng: 28.0572632, sites: ["KOP023"] },
+  { name: "Sandton City", category: "mall", tier: "area", lat: -26.1088467, lng: 28.0527198, sites: ["KOP023"] },
+  { name: "Gautrain Sandton Station", category: "transport", tier: "area", lat: -26.1078845, lng: 28.0572632, sites: ["KOP023"] },
 
-  { name: "Hyde Park Corner", category: "mall", lat: -26.1252748, lng: 28.0330341, sites: ["KOP024"] },
+  { name: "Hyde Park Corner", category: "mall", tier: "area", lat: -26.1252748, lng: 28.0330341, sites: ["KOP024"] },
 
-  { name: "44 Stanley", category: "dining", lat: -26.1850934, lng: 28.0187278, sites: ["KOP003", "KOP012", "KOP013", "KOP017"] },
-  { name: "University of the Witwatersrand", category: "education", lat: -26.1928628, lng: 28.0304471, sites: ["KOP011", "KOP027"] },
-  { name: "Nelson Mandela Bridge", category: "landmark", lat: -26.1968697, lng: 28.0342220, sites: ["KOP027"] },
-  { name: "Wimpy Greenside", category: "dining", lat: -26.1614531, lng: 28.0124562, sites: ["KOP017"] },
+  { name: "44 Stanley", category: "dining", tier: "area", lat: -26.1850934, lng: 28.0187278, sites: ["KOP003", "KOP012", "KOP013", "KOP017"] },
+  { name: "University of the Witwatersrand", category: "education", tier: "area", lat: -26.1928628, lng: 28.0304471, sites: ["KOP011", "KOP027"] },
+  { name: "Nelson Mandela Bridge", category: "landmark", tier: "area", lat: -26.1968697, lng: 28.0342220, sites: ["KOP027"] },
+  { name: "Wimpy Greenside", category: "dining", tier: "area", lat: -26.1614531, lng: 28.0124562, sites: ["KOP017"] },
 
-  { name: "Cradlestone Mall", category: "mall", lat: -26.0603788, lng: 27.8371339, sites: ["KOP005", "KOP004"] },
-  { name: "Silverstar Casino", category: "entertainment", lat: -26.0672798, lng: 27.8284211, sites: ["KOP005", "KOP004"] },
+  { name: "Cradlestone Mall", category: "mall", tier: "area", lat: -26.0603788, lng: 27.8371339, sites: ["KOP005", "KOP004"] },
+  { name: "Silverstar Casino", category: "entertainment", tier: "area", lat: -26.0672798, lng: 27.8284211, sites: ["KOP005", "KOP004"] },
 
-  { name: "Cosmo City Shopping Centre", category: "mall", lat: -26.0222793, lng: 27.9286348, sites: ["KOP015", "KOP016", "KOP025", "KOP026"] },
+  { name: "Cosmo City Shopping Centre", category: "mall", tier: "area", lat: -26.0222793, lng: 27.9286348, sites: ["KOP015", "KOP016", "KOP025", "KOP026"] },
 
-  { name: "Kagiso Mall", category: "mall", lat: -26.1671809, lng: 27.7813171, sites: ["KOP007", "KOP006", "KOP018"] },
+  { name: "Kagiso Mall", category: "mall", tier: "area", lat: -26.1671809, lng: 27.7813171, sites: ["KOP007", "KOP006", "KOP018"] },
 
-  { name: "FNB Stadium", category: "landmark", lat: -26.2347569, lng: 27.9826554, sites: ["KOP010"] },
-  { name: "Trade Route Mall", category: "mall", lat: -26.3274906, lng: 27.8688145, sites: ["KOP014"] },
+  { name: "FNB Stadium", category: "landmark", tier: "area", lat: -26.2347569, lng: 27.9826554, sites: ["KOP010"] },
+  { name: "Trade Route Mall", category: "mall", tier: "area", lat: -26.3274906, lng: 27.8688145, sites: ["KOP014"] },
 
-  { name: "Shoprite Olievenhoutbosch Corner", category: "mall", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
+  { name: "Shoprite Olievenhoutbosch Corner", category: "mall", tier: "area", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
 
   // --- Closer-in landmarks: literally next to / within a few hundred
   // metres of a site, straight from the original site descriptions,
   // verified for real coordinates. These sit alongside the area-anchor
   // landmarks above, not replacing them. ---
-  { name: "Netcare Milpark Hospital", category: "health", lat: -26.1802894, lng: 28.0176318, sites: ["KOP003"] },
-  { name: "Milpark Rea Vaya Station", category: "transport", lat: -26.1832600, lng: 28.0198100, sites: ["KOP003"] },
-  { name: "Northlands Deco Park", category: "mall", lat: -26.0330863, lng: 27.9613374, sites: ["KOP009", "KOP008"] },
-  { name: "Engen Cosmo City Convenience Centre", category: "fuel", lat: -26.0216680, lng: 27.9286172, sites: ["KOP015", "KOP016"] },
-  { name: "KFC Cosmo City", category: "dining", lat: -26.0370883, lng: 27.9218208, sites: ["KOP025", "KOP026"] },
-  { name: "Moscow Corner Centre", category: "mall", lat: -26.0383776, lng: 27.9232362, sites: ["KOP025", "KOP026"] },
-  { name: "Kagiso Magistrates Court", category: "landmark", lat: -26.1637201, lng: 27.7803257, sites: ["KOP018"] },
-  { name: "Regal Inn Hotel Midrand", category: "landmark", lat: -25.9528174, lng: 28.1269338, sites: ["KOP019", "KOP020"] },
-  { name: "Valleyview Shopping Centre", category: "mall", lat: -26.0820874, lng: 27.8039895, sites: ["KOP005"] },
-  { name: "Noordheuwel Mall", category: "mall", lat: -26.0829604, lng: 27.8021552, sites: ["KOP004"] },
-  { name: "Barlow Park Lifestyle Centre", category: "mall", lat: -26.0993393, lng: 28.0790018, sites: ["KOP023"] },
-  { name: "KPMG Crescent", category: "office", lat: -26.1856333, lng: 28.0313874, sites: ["KOP011"] },
-  { name: "Checkers Emmarentia", category: "mall", lat: -26.1610000, lng: 28.0120000, sites: ["KOP017"] },
-  { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
-  { name: "Chicken Licken Olievenhoutbosch", category: "dining", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
-  { name: "eTV Studios", category: "landmark", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
+  { name: "Netcare Milpark Hospital", category: "health", tier: "close", lat: -26.1802894, lng: 28.0176318, sites: ["KOP003"] },
+  { name: "Milpark Rea Vaya Station", category: "transport", tier: "close", lat: -26.1832600, lng: 28.0198100, sites: ["KOP003"] },
+  { name: "Northlands Deco Park", category: "mall", tier: "close", lat: -26.0330863, lng: 27.9613374, sites: ["KOP009", "KOP008"] },
+  { name: "Engen Cosmo City Convenience Centre", category: "fuel", tier: "close", lat: -26.0216680, lng: 27.9286172, sites: ["KOP015", "KOP016"] },
+  { name: "KFC Cosmo City", category: "dining", tier: "close", lat: -26.0370883, lng: 27.9218208, sites: ["KOP025", "KOP026"] },
+  { name: "Moscow Corner Centre", category: "mall", tier: "close", lat: -26.0383776, lng: 27.9232362, sites: ["KOP025", "KOP026"] },
+  { name: "Kagiso Magistrates Court", category: "landmark", tier: "close", lat: -26.1637201, lng: 27.7803257, sites: ["KOP018"] },
+  { name: "Regal Inn Hotel Midrand", category: "landmark", tier: "close", lat: -25.9528174, lng: 28.1269338, sites: ["KOP019", "KOP020"] },
+  { name: "Valleyview Shopping Centre", category: "mall", tier: "close", lat: -26.0820874, lng: 27.8039895, sites: ["KOP005"] },
+  { name: "Noordheuwel Mall", category: "mall", tier: "close", lat: -26.0829604, lng: 27.8021552, sites: ["KOP004"] },
+  { name: "Barlow Park Lifestyle Centre", category: "mall", tier: "close", lat: -26.0993393, lng: 28.0790018, sites: ["KOP023"] },
+  { name: "KPMG Crescent", category: "office", tier: "close", lat: -26.1856333, lng: 28.0313874, sites: ["KOP011"] },
+  { name: "Checkers Emmarentia", category: "mall", tier: "close", lat: -26.1610000, lng: 28.0120000, sites: ["KOP017"] },
+  { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", tier: "close", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
+  { name: "Chicken Licken Olievenhoutbosch", category: "dining", tier: "close", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
+  { name: "eTV Studios", category: "landmark", tier: "close", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
 ];
