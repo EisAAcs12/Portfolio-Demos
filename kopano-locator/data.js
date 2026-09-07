@@ -299,4 +299,25 @@ const LANDMARKS = [
   { name: "Trade Route Mall", category: "mall", lat: -26.3274906, lng: 27.8688145, sites: ["KOP014"] },
 
   { name: "Shoprite Olievenhoutbosch Corner", category: "mall", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
+
+  // --- Closer-in landmarks: literally next to / within a few hundred
+  // metres of a site, straight from the original site descriptions,
+  // verified for real coordinates. These sit alongside the area-anchor
+  // landmarks above, not replacing them. ---
+  { name: "Netcare Milpark Hospital", category: "health", lat: -26.1802894, lng: 28.0176318, sites: ["KOP003"] },
+  { name: "Milpark Rea Vaya Station", category: "transport", lat: -26.1832600, lng: 28.0198100, sites: ["KOP003"] },
+  { name: "Northlands Deco Park", category: "mall", lat: -26.0330863, lng: 27.9613374, sites: ["KOP009", "KOP008"] },
+  { name: "Engen Cosmo City Convenience Centre", category: "fuel", lat: -26.0216680, lng: 27.9286172, sites: ["KOP015", "KOP016"] },
+  { name: "KFC Cosmo City", category: "dining", lat: -26.0370883, lng: 27.9218208, sites: ["KOP025", "KOP026"] },
+  { name: "Moscow Corner Centre", category: "mall", lat: -26.0383776, lng: 27.9232362, sites: ["KOP025", "KOP026"] },
+  { name: "Kagiso Magistrates Court", category: "landmark", lat: -26.1637201, lng: 27.7803257, sites: ["KOP018"] },
+  { name: "Regal Inn Hotel Midrand", category: "landmark", lat: -25.9528174, lng: 28.1269338, sites: ["KOP019", "KOP020"] },
+  { name: "Valleyview Shopping Centre", category: "mall", lat: -26.0820874, lng: 27.8039895, sites: ["KOP005"] },
+  { name: "Noordheuwel Mall", category: "mall", lat: -26.0829604, lng: 27.8021552, sites: ["KOP004"] },
+  { name: "Barlow Park Lifestyle Centre", category: "mall", lat: -26.0993393, lng: 28.0790018, sites: ["KOP023"] },
+  { name: "KPMG Crescent", category: "office", lat: -26.1856333, lng: 28.0313874, sites: ["KOP011"] },
+  { name: "Checkers Emmarentia", category: "mall", lat: -26.1610000, lng: 28.0120000, sites: ["KOP017"] },
+  { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
+  { name: "Chicken Licken Olievenhoutbosch", category: "dining", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
+  { name: "eTV Studios", category: "landmark", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
 ];
