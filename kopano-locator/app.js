@@ -122,6 +122,7 @@ const LANDMARK_META = {
   education:     { emoji: "🎓", label: "Education" },
   office:        { emoji: "🏢", label: "Office" },
   fuel:          { emoji: "⛽", label: "Fuel" },
+  health:        { emoji: "🏥", label: "Health" },
   landmark:      { emoji: "📍", label: "Landmark" },
 };
 
