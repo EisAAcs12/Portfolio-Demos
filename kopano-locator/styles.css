@@ -20,6 +20,29 @@
   --font-display: "Oswald", "Arial Narrow", sans-serif;
   --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Brand-identity accent — everything that's "chrome" (buttons, the
+     header, the calculator, badges) reads this instead of --amber
+     directly, so a brand can be reskinned without touching the map pins
+     or the universal available/optioned/booked status colors, which
+     stay --teal/--amber/--red-signal regardless of brand on purpose. */
+  --brand-accent: var(--amber);
+  --brand-accent-glow: var(--amber-glow);
+  --brand-accent-soft: rgba(245, 166, 35, 0.1);
+  --brand-accent-soft-strong: rgba(245, 166, 35, 0.16);
+  --brand-accent-border: rgba(245, 166, 35, 0.35);
+}
+
+/* The Medium — real colours sampled from their actual logo (a vivid
+   cyan-blue is the dominant, most distinctive hue in it). The map tiles,
+   billboard pins, and status colors are deliberately NOT overridden here —
+   only the surrounding app chrome changes. */
+[data-brand="medium"] {
+  --brand-accent: #22b8e8;
+  --brand-accent-glow: rgba(34, 184, 232, 0.35);
+  --brand-accent-soft: rgba(34, 184, 232, 0.1);
+  --brand-accent-soft-strong: rgba(34, 184, 232, 0.16);
+  --brand-accent-border: rgba(34, 184, 232, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -57,7 +80,7 @@ input, select { font-family: inherit; }
   flex-shrink: 0;
 }
 
-.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 
 .brand-mark {
   font-family: var(--font-display);
@@ -68,7 +91,7 @@ input, select { font-family: inherit; }
   color: var(--text-hi);
   white-space: nowrap;
 }
-.brand-mark span { color: var(--amber); }
+.brand-mark span { color: var(--brand-accent); }
 
 .brand-mark-select {
   font-family: var(--font-display);
@@ -90,8 +113,8 @@ input, select { font-family: inherit; }
   background-position: right center;
   background-size: 9px;
 }
-.brand-mark-select:hover { color: var(--amber); }
-.brand-mark-select:focus { outline: none; color: var(--amber); }
+.brand-mark-select:hover { color: var(--brand-accent); }
+.brand-mark-select:focus { outline: none; color: var(--brand-accent); }
 .brand-mark-select option {
   background: var(--asphalt-800);
   color: var(--text-hi);
@@ -99,6 +122,47 @@ input, select { font-family: inherit; }
   text-transform: none;
   font-weight: 400;
 }
+
+.brand-switcher-group {
+  display: flex;
+  align-items: center;
+  background: var(--asphalt-800);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.brand-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-low);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+.brand-pill:hover { color: var(--text-hi); }
+.brand-pill.active { background: var(--asphalt-700); color: var(--text-hi); }
+/* Each pill always shows its OWN brand's identity colour, regardless of
+   which brand is currently active app-wide — Kopano's mark stays amber
+   even while viewing The Medium, and vice versa isn't needed since
+   Medium's mark is its logo image rather than a coloured text accent. */
+.brand-pill .accent { color: var(--amber); }
+.brand-pill-logo { height: 17px; width: auto; display: block; flex-shrink: 0; }
+.brand-pill .short-label { display: none; }
 
 .brand-tag {
   font-size: 11px;
@@ -122,7 +186,7 @@ input, select { font-family: inherit; }
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--asphalt-900);
-  background: var(--amber);
+  background: var(--brand-accent);
   border: none;
   border-radius: 999px;
   padding: 8px 14px;
@@ -141,6 +205,10 @@ input, select { font-family: inherit; }
   .contact-chip { padding: 7px 10px; font-size: 11px; }
   .contact-chip .full-label { display: none; }
   .contact-chip .short-label { display: inline; }
+  .brand-pill { font-size: 11px; padding: 6px 9px; }
+  #brand-pill-kopano .full-label { display: none; }
+  #brand-pill-kopano .short-label { display: inline; }
+  #brand-pill-medium .full-label { display: none; }
 }
 
 .live-chip {
@@ -212,9 +280,9 @@ input, select { font-family: inherit; }
   transition: border-color .15s, color .15s, background .15s;
 }
 .toggle-chip.active {
-  border-color: var(--amber);
-  color: var(--amber);
-  background: rgba(245,166,35,0.08);
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+  background: var(--brand-accent-soft);
 }
 
 /* ---------- Layout ---------- */
@@ -401,8 +469,8 @@ input, select { font-family: inherit; }
 }
 .site-card:hover { border-color: var(--line); background: var(--asphalt-650); }
 .site-card.selected {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 1px var(--amber), 0 0 18px -4px var(--amber-glow);
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 1px var(--brand-accent), 0 0 18px -4px var(--brand-accent-glow);
 }
 
 .site-card-top {
@@ -425,7 +493,7 @@ input, select { font-family: inherit; }
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  accent-color: var(--amber);
+  accent-color: var(--brand-accent);
   margin-top: 17px;
   cursor: pointer;
 }
@@ -436,7 +504,7 @@ input, select { font-family: inherit; }
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--asphalt-900);
-  background: var(--amber);
+  background: var(--brand-accent);
   padding: 2px 7px;
   border-radius: 4px;
   white-space: nowrap;
@@ -471,7 +539,7 @@ input, select { font-family: inherit; }
 }
 
 .illum-icon { flex-shrink: 0; margin-top: 1px; }
-.illum-icon.on { color: var(--amber); }
+.illum-icon.on { color: var(--brand-accent); }
 .illum-icon.off { color: var(--text-low); }
 
 .site-card-meta {
@@ -548,9 +616,9 @@ input, select { font-family: inherit; }
   transition: border-color .15s, color .15s, background .15s;
 }
 .duration-btn.active {
-  border-color: var(--amber);
-  color: var(--amber);
-  background: rgba(245,166,35,0.1);
+  border-color: var(--brand-accent);
+  color: var(--brand-accent);
+  background: var(--brand-accent-soft);
 }
 .calc-total {
   display: flex;
@@ -567,7 +635,7 @@ input, select { font-family: inherit; }
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 16px;
-  color: var(--amber);
+  color: var(--brand-accent);
 }
 .calc-disclaimer {
   font-size: 10.5px;
@@ -634,8 +702,8 @@ input, select { font-family: inherit; }
 .avail-badge.booked { background: rgba(232,88,63,0.12); color: var(--red-signal); }
 
 .live-note {
-  background: rgba(245,166,35,0.08);
-  border-left: 2px solid var(--amber);
+  background: var(--brand-accent-soft);
+  border-left: 2px solid var(--brand-accent);
   padding: 7px 10px;
   font-size: 12px;
   color: var(--text-hi);
@@ -655,15 +723,15 @@ input, select { font-family: inherit; }
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 11.5px;
-  color: var(--amber);
-  background: rgba(245,166,35,0.08);
-  border: 1px solid rgba(245,166,35,0.35);
+  color: var(--brand-accent);
+  background: var(--brand-accent-soft);
+  border: 1px solid var(--brand-accent-border);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   white-space: nowrap;
   transition: background .15s, border-color .15s;
 }
-.enquire-btn:hover { background: rgba(245,166,35,0.16); border-color: var(--amber); }
+.enquire-btn:hover { background: var(--brand-accent-soft-strong); border-color: var(--brand-accent); }
 
 /* ---------- Detail expand ---------- */
 .site-detail {
@@ -842,7 +910,7 @@ input, select { font-family: inherit; }
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: var(--amber);
+  color: var(--brand-accent);
   margin-bottom: 8px;
 }
 .modal-heading {
@@ -872,7 +940,7 @@ input, select { font-family: inherit; }
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--amber);
+  background: var(--brand-accent);
   color: var(--asphalt-900);
   font-family: var(--font-display);
   font-weight: 700;
@@ -913,7 +981,7 @@ input, select { font-family: inherit; }
   align-items: center;
   gap: 10px;
   padding: 8px 16px;
-  background: var(--amber);
+  background: var(--brand-accent);
   color: var(--asphalt-900);
   font-size: 12.5px;
   flex-shrink: 0;
@@ -922,7 +990,7 @@ input, select { font-family: inherit; }
 #install-banner button {
   margin-left: auto;
   background: var(--asphalt-900);
-  color: var(--amber);
+  color: var(--brand-accent);
   border: none;
   border-radius: 4px;
   padding: 6px 10px;
@@ -987,7 +1055,7 @@ input, select { font-family: inherit; }
 }
 .share-clear-btn:hover { color: var(--text-hi); border-color: var(--line-soft); }
 .share-link-btn {
-  background: var(--amber);
+  background: var(--brand-accent);
   color: var(--asphalt-900);
   border: none;
   border-radius: var(--radius-sm);
