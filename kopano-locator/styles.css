@@ -70,6 +70,36 @@ input, select { font-family: inherit; }
 }
 .brand-mark span { color: var(--amber); }
 
+.brand-mark-select {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-hi);
+  background-color: transparent;
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  padding-right: 16px;
+  max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f5a623' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 9px;
+}
+.brand-mark-select:hover { color: var(--amber); }
+.brand-mark-select:focus { outline: none; color: var(--amber); }
+.brand-mark-select option {
+  background: var(--asphalt-800);
+  color: var(--text-hi);
+  font-family: var(--font-body);
+  text-transform: none;
+  font-weight: 400;
+}
+
 .brand-tag {
   font-size: 11px;
   color: var(--text-low);
@@ -106,6 +136,7 @@ input, select { font-family: inherit; }
 /* Tight phones: shrink chip text/padding before anything is forced to wrap */
 @media (max-width: 420px) {
   .brand-mark { font-size: 17px; }
+  .brand-mark-select { font-size: 17px; }
   .live-chip { padding: 5px 8px; font-size: 11px; }
   .contact-chip { padding: 7px 10px; font-size: 11px; }
   .contact-chip .full-label { display: none; }
