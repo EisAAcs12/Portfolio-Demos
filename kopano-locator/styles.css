@@ -1,9 +1,9 @@
 :root {
-  --asphalt-900: #12151a;
-  --asphalt-850: #171b21;
-  --asphalt-800: #1c2129;
-  --asphalt-700: #262c35;
-  --asphalt-650: #2e3540;
+  --asphalt-900: #11161b;
+  --asphalt-850: #161c22;
+  --asphalt-800: #1b232a;
+  --asphalt-700: #252e36;
+  --asphalt-650: #2c3842;
   --line: #333a44;
   --line-soft: #262b33;
   --amber: #f5a623;
@@ -50,6 +50,11 @@
    proposal deck. Explicit block (mirrors :root's default) so the two
    brands stay symmetrical and neither depends on the other's fallback. */
 [data-brand="kopano"] {
+  --asphalt-900: #11161b;
+  --asphalt-850: #161c22;
+  --asphalt-800: #1b232a;
+  --asphalt-700: #252e36;
+  --asphalt-650: #2c3842;
   --brand-accent: var(--kopano-brand);
   --brand-accent-glow: rgba(16, 160, 216, 0.35);
   --brand-accent-soft: rgba(16, 160, 216, 0.1);
@@ -62,6 +67,11 @@
    and status colors are deliberately NOT overridden here — only the
    surrounding app chrome changes. */
 [data-brand="medium"] {
+  --asphalt-900: #1a1612;
+  --asphalt-850: #221c16;
+  --asphalt-800: #2a221b;
+  --asphalt-700: #362d25;
+  --asphalt-650: #41362d;
   --brand-accent: var(--medium-brand);
   --brand-accent-glow: rgba(242, 130, 46, 0.35);
   --brand-accent-soft: rgba(242, 130, 46, 0.1);
