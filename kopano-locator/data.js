@@ -1,34 +1,46 @@
-// Kopano Media — OOH Sites Inventory, March 2026
-// Parsed from Kopano_Media_OOH_Inventory_March_2026.pptx
+// Kopano Media & The Medium — combined OOH Sites Inventory
+// Kopano Media parsed from Kopano_Media_OOH_Inventory_March_2026.pptx
+// The Medium parsed from The_Medium_January_2026_Inventory_packages.pptx
+//
+// This file is shared by both brands' data. The app switches which
+// brand's data is active via BRANDS[id] — see app.js's activateBrandData().
 
 // ---------------------------------------------------------------
-// LIVE AVAILABILITY SYNC
-// Paste the "Publish to web" CSV link of your Google Sheet here.
-// Leave as "" to run on static data only (no live updates).
-// See LIVE_SYNC_SETUP.md for how to set this up.
-// ---------------------------------------------------------------
 // MAP TILES
-// CARTO now requires a free API key for their basemap tiles (this changed
-// recently — it's not something we broke). Get one in under a minute,
-// no account needed, at https://carto.com/basemaps/apikey and paste it
-// below. Free for up to 5 million tile loads/month. Leave "" and the map
-// will still work but shows a "API KEY REQUIRED" watermark.
+// One shared CARTO key for both brands (it's a map-tiles key for this
+// project, not tied to either company). Get one free at
+// https://carto.com/basemaps/apikey if this ever needs to change.
 // ---------------------------------------------------------------
-const CONFIG = {
-  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv",
-  REFRESH_SECONDS: 45,
+const MAP_KEY = {
   CARTO_API_KEY: "cb1_2kmy_1_abed039dd0f9e2ce493f22ff",
 };
 
-const CONTACT = {
+// ---------------------------------------------------------------
+// LIVE AVAILABILITY SYNC — per brand, since Kopano Media and The Medium
+// are run separately (Peter and Bongane each manage their own sheet).
+// Paste each brand's "Publish to web" CSV link into its own CONFIG below.
+// Leave "" to run that brand on static data only. See LIVE_SYNC_SETUP.md.
+// ---------------------------------------------------------------
+
+const BRANDS = {
+  kopano: {
+    id: "kopano",
+    name: "Kopano",
+    nameAccent: "Media",
+    tagline: "OOH Site Locator",
+    CONFIG: {
+      SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv
+",
+      REFRESH_SECONDS: 45,
+    },
+    CONTACT: {
   name: "Peter Mashamba",
   role: "Managing Director",
   email: "peter@kopanomediacomms.co.za",
   phone: "082 675 0747",
   phoneHref: "+27826750747",
-};
-
-const AREAS = [
+},
+    AREAS: [
   "Fourways & Northriding",
   "Midrand",
   "Sandton",
@@ -39,9 +51,8 @@ const AREAS = [
   "Kagiso, Mogale City",
   "Soweto",
   "Olievenhoutbosch, Centurion"
-];
-
-const SITES = [
+],
+    SITES: [
   {
     code: "KOP001", area: "Fourways & Northriding", image: "images/full/KOP001.jpg", thumb: "images/thumb/KOP001.jpg", rateCard: 60000, suggestedRate: 42000, production: 24000,
     title: "Witkoppen Road – towards Fourways",
@@ -258,17 +269,8 @@ const SITES = [
     material: "PVC Flex Block-out", availability: "2026-03-01", trafficFlow: "Continuous traffic and pedestrian flow",
     trafficCount: "50 000+ vehicles/day", illuminated: false, lat: -25.905682, lng: 28.097100
   }
-];
-
-// ---------------------------------------------------------------
-// NEARBY LANDMARKS
-// Real, verified places (malls, entertainment, transport, education,
-// dining) near clusters of billboard sites — coordinates confirmed via
-// Google Places. Shown on the map once zoomed in far enough, scoped to
-// whichever billboard sites are currently visible, to help sell each
-// site by showing the foot/vehicle traffic context around it.
-// ---------------------------------------------------------------
-const LANDMARKS = [
+],
+    LANDMARKS: [
   { name: "Fourways Mall", category: "mall", tier: "area", lat: -26.0188644, lng: 28.0064222, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
   { name: "Monte Casino", category: "entertainment", tier: "area", lat: -26.0245212, lng: 28.0118433, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
   { name: "Cedar Square", category: "mall", tier: "area", lat: -26.0171174, lng: 27.9993122, sites: ["KOP001", "KOP002", "KOP009", "KOP008"] },
@@ -320,4 +322,228 @@ const LANDMARKS = [
   { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", tier: "close", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
   { name: "Chicken Licken Olievenhoutbosch", category: "dining", tier: "close", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
   { name: "eTV Studios", category: "landmark", tier: "close", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
-];
+],
+  },
+
+  medium: {
+    id: "medium",
+    name: "The",
+    nameAccent: "Medium",
+    tagline: "OOH Site Locator",
+    CONFIG: {
+      SHEET_CSV_URL: "",
+      REFRESH_SECONDS: 45,
+    },
+    CONTACT: {
+  name: "Bongane Motlhabane",
+  role: "The Medium",
+  email: "Bongane@themedium.co.za",
+  phone: "083 212 0003",
+  phoneHref: "+27832120003",
+},
+    AREAS: [
+  "Johannesburg – M2 Highway",
+  "Soweto – Jabulani",
+  "Cosmo City",
+  "Tembisa",
+  "Vosloorus",
+  "Daveyton",
+  "Kagiso – Chamdor",
+  "Hammanskraal",
+  "Mokopane, Limpopo",
+],
+    SITES: [
+  {
+    code: "TMD010", area: "Johannesburg – M2 Highway",
+    title: "M2 Highway Digital Screen",
+    format: "digital",
+    image: "images/full/TMD010.jpg", thumb: "images/thumb/TMD010.jpg",
+    description: "Located along the M2 highway between the Mooi Street off-ramp and the Rissik/Selby Street off-ramps. Faces traffic heading to the CBD, Maboneng Precinct, and the N3/N12 highways towards Newtown, Crown Mines, the N1, M1 and N12 — connecting Braamfontein, Parktown, Sandton, Soweto, Pretoria, South Rand and the West Rand.",
+    size: "6m x 14m (84 sqm)",
+    rateCard: 80000, suggestedRate: 65000, production: 0,
+    slots: 12, spotLength: "15 sec", loop: "3 min loop", spotsPerDay: 480,
+    availability: "2025-01-01", trafficCount: "3,000,000+ cars/month",
+    illuminated: true, lat: -26.212541, lng: 28.049633,
+  },
+  {
+    code: "TM001A", area: "Soweto – Jabulani",
+    title: "Cnr Bolani Dr & Koma Str – Jabulani Mall",
+    format: "static",
+    image: "images/full/TM001A.jpg", thumb: "images/thumb/TM001A.jpg",
+    description: "Located outside Jabulani Mall (banks, Shoprite, Virgin Active, KFC, McDonald's, Nando's, Game, Clicks). Across the road from Bheki Mlangeni Hospital and opposite an Engen garage. 1km from Soweto Theatre, a Shell garage, Jabulani Police Station and the Jabulani taxi rank.",
+    size: "7.5m x 5m",
+    rateCard: 35000, suggestedRate: 30000, production: 15000,
+    availability: "2025-01-01", trafficCount: "800,889+ cars/month",
+    illuminated: false, lat: -26.248696, lng: 27.854758,
+  },
+  {
+    code: "TM001B", area: "Soweto – Jabulani",
+    title: "Cnr Bolani Dr & Koma Str – Jabulani Mall",
+    format: "static",
+    image: "images/full/TM001B.jpg", thumb: "images/thumb/TM001B.jpg",
+    description: "Located outside Jabulani Mall (banks, Shoprite, Virgin Active, KFC, McDonald's, Nando's, Game, Clicks). Across the road from Bheki Mlangeni Hospital and opposite an Engen garage. 1km from Soweto Theatre, a Shell garage, Jabulani Police Station and the Jabulani taxi rank.",
+    size: "7.5m x 5m",
+    rateCard: 35000, suggestedRate: 30000, production: 10500,
+    availability: "2027-01-01", trafficCount: "800,889+ cars/month",
+    illuminated: false, lat: -26.248696, lng: 27.854758,
+  },
+  {
+    code: "TM002A", area: "Cosmo City",
+    title: "Cnr Malibongwe Dr & South Africa Dr – Cosmo City Mall",
+    format: "static",
+    image: "images/full/TM002A.jpg", thumb: "images/thumb/TM002A.jpg",
+    description: "Located outside the Cosmo taxi rank, across from Cosmo Mall (banks, McDonald's, Pick n Pay, liquor store, fast food). Opposite a Sasol garage, Shoprite and Liquor, Cambridge Food/Liquor and KFC.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2026-04-01", trafficCount: "1,212,389+ cars/month",
+    illuminated: false, lat: -26.016552, lng: 27.939255,
+  },
+  {
+    code: "TM002B", area: "Cosmo City",
+    title: "Cnr Malibongwe Dr & South Africa Dr – Cosmo City Mall",
+    format: "static",
+    image: "images/full/TM002B.jpg", thumb: "images/thumb/TM002B.jpg",
+    description: "Located outside the Cosmo taxi rank, across from Cosmo Mall (banks, McDonald's, Pick n Pay, liquor store, fast food). Opposite a Sasol garage, Shoprite and Liquor, Cambridge Food/Liquor and KFC.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2026-04-01", trafficCount: "1,212,389+ cars/month",
+    illuminated: false, lat: -26.016552, lng: 27.939255,
+  },
+  {
+    code: "TM003A", area: "Tembisa",
+    title: "Cnr Olifantsfontein Rd & Aluminium Dr – Mall of Tembisa",
+    format: "static",
+    image: "images/full/TM003A.jpg", thumb: "images/thumb/TM003A.jpg",
+    description: "Located outside Mall of Tembisa on Olifantsfontein Road leading to Midrand, Busy Corner and Phumlani Mall. Surrounding areas include Ivory Park and the Winnie Mandela informal settlement.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2025-01-01", trafficCount: "1,133,679+ cars/month",
+    illuminated: false, lat: -25.959600, lng: 28.2035582,
+  },
+  {
+    code: "TM003B", area: "Tembisa",
+    title: "Cnr Olifantsfontein Rd & Aluminium Dr – Mall of Tembisa",
+    format: "static",
+    image: "images/full/TM003B.jpg", thumb: "images/thumb/TM003B.jpg",
+    description: "Located outside Mall of Tembisa on Olifantsfontein Road leading to Midrand, Busy Corner and Phumlani Mall. Surrounding areas include Ivory Park and the Winnie Mandela informal settlement.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2025-01-01", trafficCount: "1,133,679+ cars/month",
+    illuminated: false, lat: -25.959600, lng: 28.2035582,
+  },
+  {
+    code: "TM004A", area: "Vosloorus",
+    title: "Bierman Rd & Brickfield Rd – Chris Hani Mall",
+    format: "static",
+    image: "images/full/TM004A.jpg", thumb: "images/thumb/TM004A.jpg",
+    description: "Located outside two shopping centres facing each other (Chris Hani Crossing and Chris Hani Mall) in Vosloorus, with a taxi rank between them. The road leads out of Vosloorus to the N3 towards Durban and Johannesburg.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2026-04-01", trafficCount: "871,691+ cars/month",
+    illuminated: false, lat: -26.341337, lng: 28.182874,
+  },
+  {
+    code: "TM004B", area: "Vosloorus",
+    title: "Bierman Rd & Brickfield Rd – Chris Hani Mall",
+    format: "static",
+    image: "images/full/TM004B.jpg", thumb: "images/thumb/TM004B.jpg",
+    description: "Located outside two shopping centres facing each other (Chris Hani Crossing and Chris Hani Mall) in Vosloorus, with a taxi rank between them. The road leads out of Vosloorus to the N3 towards Durban and Johannesburg.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2025-01-01", trafficCount: "871,691+ cars/month",
+    illuminated: false, lat: -26.341337, lng: 28.182874,
+  },
+  {
+    code: "TM006A", area: "Daveyton",
+    title: "DM Mthimunye Street, Daveyton",
+    format: "static",
+    image: "images/full/TM006A.jpg", thumb: "images/thumb/TM006A.jpg",
+    description: "Located on the main road leading in and out of Daveyton, 2km from the N12 towards Mpumalanga and Johannesburg. A Total garage sits 100m away, and the shopping centre at the nearby robot has Shoprite, KFC, PEP, Roots Butchery and Liquor City.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2026-04-01", trafficCount: "750,800+ cars/month",
+    illuminated: false, lat: -26.162181, lng: 28.399153,
+  },
+  {
+    code: "TM006B", area: "Daveyton",
+    title: "DM Mthimunye Street, Daveyton",
+    format: "static",
+    image: "images/full/TM006B.jpg", thumb: "images/thumb/TM006B.jpg",
+    description: "Located on the main road leading in and out of Daveyton, 2km from the N12 towards Mpumalanga and Johannesburg. A Total garage sits 100m away, and the shopping centre at the nearby robot has Shoprite, KFC, PEP, Roots Butchery and Liquor City.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2025-01-01", trafficCount: "750,800+ cars/month",
+    illuminated: false, lat: -26.162181, lng: 28.399153,
+  },
+  {
+    code: "TM007A", area: "Kagiso – Chamdor",
+    title: "Jacobs Street, Kagiso – Chamdor Centre",
+    format: "static",
+    image: "images/full/TM007A.jpg", thumb: "images/thumb/TM007A.jpg",
+    description: "Located on the main road in Kagiso, opposite Pick n Pay, PnP Liquor and Build It, 100m from Chamdor Square (Shoprite, PEP, Easy Pack Liquor, Finbond, Nedbank, FNB and Absa ATMs). A Shell garage is 300m away and a SAB brewery 200m away. The road leads to Leratong District Hospital.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2025-01-01", trafficCount: "623,500+ cars/month",
+    illuminated: false, lat: -26.158013, lng: 27.797142,
+  },
+  {
+    code: "TM007B", area: "Kagiso – Chamdor",
+    title: "Jacobs Street, Kagiso – Chamdor Centre",
+    format: "static",
+    image: "images/full/TM007B.jpg", thumb: "images/thumb/TM007B.jpg",
+    description: "Located on the main road in Kagiso, opposite Pick n Pay, PnP Liquor and Build It, 100m from Chamdor Square (Shoprite, PEP, Easy Pack Liquor, Finbond, Nedbank, FNB and Absa ATMs). A Shell garage is 300m away and a SAB brewery 200m away. The road leads to Leratong District Hospital.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2025-01-01", trafficCount: "623,500+ cars/month",
+    illuminated: false, lat: -26.158013, lng: 27.797142,
+  },
+  {
+    code: "TM008A", area: "Hammanskraal",
+    title: "Temba Rd / Juba Rd – Jubilee Mall & Jubilee Crossing",
+    format: "static",
+    image: "images/full/TM008A.jpg", thumb: "images/thumb/TM008A.jpg",
+    description: "Located between Jubilee Mall and Jubilee shopping centre in Hammanskraal, Pretoria, on Temba Road. Next to Jubilee Hospital, Jubilee Police Station, a taxi rank and an Engen garage. Combined anchor tenants include Shoprite, Absa, FNB, PEP, Pick n Pay, KFC, Nando's and McDonald's.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2027-01-01", trafficCount: "711,273+ cars/month",
+    illuminated: false, lat: -25.404847, lng: 28.266457,
+  },
+  {
+    code: "TM008B", area: "Hammanskraal",
+    title: "Temba Rd / Juba Rd – Jubilee Mall & Jubilee Crossing",
+    format: "static",
+    image: "images/full/TM008B.jpg", thumb: "images/thumb/TM008B.jpg",
+    description: "Located between Jubilee Mall and Jubilee shopping centre in Hammanskraal, Pretoria, on Temba Road. Next to Jubilee Hospital, Jubilee Police Station, a taxi rank and an Engen garage. Combined anchor tenants include Shoprite, Absa, FNB, PEP, Pick n Pay, KFC, Nando's and McDonald's.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15500,
+    availability: "2026-08-01", trafficCount: "711,273+ cars/month",
+    illuminated: false, lat: -25.404847, lng: 28.266457,
+  },
+  {
+    code: "TM005A", area: "Mokopane, Limpopo",
+    title: "Dudu Madisha Dr – Mahwelereng Shopping Centre",
+    format: "static",
+    image: "images/full/TM005A.jpg", thumb: "images/thumb/TM005A.jpg",
+    description: "Located opposite Mahwelereng Shopping Centre on Dudu Madisha Drive, next to an Engen garage. Anchor tenants include Shoprite, Absa, Nedbank, Capitec, FNB, PEP, Jet and the Post Office. 2km from Mokopane Hospital, the Magistrate's Court, SASSA offices, Sasko Bakery, Mahwelereng Stadium, Waterberg TVET College and the Traffic Department.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2026-08-01", trafficCount: "356,010+ cars/month",
+    illuminated: false, lat: -24.140851, lng: 28.968667,
+  },
+  {
+    code: "TM005B", area: "Mokopane, Limpopo",
+    title: "Dudu Madisha Dr – Mahwelereng Shopping Centre",
+    format: "static",
+    image: "images/full/TM005B.jpg", thumb: "images/thumb/TM005B.jpg",
+    description: "Located opposite Mahwelereng Shopping Centre on Dudu Madisha Drive, next to an Engen garage. Anchor tenants include Shoprite, Absa, Nedbank, Capitec, FNB, PEP, Jet and the Post Office. 2km from Mokopane Hospital, the Magistrate's Court, SASSA offices, Sasko Bakery, Mahwelereng Stadium, Waterberg TVET College and the Traffic Department.",
+    size: "3m x 12m",
+    rateCard: 45000, suggestedRate: 35000, production: 15000,
+    availability: "2025-01-01", trafficCount: "356,010+ cars/month",
+    illuminated: false, lat: -24.140851, lng: 28.968667,
+  },
+],
+    // Close-proximity landmarks haven't been researched for The Medium's
+    // sites yet — leaving empty for now rather than guessing.
+    LANDMARKS: [],
+  },
+};
