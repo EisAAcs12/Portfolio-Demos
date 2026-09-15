@@ -798,8 +798,10 @@ function activateBrandData(id) {
 function updateBrandHeaderUI() {
   const brand = BRANDS[currentBrandId];
   document.title = `${brand.name} ${brand.nameAccent} — ${brand.tagline}`;
-  const switcher = document.getElementById("brand-switcher");
-  if (switcher) switcher.value = currentBrandId;
+  document.body.dataset.brand = currentBrandId;
+  document.querySelectorAll(".brand-pill").forEach(pill => {
+    pill.classList.toggle("active", pill.dataset.brand === currentBrandId);
+  });
   const tagEl = document.getElementById("brand-tag");
   if (tagEl) tagEl.textContent = brand.tagline;
 }
@@ -892,11 +894,10 @@ const startParams = new URLSearchParams(location.search);
 const startBrandId = BRANDS[startParams.get("brand")] ? startParams.get("brand") : "kopano";
 activateBrandData(startBrandId);
 
-const brandSwitcher = document.getElementById("brand-switcher");
-if (brandSwitcher) {
-  brandSwitcher.value = startBrandId;
-  brandSwitcher.addEventListener("change", (e) => switchBrand(e.target.value));
-}
+const brandPills = document.querySelectorAll(".brand-pill");
+brandPills.forEach(pill => {
+  pill.addEventListener("click", () => switchBrand(pill.dataset.brand));
+});
 
 populateSelects();
 populateContactStatic();
