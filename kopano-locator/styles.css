@@ -21,28 +21,52 @@
   --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 
+  /* Each brand's real identity colour, sampled directly from their actual
+     logo files — not invented. Kept as their own constants (rather than
+     only living inside the brand-accent override below) so a pill button
+     can always show its OWN brand's colour regardless of which brand is
+     currently active app-wide. */
+  --kopano-brand: #10a0d8;   /* the sky-blue "K" mark in Kopano's real logo */
+  --medium-brand: #f2822e;   /* the orange from The Medium's real logo — NOT
+                                 their blue, since that sampled too close to
+                                 Kopano's real blue to tell the two brands
+                                 apart at a glance; orange is equally real,
+                                 sampled from the same logo, and reads as a
+                                 clearly distinct identity next to Kopano's */
+
   /* Brand-identity accent — everything that's "chrome" (buttons, the
-     header, the calculator, badges) reads this instead of --amber
+     header, the calculator, badges) reads this instead of a literal colour
      directly, so a brand can be reskinned without touching the map pins
      or the universal available/optioned/booked status colors, which
      stay --teal/--amber/--red-signal regardless of brand on purpose. */
-  --brand-accent: var(--amber);
-  --brand-accent-glow: var(--amber-glow);
-  --brand-accent-soft: rgba(245, 166, 35, 0.1);
-  --brand-accent-soft-strong: rgba(245, 166, 35, 0.16);
-  --brand-accent-border: rgba(245, 166, 35, 0.35);
+  --brand-accent: var(--kopano-brand);
+  --brand-accent-glow: rgba(16, 160, 216, 0.35);
+  --brand-accent-soft: rgba(16, 160, 216, 0.1);
+  --brand-accent-soft-strong: rgba(16, 160, 216, 0.16);
+  --brand-accent-border: rgba(16, 160, 216, 0.35);
 }
 
-/* The Medium — real colours sampled from their actual logo (a vivid
-   cyan-blue is the dominant, most distinctive hue in it). The map tiles,
-   billboard pins, and status colors are deliberately NOT overridden here —
-   only the surrounding app chrome changes. */
+/* Kopano Media — their real sky-blue, sampled from the logo in their
+   proposal deck. Explicit block (mirrors :root's default) so the two
+   brands stay symmetrical and neither depends on the other's fallback. */
+[data-brand="kopano"] {
+  --brand-accent: var(--kopano-brand);
+  --brand-accent-glow: rgba(16, 160, 216, 0.35);
+  --brand-accent-soft: rgba(16, 160, 216, 0.1);
+  --brand-accent-soft-strong: rgba(16, 160, 216, 0.16);
+  --brand-accent-border: rgba(16, 160, 216, 0.35);
+}
+
+/* The Medium — their real orange, sampled from the same logo file as the
+   blue used elsewhere in their branding. The map tiles, billboard pins,
+   and status colors are deliberately NOT overridden here — only the
+   surrounding app chrome changes. */
 [data-brand="medium"] {
-  --brand-accent: #22b8e8;
-  --brand-accent-glow: rgba(34, 184, 232, 0.35);
-  --brand-accent-soft: rgba(34, 184, 232, 0.1);
-  --brand-accent-soft-strong: rgba(34, 184, 232, 0.16);
-  --brand-accent-border: rgba(34, 184, 232, 0.35);
+  --brand-accent: var(--medium-brand);
+  --brand-accent-glow: rgba(242, 130, 46, 0.35);
+  --brand-accent-soft: rgba(242, 130, 46, 0.1);
+  --brand-accent-soft-strong: rgba(242, 130, 46, 0.16);
+  --brand-accent-border: rgba(242, 130, 46, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -160,8 +184,7 @@ input, select { font-family: inherit; }
    which brand is currently active app-wide — Kopano's mark stays amber
    even while viewing The Medium, and vice versa isn't needed since
    Medium's mark is its logo image rather than a coloured text accent. */
-.brand-pill .accent { color: var(--amber); }
-.brand-pill-logo { height: 17px; width: auto; display: block; flex-shrink: 0; }
+.brand-pill-logo { height: 18px; width: auto; display: block; flex-shrink: 0; }
 .brand-pill .short-label { display: none; }
 
 .brand-tag {
