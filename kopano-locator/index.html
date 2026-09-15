@@ -22,10 +22,16 @@
 
   <header class="topbar">
     <div class="brand" id="brand-switcher-wrap">
-      <select id="brand-switcher" class="brand-mark-select" aria-label="Switch media company">
-        <option value="kopano">Kopano Media</option>
-        <option value="medium">The Medium</option>
-      </select>
+      <div class="brand-switcher-group" role="group" aria-label="Switch media company">
+        <button type="button" class="brand-pill" id="brand-pill-kopano" data-brand="kopano">
+          <span class="full-label">Kopano<span class="accent">Media</span></span>
+          <span class="short-label">Kopano</span>
+        </button>
+        <button type="button" class="brand-pill" id="brand-pill-medium" data-brand="medium">
+          <img src="brand-assets/the-medium-logo.png" alt="" class="brand-pill-logo" />
+          <span class="full-label">The Medium</span>
+        </button>
+      </div>
       <span class="brand-tag" id="brand-tag">OOH Site Locator</span>
     </div>
     <div class="topbar-right">
