@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Kopano Media — OOH Site Locator</title>
-<meta name="description" content="Find available Kopano Media billboard faces across Gauteng." />
+<title>Kopano Media & The Medium — OOH Site Locator</title>
+<meta name="description" content="Find available billboard and digital screen sites across Gauteng and Limpopo." />
 <meta name="theme-color" content="#12151a" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -21,9 +21,12 @@
 <div id="app">
 
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">Kopano<span>Media</span></span>
-      <span class="brand-tag">OOH Site Locator</span>
+    <div class="brand" id="brand-switcher-wrap">
+      <select id="brand-switcher" class="brand-mark-select" aria-label="Switch media company">
+        <option value="kopano">Kopano Media</option>
+        <option value="medium">The Medium</option>
+      </select>
+      <span class="brand-tag" id="brand-tag">OOH Site Locator</span>
     </div>
     <div class="topbar-right">
       <div class="live-chip"><span class="live-dot"></span><span id="result-count">27 boards</span></div>
@@ -92,7 +95,7 @@
       <h2 class="modal-heading">Contact for pricing</h2>
       <p class="modal-sub" id="contact-subtitle">Get today's rate card for any Kopano Media site</p>
       <div class="modal-contact-row">
-        <div class="modal-avatar">PM</div>
+        <div class="modal-avatar" id="modal-avatar">PM</div>
         <div>
           <div class="modal-name" id="contact-name">Peter Mashamba</div>
           <div class="modal-role" id="contact-role">Managing Director</div>
