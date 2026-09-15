@@ -442,6 +442,20 @@ input, select { font-family: inherit; }
   white-space: nowrap;
 }
 
+.format-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  margin-left: 6px;
+}
+
 .site-title-line { flex: 1; min-width: 0; }
 .site-title {
   font-size: 13.5px;
