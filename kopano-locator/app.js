@@ -317,10 +317,13 @@ function siteCardHTML(site, expanded) {
   const status = resolveStatus(site);
   const badge = availabilityBadge(site);
   const signal = trafficLightHTML(status);
+  const isDigital = site.format === "digital";
 
   const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
 
   const durations = [1, 3, 6, 12];
+  const hasProduction = site.production > 0;
+  const calcTotal = site.suggestedRate * 1 + (site.production || 0);
   const calcBlock = `
     <div class="calc-block">
       <div class="calc-head">Estimate a campaign cost</div>
@@ -329,23 +332,36 @@ function siteCardHTML(site, expanded) {
       </div>
       <div class="calc-total">
         <span class="calc-total-label">Estimated total</span>
-        <span class="calc-total-figure" data-calc-total="${site.code}">${fmtMoney(site.suggestedRate * 1 + site.production)}</span>
+        <span class="calc-total-figure" data-calc-total="${site.code}">${fmtMoney(calcTotal)}</span>
       </div>
-      <p class="calc-disclaimer">Estimate only — suggested rate × months + production. Final pricing confirmed via Contact for pricing.</p>
+      <p class="calc-disclaimer">Estimate only — suggested rate × months${hasProduction ? " + production" : ""}. Final pricing confirmed via Contact for pricing.</p>
     </div>`;
+
+  // Kopano's sites have LSM/material/traffic-flow; The Medium's don't carry
+  // those fields at all — fall back cleanly rather than printing "undefined".
+  const detailGrid = isDigital ? `
+      <div class="detail-grid">
+        <div class="detail-field"><dt>Slots</dt><dd>${site.slots ?? "—"}</dd></div>
+        <div class="detail-field"><dt>Spot length</dt><dd>${site.spotLength || "—"}</dd></div>
+        <div class="detail-field"><dt>Loop</dt><dd>${site.loop || "—"}</dd></div>
+        <div class="detail-field"><dt>Spots per day</dt><dd>${site.spotsPerDay ?? "—"}</dd></div>
+        <div class="detail-field"><dt>Traffic count</dt><dd>${site.trafficCount || "—"}</dd></div>
+        <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
+      </div>` : `
+      <div class="detail-grid">
+        <div class="detail-field"><dt>LSM / SEM</dt><dd>${site.lsm || "Not specified"}</dd></div>
+        <div class="detail-field"><dt>Material</dt><dd>${site.material || "Not specified"}</dd></div>
+        <div class="detail-field"><dt>Traffic count</dt><dd>${site.trafficCount || "—"}</dd></div>
+        <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
+        ${site.trafficFlow ? `<div class="detail-field" style="grid-column: 1 / -1;"><dt>Traffic flow</dt><dd>${site.trafficFlow}</dd></div>` : ""}
+      </div>`;
 
   const detail = expanded ? `
     <div class="site-detail">
       <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
       ${noteRow}
       <p>${site.description}</p>
-      <div class="detail-grid">
-        <div class="detail-field"><dt>LSM / SEM</dt><dd>${site.lsm}</dd></div>
-        <div class="detail-field"><dt>Material</dt><dd>${site.material}</dd></div>
-        <div class="detail-field"><dt>Traffic count</dt><dd>${site.trafficCount}</dd></div>
-        <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
-        <div class="detail-field" style="grid-column: 1 / -1;"><dt>Traffic flow</dt><dd>${site.trafficFlow}</dd></div>
-      </div>
+      ${detailGrid}
       ${calcBlock}
       <div class="gps-row">
         <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
@@ -360,6 +376,7 @@ function siteCardHTML(site, expanded) {
         <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" />
         <div class="site-title-line">
           <span class="site-shield">${site.code}</span>
+          ${isDigital ? `<span class="format-badge">📺 Digital</span>` : ""}
           <p class="site-title">${site.title}</p>
           <span class="site-size">${site.size}</span>
         </div>
