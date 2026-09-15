@@ -1,986 +1,923 @@
-:root {
-  --asphalt-900: #12151a;
-  --asphalt-850: #171b21;
-  --asphalt-800: #1c2129;
-  --asphalt-700: #262c35;
-  --asphalt-650: #2e3540;
-  --line: #333a44;
-  --line-soft: #262b33;
-  --amber: #f5a623;
-  --amber-dim: #c9861b;
-  --amber-glow: rgba(245, 166, 35, 0.35);
-  --teal: #21c7b0;
-  --teal-dim: #14897a;
-  --red-signal: #e8583f;
-  --text-hi: #f4f1ea;
-  --text-mid: #aab0b6;
-  --text-low: #6c7379;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --font-display: "Oswald", "Arial Narrow", sans-serif;
-  --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+// Kopano Media & The Medium — OOH Site Locator
+// Vanilla JS + Leaflet. Data comes from data.js (BRANDS, MAP_KEY).
+// Which brand is "active" is held in these module-level `let` bindings —
+// every function below reads SITES/AREAS/CONTACT/CONFIG/LANDMARKS via
+// closure, so switching brands is just reassigning these and re-running
+// the render pipeline (see activateBrandData / switchBrand).
+
+let currentBrandId, SITES, AREAS, CONTACT, CONFIG, LANDMARKS;
+let liveSyncTimer = null;
+
+const state = {
+  search: "",
+  area: "all",
+  size: "all",
+  illuminated: "all",
+  availableNow: false,
+  selectedCode: null,
+  collapsedAreas: new Set(),
+  curateMode: false,
+  picked: new Set(),      // codes checked while building a client link
+  clientView: null,       // Set of codes when viewing a shared link, else null
+};
+
+const TODAY = new Date(); // real "today" for availability comparisons
+
+// ---------- helpers ----------
+
+function fmtMoney(n) {
+  return "R" + Math.round(n).toLocaleString("en-ZA");
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-
-body {
-  background: var(--asphalt-900);
-  color: var(--text-hi);
-  font-family: var(--font-body);
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
+function fmtDate(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
 }
 
-button { font-family: inherit; cursor: pointer; }
-input, select { font-family: inherit; }
-
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+function isAvailableNow(site) {
+  return resolveStatus(site) === "available";
 }
 
-/* ---------- Header ---------- */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left));
-  padding-top: max(12px, env(safe-area-inset-top));
-  background: var(--asphalt-850);
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
+// Resolves the effective status for a site: "available" | "optioned" | "booked"
+// Sheet-driven status wins when present; otherwise falls back to the static
+// availability date (past/today = available, future = booked).
+function resolveStatus(site) {
+  if (site.liveStatus === "available" || site.liveStatus === "optioned" || site.liveStatus === "booked") {
+    return site.liveStatus;
+  }
+  return new Date(site.availability + "T00:00:00") <= TODAY ? "available" : "booked";
 }
 
-.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-
-.brand-mark {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--text-hi);
-  white-space: nowrap;
-}
-.brand-mark span { color: var(--amber); }
-
-.brand-mark-select {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--text-hi);
-  background-color: transparent;
-  border: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  cursor: pointer;
-  padding-right: 16px;
-  max-width: 100%;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f5a623' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 9px;
-}
-.brand-mark-select:hover { color: var(--amber); }
-.brand-mark-select:focus { outline: none; color: var(--amber); }
-.brand-mark-select option {
-  background: var(--asphalt-800);
-  color: var(--text-hi);
-  font-family: var(--font-body);
-  text-transform: none;
-  font-weight: 400;
+// The date to show alongside a non-available status: prefer the sheet's
+// NextAvailableDate, fall back to AvailableFrom.
+function resolveStatusDate(site) {
+  return site.liveNextAvailable || site.availability || "";
 }
 
-.brand-tag {
-  font-size: 11px;
-  color: var(--text-low);
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  display: none;
-}
-@media (min-width: 640px) { .brand-tag { display: inline; } }
+const STATUS_META = {
+  available: { label: "Available now", cls: "available" },
+  optioned:  { label: "Optioned",       cls: "optioned" },
+  booked:    { label: "Booked",         cls: "booked" },
+};
 
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.contact-chip {
-  font-family: var(--font-display);
-  font-size: 12px;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: var(--asphalt-900);
-  background: var(--amber);
-  border: none;
-  border-radius: 999px;
-  padding: 8px 14px;
-  white-space: nowrap;
-  transition: filter .15s, transform .1s;
-}
-.contact-chip:hover { filter: brightness(1.08); }
-.contact-chip:active { transform: scale(0.97); }
-.contact-chip .short-label { display: none; }
-
-/* Tight phones: shrink chip text/padding before anything is forced to wrap */
-@media (max-width: 420px) {
-  .brand-mark { font-size: 17px; }
-  .brand-mark-select { font-size: 17px; }
-  .live-chip { padding: 5px 8px; font-size: 11px; }
-  .contact-chip { padding: 7px 10px; font-size: 11px; }
-  .contact-chip .full-label { display: none; }
-  .contact-chip .short-label { display: inline; }
+function trafficLightHTML(status) {
+  return `
+    <span class="signal" title="${STATUS_META[status].label}">
+      <span class="signal-light red${status === "booked" ? " on" : ""}"></span>
+      <span class="signal-light amber${status === "optioned" ? " on" : ""}"></span>
+      <span class="signal-light green${status === "available" ? " on" : ""}"></span>
+    </span>`;
 }
 
-.live-chip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-mid);
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 0 3px rgba(33,199,176,0.18);
-  flex-shrink: 0;
+function availabilityBadge(site) {
+  const status = resolveStatus(site);
+  const meta = STATUS_META[status];
+
+  if (status === "available") {
+    return `<span class="avail-badge available">● ${meta.label}</span>`;
+  }
+
+  // Booked/Optioned dates are intentionally not shown publicly — dates live
+  // in the Google Sheet for staff reference only.
+  const client = site.liveClient ? ` — ${site.liveClient}` : "";
+  return `<span class="avail-badge ${meta.cls}">● ${meta.label}${client}</span>`;
 }
 
-/* ---------- Filters ---------- */
-.filterbar {
-  display: flex;
-  gap: 8px;
-  padding: 10px max(18px, env(safe-area-inset-right)) 10px max(18px, env(safe-area-inset-left));
-  background: var(--asphalt-850);
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.filterbar::-webkit-scrollbar { display: none; }
-
-.filterbar input[type="search"] {
-  flex: 1 1 180px;
-  min-width: 140px;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: 13px;
-}
-.filterbar input[type="search"]::placeholder { color: var(--text-low); }
-
-.filterbar select {
-  flex: 0 0 auto;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  border-radius: var(--radius-sm);
-  padding: 8px 8px;
-  font-size: 13px;
+function uniqueSizes() {
+  return [...new Set(SITES.map(s => s.size))].sort();
 }
 
-.toggle-chip {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
-  white-space: nowrap;
-  transition: border-color .15s, color .15s, background .15s;
-}
-.toggle-chip.active {
-  border-color: var(--amber);
-  color: var(--amber);
-  background: rgba(245,166,35,0.08);
+function siteKey(site) {
+  // group markers that share (near-identical) coordinates
+  return site.lat.toFixed(3) + "," + site.lng.toFixed(3);
 }
 
-/* ---------- Layout ---------- */
-.layout {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-@media (min-width: 900px) {
-  .layout { flex-direction: row; }
-}
-
-.map-wrap {
-  position: relative;
-  flex: 1 1 48vh;
-  min-height: 260px;
-}
-@media (min-width: 900px) {
-  .map-wrap { flex: 1 1 auto; order: 2; }
+function matchesFilters(site) {
+  if (state.clientView && !state.clientView.has(site.code)) return false;
+  const q = state.search.trim().toLowerCase();
+  if (q) {
+    const hay = (site.code + " " + site.title + " " + site.area + " " + site.description).toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  if (state.area !== "all" && site.area !== state.area) return false;
+  if (state.size !== "all" && site.size !== state.size) return false;
+  if (state.illuminated === "yes" && !site.illuminated) return false;
+  if (state.illuminated === "no" && site.illuminated) return false;
+  if (state.availableNow && !isAvailableNow(site)) return false;
+  return true;
 }
 
-#map {
-  position: absolute;
-  inset: 0;
-  background: var(--asphalt-900);
-  touch-action: none; /* stop pinch/trackpad-zoom on the map from also zooming the whole page */
+function filteredSites() {
+  return SITES.filter(matchesFilters);
 }
 
-/* Hover/tap site preview — a fixed overlay centered inside the map itself
-   (not anchored to the pin's screen position), so it's always fully visible
-   at a consistent size on both desktop hover and mobile tap, with no need
-   to scroll or move the cursor to see the whole photo. The image and its
-   caption are both sized against the same .map-preview-frame box (rather
-   than one being a flex item and the other position:absolute against a
-   different reference box), so they always line up edge-to-edge with no
-   gap or size mismatch between them. */
-.map-preview {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-  z-index: 500;
-}
-.map-preview.show { opacity: 1; }
-.map-preview-frame {
-  width: 80%;
-  height: 80%;
-  display: flex;
-  flex-direction: column;
-}
-.map-preview-frame img {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border: 3px solid var(--asphalt-700);
-  border-bottom: none;
-  box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
-  background: var(--asphalt-800);
-}
-.map-preview-cap {
-  flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  background: var(--asphalt-700);
-  border: 3px solid var(--asphalt-700);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding: 8px 14px 10px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-hi);
-}
-.map-preview-cap span:first-child { color: var(--amber); font-weight: 700; margin-right: 6px; }
-.map-preview-line2 {
-  color: var(--text-mid);
-  font-size: 11px;
-  margin-top: 3px;
+// ---------- map ----------
+
+let map, markerLayer;
+const markersByCode = new Map(); // site code -> Leaflet marker
+
+// Landmarks only appear once zoomed in this far — keeps the wide view clean
+// and focused on the billboards themselves.
+const LANDMARK_MIN_ZOOM = 14;
+let landmarkLayer;
+
+const LANDMARK_META = {
+  mall:          { emoji: "🛍️", label: "Shopping" },
+  dining:        { emoji: "🍴", label: "Dining" },
+  entertainment: { emoji: "🎬", label: "Entertainment" },
+  transport:     { emoji: "🚉", label: "Transport" },
+  education:     { emoji: "🎓", label: "Education" },
+  office:        { emoji: "🏢", label: "Office" },
+  fuel:          { emoji: "⛽", label: "Fuel" },
+  health:        { emoji: "🏥", label: "Health" },
+  landmark:      { emoji: "📍", label: "Landmark" },
+};
+
+function landmarkIcon(lm) {
+  const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
+  const tierClass = lm.tier === "close" ? "tier-close" : "tier-area";
+  const size = lm.tier === "close" ? 32 : 26;
+  return L.divIcon({
+    className: "landmark-pin-wrap",
+    html: `<div class="landmark-pin ${tierClass}"><span>${meta.emoji}</span></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
 }
 
-.panel {
-  flex: 1 1 52vh;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--asphalt-800);
-  border-top: 1px solid var(--line-soft);
+function rebuildLandmarks() {
+  landmarkLayer.clearLayers();
+  const visibleCodes = new Set(filteredSites().map(s => s.code));
+  LANDMARKS.forEach(lm => {
+    if (!lm.sites.some(code => visibleCodes.has(code))) return;
+    const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
+    const tierLabel = lm.tier === "close" ? "Right by the board" : "Nearby area";
+    const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon(lm) });
+    marker.bindPopup(`<div class="landmark-popup landmark-popup-${lm.tier}"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label} · ${tierLabel}</span></div>`, { maxWidth: 190 });
+    marker.addTo(landmarkLayer);
+  });
 }
-@media (min-width: 900px) {
-  .panel {
-    flex: 0 0 400px;
-    order: 1;
-    border-top: none;
-    border-right: 1px solid var(--line-soft);
+
+function updateLandmarkVisibility() {
+  const shouldShow = map.getZoom() >= LANDMARK_MIN_ZOOM;
+  const isShown = map.hasLayer(landmarkLayer);
+  if (shouldShow && !isShown) map.addLayer(landmarkLayer);
+  if (!shouldShow && isShown) map.removeLayer(landmarkLayer);
+}
+
+function initMap() {
+  map = L.map("map", { zoomControl: false, attributionControl: true });
+
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+
+  const cartoKey = MAP_KEY.CARTO_API_KEY ? `?key=${MAP_KEY.CARTO_API_KEY}` : "";
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoKey}`, {
+    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: "abcd",
+    maxZoom: 19,
+  }).addTo(map);
+
+  markerLayer = L.layerGroup().addTo(map);
+  landmarkLayer = L.layerGroup();
+
+  fitMapToBrand();
+
+  map.on("zoomend", updateLandmarkVisibility);
+
+  // Prevent trackpad-pinch and mobile-pinch gestures over the map from
+  // zooming the whole browser page instead of just the map. Leaflet handles
+  // its own zoom fine, but a ctrl+wheel (trackpad pinch) or a touch pinch
+  // can still leak through to the browser's native page zoom unless we
+  // explicitly stop it here.
+  const mapEl = document.getElementById("map");
+  mapEl.addEventListener("wheel", (e) => {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
+
+  // Tapping/clicking empty map area (not a marker) dismisses the preview
+  map.on("click", () => {
+    if (!state.selectedCode) hideMapPreview();
+  });
+
+  updateLandmarkVisibility();
+}
+
+// Fits the map to whichever brand is active — Kopano's sites are all
+// within Gauteng, but The Medium's stretch as far as Mokopane in Limpopo,
+// so a fixed center/zoom wouldn't work well for both.
+function fitMapToBrand() {
+  if (!map || !SITES || SITES.length === 0) return;
+  const bounds = L.latLngBounds(SITES.map(s => [s.lat, s.lng]));
+  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+}
+
+function pinIcon(selected) {
+  return L.divIcon({
+    className: "kop-pin-wrap",
+    html: `<div class="kop-pin${selected ? " selected" : ""}">
+             <div class="kop-pin-board"></div>
+             <div class="kop-pin-post"></div>
+           </div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 26],
+    popupAnchor: [0, -24],
+  });
+}
+
+function rebuildMarkers() {
+  markerLayer.clearLayers();
+  markersByCode.clear();
+
+  const visible = filteredSites();
+
+  // Group only to detect sites that share (near-identical) coordinates, so
+  // each one can be nudged into its own spot — every site always gets its
+  // own marker, never merged, so hover/click always shows the exact site.
+  const groups = new Map();
+  visible.forEach(site => {
+    const key = siteKey(site);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(site);
+  });
+
+  groups.forEach((sites) => {
+    const n = sites.length;
+    sites.forEach((site, i) => {
+      let lat = site.lat, lng = site.lng;
+      if (n > 1) {
+        // spread sites sharing a spot evenly around it in a small ring so
+        // every pin is individually visible and clickable
+        const angle = (2 * Math.PI * i) / n;
+        const radiusDeg = 0.00018 + (n > 4 ? 0.00006 : 0);
+        const latRad = (site.lat * Math.PI) / 180;
+        lat += radiusDeg * Math.sin(angle);
+        lng += (radiusDeg / Math.cos(latRad)) * Math.cos(angle);
+      }
+
+      const selected = state.selectedCode === site.code;
+      const marker = L.marker([lat, lng], { icon: pinIcon(selected) });
+
+      marker.on("mouseover", () => showMapPreview(site));
+      marker.on("mouseout", () => {
+        if (state.selectedCode !== site.code) hideMapPreview();
+      });
+      marker.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        showMapPreview(site);
+        selectSite(site.code, { fromMap: true });
+      });
+      marker.addTo(markerLayer);
+      markersByCode.set(site.code, marker);
+    });
+  });
+
+  rebuildLandmarks();
+}
+
+function flyToSite(site) {
+  map.flyTo([site.lat, site.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
+  showMapPreview(site);
+}
+
+// ---------- map preview overlay ----------
+
+const mapPreviewEl = document.getElementById("map-preview");
+const mapPreviewImg = document.getElementById("map-preview-img");
+const mapPreviewCode = document.getElementById("map-preview-code");
+const mapPreviewTitle = document.getElementById("map-preview-title");
+const mapPreviewSub = document.getElementById("map-preview-sub");
+
+function showMapPreview(site) {
+  mapPreviewImg.src = site.image;
+  mapPreviewImg.alt = site.code;
+  mapPreviewCode.textContent = site.code;
+  mapPreviewTitle.textContent = " — " + site.title;
+  mapPreviewSub.textContent = `${site.area} · ${site.size}`;
+  mapPreviewEl.classList.add("show");
+}
+
+function hideMapPreview() {
+  mapPreviewEl.classList.remove("show");
+}
+
+// ---------- rendering ----------
+
+const listEl = document.getElementById("site-list");
+const resultCountEl = document.getElementById("result-count");
+
+function illuminatedIconSvg(on) {
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18h6"/><path d="M10 22h4"/>
+    <path d="M12 2a6 6 0 0 0-4 10.5c.5.5 1 1.5 1 2.5h6c0-1 .5-2 1-2.5A6 6 0 0 0 12 2z" ${on ? 'fill="currentColor"' : ""}/>
+  </svg>`;
+}
+
+function siteCardHTML(site, expanded) {
+  const status = resolveStatus(site);
+  const badge = availabilityBadge(site);
+  const signal = trafficLightHTML(status);
+
+  const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
+
+  const durations = [1, 3, 6, 12];
+  const calcBlock = `
+    <div class="calc-block">
+      <div class="calc-head">Estimate a campaign cost</div>
+      <div class="calc-durations">
+        ${durations.map(m => `<button class="duration-btn${m === 1 ? " active" : ""}" data-code="${site.code}" data-months="${m}">${m} mo</button>`).join("")}
+      </div>
+      <div class="calc-total">
+        <span class="calc-total-label">Estimated total</span>
+        <span class="calc-total-figure" data-calc-total="${site.code}">${fmtMoney(site.suggestedRate * 1 + site.production)}</span>
+      </div>
+      <p class="calc-disclaimer">Estimate only — suggested rate × months + production. Final pricing confirmed via Contact for pricing.</p>
+    </div>`;
+
+  const detail = expanded ? `
+    <div class="site-detail">
+      <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
+      ${noteRow}
+      <p>${site.description}</p>
+      <div class="detail-grid">
+        <div class="detail-field"><dt>LSM / SEM</dt><dd>${site.lsm}</dd></div>
+        <div class="detail-field"><dt>Material</dt><dd>${site.material}</dd></div>
+        <div class="detail-field"><dt>Traffic count</dt><dd>${site.trafficCount}</dd></div>
+        <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
+        <div class="detail-field" style="grid-column: 1 / -1;"><dt>Traffic flow</dt><dd>${site.trafficFlow}</dd></div>
+      </div>
+      ${calcBlock}
+      <div class="gps-row">
+        <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
+        <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
+      </div>
+    </div>` : "";
+
+  return `
+    <div class="site-card${state.selectedCode === site.code ? " selected" : ""}" data-code="${site.code}">
+      <div class="site-card-top">
+        ${state.curateMode ? `<input type="checkbox" class="pick-check" data-pick="${site.code}" ${state.picked.has(site.code) ? "checked" : ""} />` : ""}
+        <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" />
+        <div class="site-title-line">
+          <span class="site-shield">${site.code}</span>
+          <p class="site-title">${site.title}</p>
+          <span class="site-size">${site.size}</span>
+        </div>
+        <span class="illum-icon ${site.illuminated ? "on" : "off"}" title="${site.illuminated ? "Illuminated" : "Not illuminated"}">
+          ${illuminatedIconSvg(site.illuminated)}
+        </span>
+      </div>
+      <div class="rate-row">
+        <span class="rate-figure">Media Rate from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
+        <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
+      </div>
+      <div class="site-card-bottom">
+        ${signal}
+        ${badge}
+        <button class="enquire-btn" data-enquire="${site.code}">Contact for pricing</button>
+      </div>
+      ${detail}
+    </div>`;
+}
+
+function renderList() {
+  const visible = filteredSites();
+  const total = state.clientView ? state.clientView.size : SITES.length;
+  resultCountEl.textContent = `${visible.length} of ${total} boards`;
+
+  if (visible.length === 0) {
+    listEl.innerHTML = `<div class="empty-state">No boards match those filters.<br>Try clearing search or the area filter.</div>`;
+    return;
+  }
+
+  const byArea = new Map();
+  visible.forEach(site => {
+    if (!byArea.has(site.area)) byArea.set(site.area, []);
+    byArea.get(site.area).push(site);
+  });
+
+  let html = "";
+  // preserve AREAS order
+  AREAS.forEach(area => {
+    if (!byArea.has(area)) return;
+    const sites = byArea.get(area);
+    const collapsed = state.collapsedAreas.has(area);
+    html += `
+      <div class="area-group${collapsed ? " collapsed" : ""}" data-area="${area}">
+        <div class="area-group-head">
+          <span class="area-group-name">${area}</span>
+          <span style="display:flex;align-items:center;">
+            <span class="area-group-count">${sites.length}</span>
+            <span class="area-chevron">▾</span>
+          </span>
+        </div>
+        <div class="area-body">
+          ${sites.map(s => siteCardHTML(s, state.selectedCode === s.code)).join("")}
+        </div>
+      </div>`;
+  });
+
+  listEl.innerHTML = html;
+}
+
+function selectSite(code, opts = {}) {
+  state.selectedCode = state.selectedCode === code ? null : code;
+  renderList();
+  rebuildMarkers();
+
+  if (state.selectedCode) {
+    const site = SITES.find(s => s.code === state.selectedCode);
+    // ensure its area group is expanded
+    state.collapsedAreas.delete(site.area);
+    if (!opts.fromMap) flyToSite(site);
+    if (!opts.fromMap) {
+      renderList();
+      const card = listEl.querySelector(`.site-card[data-code="${code}"]`);
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      const card = listEl.querySelector(`.site-card[data-code="${code}"]`);
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  } else {
+    hideMapPreview();
   }
 }
-@media (min-width: 1180px) {
-  .panel { flex-basis: 440px; }
+
+// ---------- events ----------
+
+listEl.addEventListener("click", (e) => {
+  if (e.target.closest(".copy-btn")) {
+    e.stopPropagation();
+    return; // let the link's default navigation happen, just don't also toggle the card
+  }
+  const pickCheck = e.target.closest(".pick-check");
+  if (pickCheck) {
+    e.stopPropagation();
+    const code = pickCheck.dataset.pick;
+    if (pickCheck.checked) state.picked.add(code);
+    else state.picked.delete(code);
+    updateShareBar();
+    return;
+  }
+  const durationBtn = e.target.closest(".duration-btn");
+  if (durationBtn) {
+    e.stopPropagation();
+    const site = SITES.find(s => s.code === durationBtn.dataset.code);
+    const months = parseInt(durationBtn.dataset.months, 10);
+    const total = site.suggestedRate * months + site.production;
+    const calcBlock = durationBtn.closest(".calc-block");
+    calcBlock.querySelectorAll(".duration-btn").forEach(b => b.classList.toggle("active", b === durationBtn));
+    const totalEl = calcBlock.querySelector(".calc-total-figure");
+    if (totalEl) totalEl.textContent = fmtMoney(total);
+    return;
+  }
+  const enquireBtn = e.target.closest(".enquire-btn");
+  if (enquireBtn) {
+    e.stopPropagation();
+    const site = SITES.find(s => s.code === enquireBtn.dataset.enquire);
+    openContactModal(site);
+    return;
+  }
+  const head = e.target.closest(".area-group-head");
+  if (head) {
+    const area = head.closest(".area-group").dataset.area;
+    if (state.collapsedAreas.has(area)) state.collapsedAreas.delete(area);
+    else state.collapsedAreas.add(area);
+    renderList();
+    return;
+  }
+  const card = e.target.closest(".site-card");
+  if (card) selectSite(card.dataset.code);
+});
+
+document.getElementById("search-input").addEventListener("input", (e) => {
+  state.search = e.target.value;
+  renderList();
+  rebuildMarkers();
+});
+
+document.getElementById("area-select").addEventListener("change", (e) => {
+  state.area = e.target.value;
+  renderList();
+  rebuildMarkers();
+  if (state.area !== "all") {
+    const first = filteredSites()[0];
+    if (first) map.flyTo([first.lat, first.lng], 12, { duration: 0.6 });
+  }
+});
+
+document.getElementById("size-select").addEventListener("change", (e) => {
+  state.size = e.target.value;
+  renderList();
+  rebuildMarkers();
+});
+
+document.getElementById("illum-toggle").addEventListener("click", (e) => {
+  const btn = e.currentTarget;
+  const cycle = { all: "yes", yes: "no", no: "all" };
+  state.illuminated = cycle[state.illuminated];
+  btn.classList.toggle("active", state.illuminated !== "all");
+  btn.textContent = state.illuminated === "yes" ? "☀ Illuminated" : state.illuminated === "no" ? "☾ Non-illuminated" : "☀ Any lighting";
+  renderList();
+  rebuildMarkers();
+});
+
+document.getElementById("avail-toggle").addEventListener("click", (e) => {
+  const btn = e.currentTarget;
+  state.availableNow = !state.availableNow;
+  btn.classList.toggle("active", state.availableNow);
+  renderList();
+  rebuildMarkers();
+});
+
+// ---------- curate & share (send a filtered set of sites to a client) ----------
+
+const curateToggleBtn = document.getElementById("curate-toggle");
+const shareBar = document.getElementById("share-bar");
+const shareCountEl = document.getElementById("share-count");
+const shareLinkBtn = document.getElementById("share-link-btn");
+const shareClearBtn = document.getElementById("share-clear-btn");
+const clientViewBanner = document.getElementById("client-view-banner");
+const clientViewText = document.getElementById("client-view-text");
+const clientViewClearBtn = document.getElementById("client-view-clear");
+
+function updateShareBar() {
+  shareCountEl.textContent = `${state.picked.size} selected`;
+  shareBar.classList.toggle("show", state.curateMode && state.picked.size > 0);
 }
 
-.panel-header {
-  padding: 12px 16px 8px;
-  flex-shrink: 0;
-}
-.panel-title {
-  font-family: var(--font-display);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-mid);
-}
-.panel-title strong { color: var(--text-hi); }
+curateToggleBtn.addEventListener("click", () => {
+  state.curateMode = !state.curateMode;
+  curateToggleBtn.classList.toggle("active", state.curateMode);
+  updateShareBar();
+  renderList();
+});
 
-.site-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 12px 16px;
-}
+shareClearBtn.addEventListener("click", () => {
+  state.picked.clear();
+  updateShareBar();
+  renderList();
+});
 
-.empty-state {
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--text-low);
-  font-size: 13px;
-}
+shareLinkBtn.addEventListener("click", async () => {
+  const codes = [...state.picked];
+  if (codes.length === 0) return;
+  const url = new URL(location.href);
+  url.search = "";
+  if (currentBrandId !== "kopano") url.searchParams.set("brand", currentBrandId);
+  url.searchParams.set("sites", codes.join(","));
+  const shareUrl = url.toString();
+  const shareText = `${codes.length} ${brandFullName()} billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
 
-/* ---------- Area group ---------- */
-.area-group { margin-bottom: 6px; }
-.area-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 8px 6px;
-  cursor: pointer;
-  user-select: none;
-}
-.area-group-head:hover .area-group-name { color: var(--text-hi); }
-.area-group-name {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  letter-spacing: 0.3px;
-  color: var(--text-mid);
-  text-transform: uppercase;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.area-group-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-low);
-  background: var(--asphalt-700);
-  border-radius: 999px;
-  padding: 2px 8px;
-  flex-shrink: 0;
-}
-.area-chevron {
-  color: var(--text-low);
-  font-size: 11px;
-  transition: transform .15s;
-  margin-left: 6px;
-}
-.area-group.collapsed .area-chevron { transform: rotate(-90deg); }
-.area-group.collapsed .area-body { display: none; }
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `${brandFullName()} — selected sites`, text: shareText, url: shareUrl });
+      return;
+    } catch (err) {
+      // user cancelled the native share sheet — fall through to clipboard
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    const original = shareLinkBtn.textContent;
+    shareLinkBtn.textContent = "Link copied!";
+    setTimeout(() => (shareLinkBtn.textContent = original), 1600);
+  } catch (err) {
+    prompt("Copy this link to send to your client:", shareUrl);
+  }
+});
 
-/* ---------- Site card ---------- */
-.site-card {
-  background: var(--asphalt-700);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  padding: 11px 12px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: border-color .15s, background .15s;
-}
-.site-card:hover { border-color: var(--line); background: var(--asphalt-650); }
-.site-card.selected {
-  border-color: var(--amber);
-  box-shadow: 0 0 0 1px var(--amber), 0 0 18px -4px var(--amber-glow);
+function applyClientViewFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const sitesParam = params.get("sites");
+  if (!sitesParam) return;
+  const codes = sitesParam.split(",").map(s => s.trim()).filter(Boolean);
+  const valid = codes.filter(c => SITES.some(s => s.code === c));
+  if (valid.length === 0) return;
+
+  state.clientView = new Set(valid);
+  curateToggleBtn.style.display = "none";
+  const switcherEl = document.getElementById("brand-switcher-wrap");
+  if (switcherEl) switcherEl.style.display = "none";
+  clientViewText.textContent = `Viewing ${valid.length} board${valid.length === 1 ? "" : "s"} hand-picked by ${brandFullName()}`;
+  clientViewBanner.classList.add("show");
 }
 
-.site-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+clientViewClearBtn.addEventListener("click", () => {
+  state.clientView = null;
+  const url = new URL(location.href);
+  url.searchParams.delete("sites");
+  history.replaceState(null, "", url.toString());
+  curateToggleBtn.style.display = "";
+  const switcherEl2 = document.getElementById("brand-switcher-wrap");
+  if (switcherEl2) switcherEl2.style.display = "";
+  clientViewBanner.classList.remove("show");
+  renderList();
+  rebuildMarkers();
+});
+
+// ---------- contact modal ----------
+
+const contactModal = document.getElementById("contact-modal");
+const contactSubtitle = document.getElementById("contact-subtitle");
+const contactEmailLink = document.getElementById("contact-email-link");
+const contactWhatsappLink = document.getElementById("contact-whatsapp-link");
+
+function waNumber() {
+  // wa.me needs digits only, no + or spaces
+  return CONTACT.phoneHref.replace(/[^\d]/g, "");
 }
 
-.card-thumb {
-  width: 52px;
-  height: 52px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-  background: var(--asphalt-800);
+function openContactModal(site) {
+  const firstName = CONTACT.name.split(" ")[0];
+  if (site) {
+    contactSubtitle.textContent = `Enquiring about ${site.code} — ${site.title}`;
+    const subject = encodeURIComponent(`Rate enquiry — ${site.code} (${site.title})`);
+    const body = encodeURIComponent(
+      `Hi ${firstName},\n\nPlease could you send me the current rate card for ${site.code} — ${site.title} (${site.area})?\n\nThanks`
+    );
+    contactEmailLink.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
+    const waText = encodeURIComponent(
+      `Hi, I'd like the current rate card for ${site.code} — ${site.title} (${site.area}).`
+    );
+    contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
+  } else {
+    contactSubtitle.textContent = `Get today's rate card for any ${brandFullName()} site`;
+    contactEmailLink.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Rate card enquiry")}`;
+    const waText = encodeURIComponent(`Hi, I'd like a rate card for a ${brandFullName()} site.`);
+    contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
+  }
+  contactModal.classList.add("show");
 }
 
-.pick-check {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  accent-color: var(--amber);
-  margin-top: 17px;
-  cursor: pointer;
+function closeContactModal() {
+  contactModal.classList.remove("show");
 }
 
-.site-shield {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--asphalt-900);
-  background: var(--amber);
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
+document.getElementById("header-contact-btn").addEventListener("click", () => openContactModal(null));
+document.getElementById("contact-close").addEventListener("click", closeContactModal);
+contactModal.addEventListener("click", (e) => {
+  if (e.target === contactModal) closeContactModal();
+});
+
+// ---------- live availability sync (Google Sheet, published as CSV) ----------
+
+const syncStatusEl = document.getElementById("sync-status");
+
+function parseCsv(text) {
+  // minimal CSV parser: handles quoted fields containing commas
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (field !== "" || row.length) { row.push(field); rows.push(row); }
+        row = []; field = "";
+        if (c === "\r" && text[i + 1] === "\n") i++;
+      } else field += c;
+    }
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(cell => cell.trim() !== ""));
 }
 
-.site-title-line { flex: 1; min-width: 0; }
-.site-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-hi);
-  line-height: 1.3;
-  margin: 0 0 2px;
-}
-.site-size {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--teal);
+function setSyncStatus(text, ok) {
+  if (!syncStatusEl) return;
+  syncStatusEl.textContent = text;
+  syncStatusEl.classList.toggle("ok", !!ok);
 }
 
-.illum-icon { flex-shrink: 0; margin-top: 1px; }
-.illum-icon.on { color: var(--amber); }
-.illum-icon.off { color: var(--text-low); }
+async function fetchLiveAvailability() {
+  if (!CONFIG.SHEET_CSV_URL) {
+    setSyncStatus("Static data — no live sheet connected", false);
+    return;
+  }
+  try {
+    const res = await fetch(CONFIG.SHEET_CSV_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const rows = parseCsv(text);
+    if (rows.length < 2) throw new Error("Empty sheet");
 
-.site-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 8px;
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.meta-item { display: flex; align-items: center; gap: 4px; }
-.meta-item svg { flex-shrink: 0; opacity: 0.7; }
+    // normalize header names: lowercase, strip spaces, so "Next Available Date"
+    // and "NextAvailableDate" both resolve to the same column key
+    const header = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, ""));
+    const iCode = header.indexOf("code");
+    const iStatus = header.indexOf("status");
+    const iAvail = header.indexOf("availablefrom");
+    const iNote = header.indexOf("note");
+    const iClient = header.indexOf("client");
+    const iNextAvail = header.indexOf("nextavailabledate");
+    // "area" column is intentionally not consumed — it's there purely so
+    // staff editing the sheet can see which site a row refers to.
+    if (iCode === -1 || iStatus === -1) throw new Error("Missing Code/Status columns");
 
-.rate-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 9px;
-}
-.rate-figure {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-hi);
-}
-.rate-per {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin-left: 2px;
-}
-.rate-flag {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-low);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 1px 5px;
-  cursor: help;
-}
+    const byCode = new Map();
+    for (let r = 1; r < rows.length; r++) {
+      const cells = rows[r];
+      const code = (cells[iCode] || "").trim();
+      if (!code) continue;
+      byCode.set(code, {
+        status: (cells[iStatus] || "").trim().toLowerCase(),
+        availableFrom: iAvail !== -1 ? (cells[iAvail] || "").trim() : "",
+        nextAvailable: iNextAvail !== -1 ? (cells[iNextAvail] || "").trim() : "",
+        note: iNote !== -1 ? (cells[iNote] || "").trim() : "",
+        client: iClient !== -1 ? (cells[iClient] || "").trim() : "",
+      });
+    }
 
-.calc-block {
-  background: var(--asphalt-800);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin: 12px 0;
-}
-.calc-head {
-  font-family: var(--font-display);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-mid);
-  margin-bottom: 9px;
-}
-.calc-durations {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.duration-btn {
-  flex: 1;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 7px 4px;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  transition: border-color .15s, color .15s, background .15s;
-}
-.duration-btn.active {
-  border-color: var(--amber);
-  color: var(--amber);
-  background: rgba(245,166,35,0.1);
-}
-.calc-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-}
-.calc-total-label {
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.calc-total-figure {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--amber);
-}
-.calc-disclaimer {
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin: 9px 0 0 !important;
-  line-height: 1.4;
+    let matched = 0;
+    SITES.forEach(site => {
+      const row = byCode.get(site.code);
+      if (!row) return;
+      matched++;
+      if (row.status === "booked" || row.status === "optioned" || row.status === "available") {
+        site.liveStatus = row.status;
+      } else {
+        site.liveStatus = null;
+      }
+      if (row.availableFrom) site.availability = row.availableFrom;
+      site.liveNextAvailable = row.nextAvailable || "";
+      site.liveNote = row.note || "";
+      site.liveClient = row.client || "";
+    });
+
+    const now = new Date().toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+    setSyncStatus(`Live — synced ${now} (${matched}/${SITES.length} sites)`, true);
+    renderList();
+    rebuildMarkers();
+  } catch (err) {
+    setSyncStatus("Live sheet unreachable — showing last known data", false);
+  }
 }
 
-.site-card-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  margin-top: 10px;
+// ---------- brand switching (Kopano Media / The Medium) ----------
+
+function brandFullName() {
+  const b = BRANDS[currentBrandId];
+  return `${b.name} ${b.nameAccent}`;
 }
 
-.signal {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 3px;
-  background: var(--asphalt-900);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.signal-light {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--asphalt-650);
-  opacity: 0.35;
-  transition: opacity .15s, box-shadow .15s, background .15s;
-}
-.signal-light.red.on {
-  background: var(--red-signal);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(232,88,63,0.75);
-}
-.signal-light.amber.on {
-  background: var(--amber);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(245,166,35,0.75);
-}
-.signal-light.green.on {
-  background: var(--teal);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(33,199,176,0.75);
+// Points SITES/AREAS/CONTACT/CONFIG/LANDMARKS at the given brand's data.
+// Pure data assignment only — no DOM/map work here, so it's safe to call
+// before the map or DOM listeners exist (used at first load).
+function activateBrandData(id) {
+  const brand = BRANDS[id] || BRANDS.kopano;
+  currentBrandId = brand.id;
+  SITES = brand.SITES;
+  AREAS = brand.AREAS;
+  CONTACT = brand.CONTACT;
+  CONFIG = brand.CONFIG;
+  LANDMARKS = brand.LANDMARKS || [];
 }
 
-.avail-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  font-family: var(--font-mono);
-  padding: 3px 7px;
-  border-radius: 4px;
-  white-space: normal;
-  line-height: 1.4;
-}
-.avail-badge.available { background: rgba(33,199,176,0.12); color: var(--teal); }
-.avail-badge.optioned { background: rgba(245,166,35,0.1); color: var(--amber); }
-.avail-badge.booked { background: rgba(232,88,63,0.12); color: var(--red-signal); }
-
-.live-note {
-  background: rgba(245,166,35,0.08);
-  border-left: 2px solid var(--amber);
-  padding: 7px 10px;
-  font-size: 12px;
-  color: var(--text-hi);
-  margin: 0 0 10px;
-  border-radius: 0 4px 4px 0;
+function updateBrandHeaderUI() {
+  const brand = BRANDS[currentBrandId];
+  document.title = `${brand.name} ${brand.nameAccent} — ${brand.tagline}`;
+  const switcher = document.getElementById("brand-switcher");
+  if (switcher) switcher.value = currentBrandId;
+  const tagEl = document.getElementById("brand-tag");
+  if (tagEl) tagEl.textContent = brand.tagline;
 }
 
-.sync-line {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin-top: 4px;
-}
-.sync-line.ok { color: var(--teal); }
+// Re-runs everything that depends on which brand is active: dropdowns,
+// contact card, map markers/landmarks, the list, and live sync — used
+// both at first load and whenever the user switches brands.
+function refreshUIForBrand() {
+  state.search = "";
+  state.area = "all";
+  state.size = "all";
+  state.illuminated = "all";
+  state.availableNow = false;
+  state.selectedCode = null;
+  state.collapsedAreas = new Set();
+  state.curateMode = false;
+  state.picked = new Set();
 
-.enquire-btn {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 11.5px;
-  color: var(--amber);
-  background: rgba(245,166,35,0.08);
-  border: 1px solid rgba(245,166,35,0.35);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  white-space: nowrap;
-  transition: background .15s, border-color .15s;
-}
-.enquire-btn:hover { background: rgba(245,166,35,0.16); border-color: var(--amber); }
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) searchInput.value = "";
+  const areaSelect = document.getElementById("area-select");
+  const sizeSelect = document.getElementById("size-select");
+  if (areaSelect) areaSelect.innerHTML = '<option value="all">All areas</option>';
+  if (sizeSelect) sizeSelect.innerHTML = '<option value="all">All sizes</option>';
+  const illumBtn = document.getElementById("illum-toggle");
+  const availBtn = document.getElementById("avail-toggle");
+  if (illumBtn) { illumBtn.classList.remove("active"); illumBtn.textContent = "☀ Any lighting"; }
+  if (availBtn) availBtn.classList.remove("active");
 
-/* ---------- Detail expand ---------- */
-.site-detail {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-mid);
-}
-.site-detail p { margin: 0 0 10px; }
-.detail-img {
-  width: 100%;
-  max-height: 220px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  margin-bottom: 10px;
-  display: block;
-  background: var(--asphalt-800);
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 14px;
-  margin-bottom: 10px;
-}
-.detail-field dt {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-low);
-  margin-bottom: 2px;
-}
-.detail-field dd {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-hi);
-}
-.gps-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.copy-btn {
-  display: inline-block;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 10.5px;
-  text-decoration: none;
-}
-.copy-btn:hover { color: var(--text-hi); border-color: var(--teal); }
+  populateSelects();
+  populateContactStatic();
+  updateBrandHeaderUI();
+  hideMapPreview();
+  renderList();
+  rebuildMarkers();
+  if (map) fitMapToBrand();
 
-/* ---------- Map markers ---------- */
-.kop-pin {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateY(-4px);
-}
-.kop-pin-board {
-  width: 26px;
-  height: 16px;
-  background: var(--amber);
-  border-radius: 2px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 10px var(--amber-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--asphalt-900);
-}
-.kop-pin-post { width: 2px; height: 10px; background: var(--text-low); }
-.kop-pin.selected .kop-pin-board {
-  background: var(--teal);
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 14px 2px rgba(33,199,176,0.55);
+  if (liveSyncTimer) clearInterval(liveSyncTimer);
+  fetchLiveAvailability();
+  if (CONFIG.SHEET_CSV_URL) {
+    liveSyncTimer = setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
+  }
 }
 
-/* ---------- Nearby landmarks (visible once zoomed in) ---------- */
-/* Two tiers, visually distinct: "close" = right next to the board (the
-   strongest sales signal, so it's bigger and gently pulses to draw the
-   eye), "area" = general nearby draw, still visible but a step down. */
-.landmark-pin {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-.landmark-pin.tier-area {
-  width: 26px;
-  height: 26px;
-  background: rgba(167, 139, 250, 0.25);
-  border: 2px solid #a78bfa;
-  font-size: 13px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 10px rgba(167, 139, 250, 0.5), 0 2px 8px rgba(0,0,0,0.5);
-}
-.landmark-pin.tier-close {
-  width: 32px;
-  height: 32px;
-  background: rgba(244, 114, 182, 0.3);
-  border: 2.5px solid #f472b6;
-  font-size: 16px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 16px rgba(244, 114, 182, 0.75), 0 2px 10px rgba(0,0,0,0.55);
-  animation: landmark-pulse 2.2s ease-in-out infinite;
-}
-@keyframes landmark-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 16px rgba(244, 114, 182, 0.75), 0 2px 10px rgba(0,0,0,0.55); }
-  50%      { box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 26px rgba(244, 114, 182, 1), 0 2px 10px rgba(0,0,0,0.55); }
+// Switching brands mid-session (user picks the other company from the
+// dropdown). A client-share link is brand-specific, so it's cleared here —
+// it wouldn't mean anything against the other brand's site codes.
+function switchBrand(id) {
+  if (id === currentBrandId || !BRANDS[id]) return;
+  activateBrandData(id);
+  state.clientView = null;
+  if (clientViewBanner) clientViewBanner.classList.remove("show");
+  if (curateToggleBtn) curateToggleBtn.style.display = "";
+  refreshUIForBrand();
+  const url = new URL(location.href);
+  url.searchParams.set("brand", id);
+  url.searchParams.delete("sites");
+  history.replaceState(null, "", url.toString());
 }
 
-.landmark-popup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px 8px 12px;
-  font-size: 12px;
-  border-left: 3px solid var(--line);
-}
-.landmark-popup-area { border-left-color: #a78bfa; }
-.landmark-popup-close { border-left-color: #f472b6; }
-.landmark-popup strong { color: var(--text-hi); font-weight: 600; }
-.landmark-popup span { color: var(--text-low); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+// ---------- init ----------
 
-.leaflet-popup-content-wrapper {
-  background: var(--asphalt-700);
-  color: var(--text-hi);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.leaflet-popup-tip { background: var(--asphalt-700); }
+function populateSelects() {
+  const areaSelect = document.getElementById("area-select");
+  AREAS.forEach(a => {
+    const opt = document.createElement("option");
+    opt.value = a; opt.textContent = a;
+    areaSelect.appendChild(opt);
+  });
 
-/* ---------- Contact modal ---------- */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(10,12,15,0.72);
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 2000;
-}
-.modal-overlay.show { display: flex; }
-
-.modal-card {
-  position: relative;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 24px 22px 22px;
-  max-width: 360px;
-  width: 100%;
+  const sizeSelect = document.getElementById("size-select");
+  uniqueSizes().forEach(sz => {
+    const opt = document.createElement("option");
+    opt.value = sz; opt.textContent = sz;
+    sizeSelect.appendChild(opt);
+  });
 }
 
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-low);
-  font-size: 16px;
-  padding: 4px;
-}
-.modal-close:hover { color: var(--text-hi); }
-
-.modal-eyebrow {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--amber);
-  margin-bottom: 8px;
-}
-.modal-heading {
-  font-family: var(--font-display);
-  font-size: 22px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin: 0 0 6px;
-}
-.modal-sub {
-  font-size: 12.5px;
-  color: var(--text-mid);
-  margin: 0 0 18px;
-  line-height: 1.5;
+function populateContactStatic() {
+  document.getElementById("contact-name").textContent = CONTACT.name;
+  document.getElementById("contact-role").textContent = CONTACT.role;
+  document.getElementById("contact-email-display").textContent = CONTACT.email;
+  const initials = CONTACT.name.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const avatarEl = document.getElementById("modal-avatar");
+  if (avatarEl) avatarEl.textContent = initials;
 }
 
-.modal-contact-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--asphalt-700);
-  border-radius: var(--radius-sm);
-  margin-bottom: 14px;
-}
-.modal-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--amber);
-  color: var(--asphalt-900);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.modal-name { font-weight: 600; font-size: 13.5px; }
-.modal-role { font-size: 11.5px; color: var(--text-low); }
+// Which brand to start on: the URL's ?brand= param if valid, else Kopano.
+const startParams = new URLSearchParams(location.search);
+const startBrandId = BRANDS[startParams.get("brand")] ? startParams.get("brand") : "kopano";
+activateBrandData(startBrandId);
 
-.modal-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  margin-bottom: 8px;
-  transition: filter .15s;
-}
-.modal-action-btn:hover { filter: brightness(1.08); }
-.modal-action-btn.whatsapp { background: #25D366; color: #08360f; }
-.modal-action-btn.email { background: var(--asphalt-700); color: var(--text-hi); border: 1px solid var(--line); }
-.modal-action-btn span { font-family: var(--font-mono); font-weight: 400; opacity: 0.9; }
-
-/* ---------- Scrollbars ---------- */
-.site-list::-webkit-scrollbar { width: 8px; }
-.site-list::-webkit-scrollbar-thumb { background: var(--asphalt-650); border-radius: 8px; }
-.site-list::-webkit-scrollbar-track { background: transparent; }
-
-/* ---------- Install banner ---------- */
-#install-banner {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--amber);
-  color: var(--asphalt-900);
-  font-size: 12.5px;
-  flex-shrink: 0;
-}
-#install-banner.show { display: flex; }
-#install-banner button {
-  margin-left: auto;
-  background: var(--asphalt-900);
-  color: var(--amber);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-weight: 600;
-  font-size: 12px;
-}
-#install-banner .dismiss {
-  background: transparent;
-  color: var(--asphalt-900);
-  opacity: 0.7;
-  padding: 6px 4px;
+const brandSwitcher = document.getElementById("brand-switcher");
+if (brandSwitcher) {
+  brandSwitcher.value = startBrandId;
+  brandSwitcher.addEventListener("change", (e) => switchBrand(e.target.value));
 }
 
-/* ---------- Curate & share (client link) ---------- */
-.client-view-banner {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--teal);
-  color: var(--asphalt-900);
-  font-size: 12.5px;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-.client-view-banner.show { display: flex; }
-.client-view-banner button {
-  margin-left: auto;
-  background: var(--asphalt-900);
-  color: var(--teal);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-weight: 600;
-  font-size: 12px;
-  white-space: nowrap;
+populateSelects();
+populateContactStatic();
+updateBrandHeaderUI();
+applyClientViewFromUrl();
+initMap();
+renderList();
+rebuildMarkers();
+fetchLiveAvailability();
+if (CONFIG.SHEET_CSV_URL) {
+  liveSyncTimer = setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
 }
 
-.share-bar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: var(--asphalt-700);
-  border-top: 1px solid var(--line);
-  flex-shrink: 0;
+// ---------- PWA install prompt ----------
+
+let deferredInstallEvent = null;
+const installBanner = document.getElementById("install-banner");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallEvent = e;
+  installBanner.classList.add("show");
+});
+
+document.getElementById("install-btn").addEventListener("click", async () => {
+  if (!deferredInstallEvent) return;
+  deferredInstallEvent.prompt();
+  await deferredInstallEvent.userChoice;
+  installBanner.classList.remove("show");
+  deferredInstallEvent = null;
+});
+
+document.getElementById("dismiss-install").addEventListener("click", () => {
+  installBanner.classList.remove("show");
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
 }
-.share-bar.show { display: flex; }
-#share-count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-mid);
-}
-.share-clear-btn {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  font-size: 12px;
-}
-.share-clear-btn:hover { color: var(--text-hi); border-color: var(--line-soft); }
-.share-link-btn {
-  background: var(--amber);
-  color: var(--asphalt-900);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 7px 14px;
-  font-weight: 700;
-  font-size: 12px;
-  white-space: nowrap;
-  transition: filter .15s;
-}
-.share-link-btn:hover { filter: brightness(1.08); }
