@@ -1,5 +1,12 @@
-// Kopano Media — OOH Site Locator
-// Vanilla JS + Leaflet. Data comes from data.js (SITES, AREAS).
+// Kopano Media & The Medium — OOH Site Locator
+// Vanilla JS + Leaflet. Data comes from data.js (BRANDS, MAP_KEY).
+// Which brand is "active" is held in these module-level `let` bindings —
+// every function below reads SITES/AREAS/CONTACT/CONFIG/LANDMARKS via
+// closure, so switching brands is just reassigning these and re-running
+// the render pipeline (see activateBrandData / switchBrand).
+
+let currentBrandId, SITES, AREAS, CONTACT, CONFIG, LANDMARKS;
+let liveSyncTimer = null;
 
 const state = {
   search: "",
@@ -160,11 +167,11 @@ function updateLandmarkVisibility() {
 }
 
 function initMap() {
-  map = L.map("map", { zoomControl: false, attributionControl: true }).setView([-26.13, 27.99], 10);
+  map = L.map("map", { zoomControl: false, attributionControl: true });
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  const cartoKey = CONFIG.CARTO_API_KEY ? `?key=${CONFIG.CARTO_API_KEY}` : "";
+  const cartoKey = MAP_KEY.CARTO_API_KEY ? `?key=${MAP_KEY.CARTO_API_KEY}` : "";
   L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoKey}`, {
     attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: "abcd",
@@ -173,6 +180,8 @@ function initMap() {
 
   markerLayer = L.layerGroup().addTo(map);
   landmarkLayer = L.layerGroup();
+
+  fitMapToBrand();
 
   map.on("zoomend", updateLandmarkVisibility);
 
@@ -192,6 +201,15 @@ function initMap() {
   });
 
   updateLandmarkVisibility();
+}
+
+// Fits the map to whichever brand is active — Kopano's sites are all
+// within Gauteng, but The Medium's stretch as far as Mokopane in Limpopo,
+// so a fixed center/zoom wouldn't work well for both.
+function fitMapToBrand() {
+  if (!map || !SITES || SITES.length === 0) return;
+  const bounds = L.latLngBounds(SITES.map(s => [s.lat, s.lng]));
+  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
 }
 
 function pinIcon(selected) {
@@ -546,13 +564,14 @@ shareLinkBtn.addEventListener("click", async () => {
   if (codes.length === 0) return;
   const url = new URL(location.href);
   url.search = "";
+  if (currentBrandId !== "kopano") url.searchParams.set("brand", currentBrandId);
   url.searchParams.set("sites", codes.join(","));
   const shareUrl = url.toString();
-  const shareText = `${codes.length} Kopano Media billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
+  const shareText = `${codes.length} ${brandFullName()} billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Kopano Media — selected sites", text: shareText, url: shareUrl });
+      await navigator.share({ title: `${brandFullName()} — selected sites`, text: shareText, url: shareUrl });
       return;
     } catch (err) {
       // user cancelled the native share sheet — fall through to clipboard
@@ -578,7 +597,9 @@ function applyClientViewFromUrl() {
 
   state.clientView = new Set(valid);
   curateToggleBtn.style.display = "none";
-  clientViewText.textContent = `Viewing ${valid.length} board${valid.length === 1 ? "" : "s"} hand-picked by Kopano Media`;
+  const switcherEl = document.getElementById("brand-switcher-wrap");
+  if (switcherEl) switcherEl.style.display = "none";
+  clientViewText.textContent = `Viewing ${valid.length} board${valid.length === 1 ? "" : "s"} hand-picked by ${brandFullName()}`;
   clientViewBanner.classList.add("show");
 }
 
@@ -588,6 +609,8 @@ clientViewClearBtn.addEventListener("click", () => {
   url.searchParams.delete("sites");
   history.replaceState(null, "", url.toString());
   curateToggleBtn.style.display = "";
+  const switcherEl2 = document.getElementById("brand-switcher-wrap");
+  if (switcherEl2) switcherEl2.style.display = "";
   clientViewBanner.classList.remove("show");
   renderList();
   rebuildMarkers();
@@ -606,11 +629,12 @@ function waNumber() {
 }
 
 function openContactModal(site) {
+  const firstName = CONTACT.name.split(" ")[0];
   if (site) {
     contactSubtitle.textContent = `Enquiring about ${site.code} — ${site.title}`;
     const subject = encodeURIComponent(`Rate enquiry — ${site.code} (${site.title})`);
     const body = encodeURIComponent(
-      `Hi Peter,\n\nPlease could you send me the current rate card for ${site.code} — ${site.title} (${site.area})?\n\nThanks`
+      `Hi ${firstName},\n\nPlease could you send me the current rate card for ${site.code} — ${site.title} (${site.area})?\n\nThanks`
     );
     contactEmailLink.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
     const waText = encodeURIComponent(
@@ -618,9 +642,9 @@ function openContactModal(site) {
     );
     contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
   } else {
-    contactSubtitle.textContent = "Get today's rate card for any Kopano Media site";
+    contactSubtitle.textContent = `Get today's rate card for any ${brandFullName()} site`;
     contactEmailLink.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Rate card enquiry")}`;
-    const waText = encodeURIComponent("Hi, I'd like a rate card for a Kopano Media site.");
+    const waText = encodeURIComponent(`Hi, I'd like a rate card for a ${brandFullName()} site.`);
     contactWhatsappLink.href = `https://wa.me/${waNumber()}?text=${waText}`;
   }
   contactModal.classList.add("show");
@@ -734,6 +758,91 @@ async function fetchLiveAvailability() {
   }
 }
 
+// ---------- brand switching (Kopano Media / The Medium) ----------
+
+function brandFullName() {
+  const b = BRANDS[currentBrandId];
+  return `${b.name} ${b.nameAccent}`;
+}
+
+// Points SITES/AREAS/CONTACT/CONFIG/LANDMARKS at the given brand's data.
+// Pure data assignment only — no DOM/map work here, so it's safe to call
+// before the map or DOM listeners exist (used at first load).
+function activateBrandData(id) {
+  const brand = BRANDS[id] || BRANDS.kopano;
+  currentBrandId = brand.id;
+  SITES = brand.SITES;
+  AREAS = brand.AREAS;
+  CONTACT = brand.CONTACT;
+  CONFIG = brand.CONFIG;
+  LANDMARKS = brand.LANDMARKS || [];
+}
+
+function updateBrandHeaderUI() {
+  const brand = BRANDS[currentBrandId];
+  document.title = `${brand.name} ${brand.nameAccent} — ${brand.tagline}`;
+  const switcher = document.getElementById("brand-switcher");
+  if (switcher) switcher.value = currentBrandId;
+  const tagEl = document.getElementById("brand-tag");
+  if (tagEl) tagEl.textContent = brand.tagline;
+}
+
+// Re-runs everything that depends on which brand is active: dropdowns,
+// contact card, map markers/landmarks, the list, and live sync — used
+// both at first load and whenever the user switches brands.
+function refreshUIForBrand() {
+  state.search = "";
+  state.area = "all";
+  state.size = "all";
+  state.illuminated = "all";
+  state.availableNow = false;
+  state.selectedCode = null;
+  state.collapsedAreas = new Set();
+  state.curateMode = false;
+  state.picked = new Set();
+
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) searchInput.value = "";
+  const areaSelect = document.getElementById("area-select");
+  const sizeSelect = document.getElementById("size-select");
+  if (areaSelect) areaSelect.innerHTML = '<option value="all">All areas</option>';
+  if (sizeSelect) sizeSelect.innerHTML = '<option value="all">All sizes</option>';
+  const illumBtn = document.getElementById("illum-toggle");
+  const availBtn = document.getElementById("avail-toggle");
+  if (illumBtn) { illumBtn.classList.remove("active"); illumBtn.textContent = "☀ Any lighting"; }
+  if (availBtn) availBtn.classList.remove("active");
+
+  populateSelects();
+  populateContactStatic();
+  updateBrandHeaderUI();
+  hideMapPreview();
+  renderList();
+  rebuildMarkers();
+  if (map) fitMapToBrand();
+
+  if (liveSyncTimer) clearInterval(liveSyncTimer);
+  fetchLiveAvailability();
+  if (CONFIG.SHEET_CSV_URL) {
+    liveSyncTimer = setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
+  }
+}
+
+// Switching brands mid-session (user picks the other company from the
+// dropdown). A client-share link is brand-specific, so it's cleared here —
+// it wouldn't mean anything against the other brand's site codes.
+function switchBrand(id) {
+  if (id === currentBrandId || !BRANDS[id]) return;
+  activateBrandData(id);
+  state.clientView = null;
+  if (clientViewBanner) clientViewBanner.classList.remove("show");
+  if (curateToggleBtn) curateToggleBtn.style.display = "";
+  refreshUIForBrand();
+  const url = new URL(location.href);
+  url.searchParams.set("brand", id);
+  url.searchParams.delete("sites");
+  history.replaceState(null, "", url.toString());
+}
+
 // ---------- init ----------
 
 function populateSelects() {
@@ -756,17 +865,32 @@ function populateContactStatic() {
   document.getElementById("contact-name").textContent = CONTACT.name;
   document.getElementById("contact-role").textContent = CONTACT.role;
   document.getElementById("contact-email-display").textContent = CONTACT.email;
+  const initials = CONTACT.name.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const avatarEl = document.getElementById("modal-avatar");
+  if (avatarEl) avatarEl.textContent = initials;
+}
+
+// Which brand to start on: the URL's ?brand= param if valid, else Kopano.
+const startParams = new URLSearchParams(location.search);
+const startBrandId = BRANDS[startParams.get("brand")] ? startParams.get("brand") : "kopano";
+activateBrandData(startBrandId);
+
+const brandSwitcher = document.getElementById("brand-switcher");
+if (brandSwitcher) {
+  brandSwitcher.value = startBrandId;
+  brandSwitcher.addEventListener("change", (e) => switchBrand(e.target.value));
 }
 
 populateSelects();
 populateContactStatic();
+updateBrandHeaderUI();
 applyClientViewFromUrl();
 initMap();
 renderList();
 rebuildMarkers();
 fetchLiveAvailability();
 if (CONFIG.SHEET_CSV_URL) {
-  setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
+  liveSyncTimer = setInterval(fetchLiveAvailability, CONFIG.REFRESH_SECONDS * 1000);
 }
 
 // ---------- PWA install prompt ----------
