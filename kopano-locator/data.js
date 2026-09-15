@@ -321,6 +321,9 @@ const BRANDS = {
   { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", tier: "close", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
   { name: "Chicken Licken Olievenhoutbosch", category: "dining", tier: "close", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
   { name: "eTV Studios", category: "landmark", tier: "close", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
+  { name: "University of Johannesburg (Kingsway)", category: "education", tier: "area", lat: -26.1835900, lng: 27.9976812, sites: ["KOP012", "KOP013"] },
+  { name: "Maponya Mall", category: "mall", tier: "area", lat: -26.2580323, lng: 27.9020381, sites: ["KOP010"] },
+  { name: "Kagiso Central Taxi Rank", category: "transport", tier: "area", lat: -26.1585554, lng: 27.7831347, sites: ["KOP007", "KOP006"] },
 ],
   },
 
@@ -543,6 +546,19 @@ const BRANDS = {
 ],
     // Close-proximity landmarks haven't been researched for The Medium's
     // sites yet — leaving empty for now rather than guessing.
-    LANDMARKS: [],
+    LANDMARKS: [
+      { name: "Jabulani Mall", category: "mall", tier: "close", lat: -26.2514239, lng: 27.8582055, sites: ["TM001A", "TM001B"] },
+      { name: "Bheki Mlangeni District Hospital", category: "health", tier: "close", lat: -26.2478767, lng: 27.8570665, sites: ["TM001A", "TM001B"] },
+      { name: "Soweto Theatre", category: "entertainment", tier: "area", lat: -26.2490705, lng: 27.8598536, sites: ["TM001A", "TM001B"] },
+      { name: "Cosmo City Shopping Centre", category: "mall", tier: "area", lat: -26.0222793, lng: 27.9286348, sites: ["TM002A", "TM002B"] },
+      { name: "Mall of Tembisa", category: "mall", tier: "close", lat: -25.9592264, lng: 28.2031257, sites: ["TM003A", "TM003B"] },
+      { name: "Chris Hani Mall", category: "mall", tier: "close", lat: -26.3429914, lng: 28.1824854, sites: ["TM004A", "TM004B"] },
+      { name: "Shoprite Daveyton", category: "mall", tier: "close", lat: -26.1635117, lng: 28.4022227, sites: ["TM006A", "TM006B"] },
+      { name: "Chamdor Square Shopping Centre", category: "mall", tier: "close", lat: -26.1559518, lng: 27.7955722, sites: ["TM007A", "TM007B"] },
+      { name: "Jubilee Mall", category: "mall", tier: "close", lat: -25.4053878, lng: 28.2696922, sites: ["TM008A", "TM008B"] },
+      { name: "Jubilee District Hospital", category: "health", tier: "area", lat: -25.4031152, lng: 28.2662349, sites: ["TM008A", "TM008B"] },
+      { name: "Mokopane Hospital", category: "health", tier: "area", lat: -24.1550510, lng: 28.9891494, sites: ["TM005A", "TM005B"] },
+      { name: "Maboneng Precinct", category: "landmark", tier: "area", lat: -26.2042543, lng: 28.0591310, sites: ["TMD010"] },
+    ],
   },
 };
