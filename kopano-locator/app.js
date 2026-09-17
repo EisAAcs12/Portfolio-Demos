@@ -681,6 +681,24 @@ function updateShareBar() {
   shareBar.classList.toggle("show", state.curateMode && state.picked.size > 0);
 }
 
+// ---------- 3D map tilt toggle ----------
+// A CSS-only trick: Leaflet itself is a flat 2D map, but tilting the whole
+// map container in 3D space (perspective + rotateX) gives a genuine angled
+// "looking down at the boards" view using the exact same tiles and pins —
+// no switch to a different map engine needed. The pins get an inverse
+// counter-rotation so they read as standing upright on the tilted ground
+// rather than lying flat with it.
+const tiltToggleBtn = document.getElementById("tilt-toggle");
+if (tiltToggleBtn) {
+  tiltToggleBtn.addEventListener("click", () => {
+    const mapWrapEl = document.querySelector(".map-wrap");
+    if (!mapWrapEl) return;
+    const isTilted = mapWrapEl.classList.toggle("tilt-3d");
+    tiltToggleBtn.classList.toggle("active", isTilted);
+    tiltToggleBtn.textContent = isTilted ? "🗺️ 2D View" : "🗺️ 3D View";
+  });
+}
+
 curateToggleBtn.addEventListener("click", () => {
   state.curateMode = !state.curateMode;
   curateToggleBtn.classList.toggle("active", state.curateMode);
@@ -915,7 +933,7 @@ function activateBrandData(id) {
 
 function updateBrandHeaderUI() {
   const brand = BRANDS[currentBrandId];
-  document.title = `${brand.name} ${brand.nameAccent} — ${brand.tagline}`;
+  document.title = `BoardBase — ${brand.name} ${brand.nameAccent}`;
   document.body.dataset.brand = currentBrandId;
   document.querySelectorAll(".brand-pill").forEach(pill => {
     pill.classList.toggle("active", pill.dataset.brand === currentBrandId);
