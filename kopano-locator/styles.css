@@ -1,11 +1,17 @@
 :root {
-  --asphalt-900: #11161b;
-  --asphalt-850: #161c22;
-  --asphalt-800: #1b232a;
-  --asphalt-700: #252e36;
-  --asphalt-650: #2c3842;
-  --line: #333a44;
-  --line-soft: #262b33;
+  /* A single, lighter, neutral-cool slate base shared by both brands —
+     noticeably fresher than a near-black background while staying a
+     proper dark UI (fits a map-based tool). Each brand's identity now
+     comes entirely from its accent colour below, not from also tinting
+     the background — mixing a warm accent with a warm-tinted background
+     was reading muddy/brownish, so the base stays neutral for both. */
+  --asphalt-900: #181d24;
+  --asphalt-850: #1f252d;
+  --asphalt-800: #262d37;
+  --asphalt-700: #323b47;
+  --asphalt-650: #3d4753;
+  --line: #414b58;
+  --line-soft: #313944;
   --amber: #f5a623;
   --amber-dim: #c9861b;
   --amber-glow: rgba(245, 166, 35, 0.35);
@@ -14,7 +20,7 @@
   --red-signal: #e8583f;
   --text-hi: #f4f1ea;
   --text-mid: #aab0b6;
-  --text-low: #6c7379;
+  --text-low: #7c8390;
   --radius-sm: 6px;
   --radius-md: 10px;
   --font-display: "Oswald", "Arial Narrow", sans-serif;
@@ -27,12 +33,12 @@
      can always show its OWN brand's colour regardless of which brand is
      currently active app-wide. */
   --kopano-brand: #10a0d8;   /* the sky-blue "K" mark in Kopano's real logo */
-  --medium-brand: #f2822e;   /* the orange from The Medium's real logo — NOT
-                                 their blue, since that sampled too close to
-                                 Kopano's real blue to tell the two brands
-                                 apart at a glance; orange is equally real,
-                                 sampled from the same logo, and reads as a
-                                 clearly distinct identity next to Kopano's */
+  --medium-brand: #ff5722;   /* a vivid red-orange from The Medium's real
+                                 logo — bumped up in saturation from the
+                                 earlier pick, which read muddy/brownish
+                                 against a warm background; this one pops
+                                 clearly against the shared neutral base
+                                 and reads nothing like Kopano's blue */
 
   /* Brand-identity accent — everything that's "chrome" (buttons, the
      header, the calculator, badges) reads this instead of a literal colour
@@ -50,11 +56,6 @@
    proposal deck. Explicit block (mirrors :root's default) so the two
    brands stay symmetrical and neither depends on the other's fallback. */
 [data-brand="kopano"] {
-  --asphalt-900: #11161b;
-  --asphalt-850: #161c22;
-  --asphalt-800: #1b232a;
-  --asphalt-700: #252e36;
-  --asphalt-650: #2c3842;
   --brand-accent: var(--kopano-brand);
   --brand-accent-glow: rgba(16, 160, 216, 0.35);
   --brand-accent-soft: rgba(16, 160, 216, 0.1);
@@ -62,21 +63,16 @@
   --brand-accent-border: rgba(16, 160, 216, 0.35);
 }
 
-/* The Medium — their real orange, sampled from the same logo file as the
-   blue used elsewhere in their branding. The map tiles, billboard pins,
-   and status colors are deliberately NOT overridden here — only the
-   surrounding app chrome changes. */
+/* The Medium — their real red-orange, sampled from the same logo file as
+   the blue used elsewhere in their branding. The map tiles, billboard
+   pins, and status colors are deliberately NOT overridden here — only
+   the surrounding app chrome changes. */
 [data-brand="medium"] {
-  --asphalt-900: #1a1612;
-  --asphalt-850: #221c16;
-  --asphalt-800: #2a221b;
-  --asphalt-700: #362d25;
-  --asphalt-650: #41362d;
   --brand-accent: var(--medium-brand);
-  --brand-accent-glow: rgba(242, 130, 46, 0.35);
-  --brand-accent-soft: rgba(242, 130, 46, 0.1);
-  --brand-accent-soft-strong: rgba(242, 130, 46, 0.16);
-  --brand-accent-border: rgba(242, 130, 46, 0.35);
+  --brand-accent-glow: rgba(255, 87, 34, 0.35);
+  --brand-accent-soft: rgba(255, 87, 34, 0.1);
+  --brand-accent-soft-strong: rgba(255, 87, 34, 0.16);
+  --brand-accent-border: rgba(255, 87, 34, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -186,6 +182,7 @@ input, select { font-family: inherit; }
   transition: background .15s, color .15s;
   white-space: nowrap;
   min-width: 0;
+  flex-shrink: 0;
   overflow: hidden;
 }
 .brand-pill:hover { color: var(--text-hi); }
@@ -238,9 +235,10 @@ input, select { font-family: inherit; }
   .contact-chip { padding: 7px 10px; font-size: 11px; }
   .contact-chip .full-label { display: none; }
   .contact-chip .short-label { display: inline; }
-  .brand-pill { font-size: 11px; padding: 6px 9px; }
+  .brand-pill { font-size: 11px; padding: 7px 10px; gap: 0; }
+  .brand-pill-logo { height: 20px; }
   #brand-pill-kopano .full-label { display: none; }
-  #brand-pill-kopano .short-label { display: inline; }
+  #brand-pill-kopano .short-label { display: none; }
   #brand-pill-medium .full-label { display: none; }
 }
 
