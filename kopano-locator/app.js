@@ -313,18 +313,11 @@ function illuminatedIconSvg(on) {
   </svg>`;
 }
 
-function siteCardHTML(site, expanded) {
-  const status = resolveStatus(site);
-  const badge = availabilityBadge(site);
-  const signal = trafficLightHTML(status);
-  const isDigital = site.format === "digital";
-
-  const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
-
+function calcBlockHTML(site) {
   const durations = [1, 3, 6, 12];
   const hasProduction = site.production > 0;
   const calcTotal = site.suggestedRate * 1 + (site.production || 0);
-  const calcBlock = `
+  return `
     <div class="calc-block">
       <div class="calc-head">Estimate a campaign cost</div>
       <div class="calc-durations">
@@ -336,10 +329,13 @@ function siteCardHTML(site, expanded) {
       </div>
       <p class="calc-disclaimer">Estimate only — suggested rate × months${hasProduction ? " + production" : ""}. Final pricing confirmed via Contact for pricing.</p>
     </div>`;
+}
 
+function detailGridHTML(site) {
+  const isDigital = site.format === "digital";
   // Kopano's sites have LSM/material/traffic-flow; The Medium's don't carry
   // those fields at all — fall back cleanly rather than printing "undefined".
-  const detailGrid = isDigital ? `
+  return isDigital ? `
       <div class="detail-grid">
         <div class="detail-field"><dt>Slots</dt><dd>${site.slots ?? "—"}</dd></div>
         <div class="detail-field"><dt>Spot length</dt><dd>${site.spotLength || "—"}</dd></div>
@@ -355,14 +351,23 @@ function siteCardHTML(site, expanded) {
         <div class="detail-field"><dt>Illuminated</dt><dd>${site.illuminated ? "Yes" : "No"}</dd></div>
         ${site.trafficFlow ? `<div class="detail-field" style="grid-column: 1 / -1;"><dt>Traffic flow</dt><dd>${site.trafficFlow}</dd></div>` : ""}
       </div>`;
+}
+
+function siteCardHTML(site, expanded) {
+  const status = resolveStatus(site);
+  const badge = availabilityBadge(site);
+  const signal = trafficLightHTML(status);
+  const isDigital = site.format === "digital";
+
+  const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
 
   const detail = expanded ? `
     <div class="site-detail">
       <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
       ${noteRow}
       <p>${site.description}</p>
-      ${detailGrid}
-      ${calcBlock}
+      ${detailGridHTML(site)}
+      ${calcBlockHTML(site)}
       <div class="gps-row">
         <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
         <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
@@ -397,7 +402,108 @@ function siteCardHTML(site, expanded) {
     </div>`;
 }
 
+function renderFocusView() {
+  const visible = filteredSites();
+  const idx = visible.findIndex(s => s.code === state.selectedCode);
+  const site = visible[idx];
+  if (!site) { exitFocusView(); return; }
+
+  const status = resolveStatus(site);
+  const isDigital = site.format === "digital";
+  const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
+  const posLabel = visible.length > 1 ? `${idx + 1} of ${visible.length}` : "";
+
+  resultCountEl.textContent = `${visible.length} of ${state.clientView ? state.clientView.size : SITES.length} boards`;
+
+  listEl.innerHTML = `
+    <div class="focus-view">
+      <div class="focus-header">
+        <button class="focus-back" title="Back to list (Esc)">← All boards</button>
+        <div class="focus-nav">
+          <span class="focus-position">${posLabel}</span>
+          <button class="focus-prev" title="Previous (↑)" ${visible.length < 2 ? "disabled" : ""}>↑</button>
+          <button class="focus-next" title="Next (↓)" ${visible.length < 2 ? "disabled" : ""}>↓</button>
+        </div>
+      </div>
+      <div class="focus-body">
+        <img class="focus-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
+        <div class="focus-title-row">
+          <span class="site-shield">${site.code}</span>
+          ${isDigital ? `<span class="format-badge">📺 Digital</span>` : ""}
+          <span class="focus-size">${site.size}</span>
+        </div>
+        <h2 class="focus-title">${site.title}</h2>
+        <div class="focus-status-row">
+          ${trafficLightHTML(status)}
+          ${availabilityBadge(site)}
+          <span class="illum-icon ${site.illuminated ? "on" : "off"}" title="${site.illuminated ? "Illuminated" : "Not illuminated"}">
+            ${illuminatedIconSvg(site.illuminated)}
+          </span>
+        </div>
+        <div class="rate-row">
+          <span class="rate-figure">Media Rate from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
+          <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
+        </div>
+        ${noteRow}
+        <p class="focus-desc">${site.description}</p>
+        ${detailGridHTML(site)}
+        ${calcBlockHTML(site)}
+        <div class="gps-row">
+          <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
+          <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
+        </div>
+        <button class="enquire-btn focus-enquire" data-enquire="${site.code}">Contact for pricing</button>
+      </div>
+    </div>`;
+}
+
+function moveFocus(delta) {
+  const visible = filteredSites();
+  if (visible.length < 2) return;
+  const idx = visible.findIndex(s => s.code === state.selectedCode);
+  if (idx === -1) return;
+  const nextIdx = (idx + delta + visible.length) % visible.length;
+  const oldCode = state.selectedCode;
+  const newSite = visible[nextIdx];
+  state.selectedCode = newSite.code;
+  state.collapsedAreas.delete(newSite.area);
+  renderFocusView();
+  updateMarkerSelection(oldCode, newSite.code);
+  flyToSite(newSite);
+}
+
+function exitFocusView() {
+  state.selectedCode = null;
+  hideMapPreview();
+  renderList();
+  rebuildMarkers();
+}
+
+// Swaps just the two affected pin icons instead of rebuilding every marker
+// on the map — keeps arrow-key browsing feeling instant rather than
+// re-drawing the whole marker layer on every keypress.
+function updateMarkerSelection(oldCode, newCode) {
+  const oldMarker = markersByCode.get(oldCode);
+  const newMarker = markersByCode.get(newCode);
+  if (oldMarker) oldMarker.setIcon(pinIcon(false));
+  if (newMarker) newMarker.setIcon(pinIcon(true));
+}
+
+document.addEventListener("keydown", (e) => {
+  if (!state.selectedCode) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if (e.key === "ArrowDown") { e.preventDefault(); moveFocus(1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveFocus(-1); }
+  else if (e.key === "Escape") { e.preventDefault(); exitFocusView(); }
+});
+
 function renderList() {
+  if (state.selectedCode && !state.curateMode) {
+    renderFocusView();
+    return;
+  }
+
   const visible = filteredSites();
   const total = state.clientView ? state.clientView.size : SITES.length;
   resultCountEl.textContent = `${visible.length} of ${total} boards`;
@@ -446,12 +552,12 @@ function selectSite(code, opts = {}) {
     const site = SITES.find(s => s.code === state.selectedCode);
     // ensure its area group is expanded
     state.collapsedAreas.delete(site.area);
-    if (!opts.fromMap) flyToSite(site);
-    if (!opts.fromMap) {
-      renderList();
-      const card = listEl.querySelector(`.site-card[data-code="${code}"]`);
-      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else {
+    flyToSite(site);
+    // Curate mode keeps the old inline-expand-within-the-list behaviour
+    // (reps still need to see checkboxes for every card), so that's the
+    // only case that still needs to scroll a card into view. Otherwise
+    // the focus view has already replaced the whole panel.
+    if (state.curateMode) {
       const card = listEl.querySelector(`.site-card[data-code="${code}"]`);
       if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -466,6 +572,18 @@ listEl.addEventListener("click", (e) => {
   if (e.target.closest(".copy-btn")) {
     e.stopPropagation();
     return; // let the link's default navigation happen, just don't also toggle the card
+  }
+  if (e.target.closest(".focus-back")) {
+    exitFocusView();
+    return;
+  }
+  if (e.target.closest(".focus-next")) {
+    moveFocus(1);
+    return;
+  }
+  if (e.target.closest(".focus-prev")) {
+    moveFocus(-1);
+    return;
   }
   const pickCheck = e.target.closest(".pick-check");
   if (pickCheck) {
@@ -851,15 +969,26 @@ function refreshUIForBrand() {
 // it wouldn't mean anything against the other brand's site codes.
 function switchBrand(id) {
   if (id === currentBrandId || !BRANDS[id]) return;
-  activateBrandData(id);
-  state.clientView = null;
-  if (clientViewBanner) clientViewBanner.classList.remove("show");
-  if (curateToggleBtn) curateToggleBtn.style.display = "";
-  refreshUIForBrand();
-  const url = new URL(location.href);
-  url.searchParams.set("brand", id);
-  url.searchParams.delete("sites");
-  history.replaceState(null, "", url.toString());
+  const layoutEl = document.querySelector(".layout");
+  if (layoutEl) layoutEl.classList.add("brand-switching");
+
+  setTimeout(() => {
+    activateBrandData(id);
+    state.clientView = null;
+    if (clientViewBanner) clientViewBanner.classList.remove("show");
+    if (curateToggleBtn) curateToggleBtn.style.display = "";
+    refreshUIForBrand();
+    const url = new URL(location.href);
+    url.searchParams.set("brand", id);
+    url.searchParams.delete("sites");
+    history.replaceState(null, "", url.toString());
+
+    if (layoutEl) {
+      // let the new content paint at opacity 0 first, then fade it in —
+      // avoids a flash of the old layout mid-transition
+      requestAnimationFrame(() => layoutEl.classList.remove("brand-switching"));
+    }
+  }, 160);
 }
 
 // ---------- init ----------
