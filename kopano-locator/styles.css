@@ -118,6 +118,20 @@ input, select { font-family: inherit; }
 
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 
+.app-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-low);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-right: 2px;
+  border-right: 1px solid var(--line);
+  margin-right: 2px;
+}
+
 .brand-mark {
   font-family: var(--font-display);
   font-weight: 600;
@@ -246,6 +260,8 @@ input, select { font-family: inherit; }
   #brand-pill-kopano .full-label { display: none; }
   #brand-pill-kopano .short-label { display: none; }
   #brand-pill-medium .full-label { display: none; }
+  .app-name { display: none; }
+  .tilt-toggle { font-size: 10px; padding: 6px 10px; top: 8px; left: 8px; }
 }
 
 .live-chip {
@@ -340,6 +356,8 @@ input, select { font-family: inherit; }
   position: relative;
   flex: 1 1 48vh;
   min-height: 260px;
+  perspective: 1400px;
+  overflow: hidden;
 }
 @media (min-width: 900px) {
   .map-wrap { flex: 1 1 auto; order: 2; }
@@ -350,7 +368,54 @@ input, select { font-family: inherit; }
   inset: 0;
   background: var(--asphalt-900);
   touch-action: none; /* stop pinch/trackpad-zoom on the map from also zooming the whole page */
+  transform-origin: 50% 100%;
+  transition: transform .6s cubic-bezier(.25, .8, .3, 1);
 }
+
+/* ---------- 3D tilt view ---------- */
+/* Tilts the whole map plane in 3D space via CSS — same tiles, same pins,
+   just viewed at an angle. Pins get an inverse rotateX so they read as
+   standing upright off the tilted ground rather than lying flat with it;
+   this needs transform-style: preserve-3d the whole way down Leaflet's
+   own pane structure for the counter-rotation to compose correctly. */
+.map-wrap.tilt-3d #map {
+  transform: rotateX(58deg) scale(1.65) translateY(4%);
+}
+.map-wrap.tilt-3d #map,
+.map-wrap.tilt-3d .leaflet-map-pane,
+.map-wrap.tilt-3d .leaflet-tile-pane,
+.map-wrap.tilt-3d .leaflet-marker-pane,
+.map-wrap.tilt-3d .leaflet-overlay-pane,
+.map-wrap.tilt-3d .leaflet-shadow-pane,
+.map-wrap.tilt-3d .leaflet-popup-pane {
+  transform-style: preserve-3d;
+}
+.map-wrap.tilt-3d .kop-pin,
+.map-wrap.tilt-3d .landmark-pin {
+  transform: rotateX(-58deg);
+  transform-origin: 50% 100%;
+}
+
+.tilt-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 650;
+  background: var(--asphalt-800);
+  border: 1px solid var(--line);
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 8px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.tilt-toggle:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+.tilt-toggle.active { background: var(--brand-accent); border-color: var(--brand-accent); color: var(--asphalt-900); }
 
 /* Hover/tap site preview — a fixed overlay centered inside the map itself
    (not anchored to the pin's screen position), so it's always fully visible
