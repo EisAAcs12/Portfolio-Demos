@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Kopano Media & The Medium — OOH Site Locator</title>
+<title>BoardBase — OOH Site Locator</title>
 <meta name="description" content="Find available billboard and digital screen sites across Gauteng and Limpopo." />
 <meta name="theme-color" content="#12151a" />
 <link rel="manifest" href="manifest.json" />
@@ -22,6 +22,7 @@
 
   <header class="topbar">
     <div class="brand" id="brand-switcher-wrap">
+      <span class="app-name">BoardBase</span>
       <div class="brand-switcher-group" role="group" aria-label="Switch media company">
         <button type="button" class="brand-pill" id="brand-pill-kopano" data-brand="kopano">
           <img src="brand-assets/kopano-logo.png" alt="" class="brand-pill-logo" />
@@ -71,6 +72,7 @@
   <div class="layout">
     <div class="map-wrap">
       <div id="map"></div>
+      <button type="button" id="tilt-toggle" class="tilt-toggle" title="Toggle a 3D angled view of the map">🗺️ 3D View</button>
       <div class="map-preview" id="map-preview">
         <div class="map-preview-frame">
           <img id="map-preview-img" src="" alt="" />
