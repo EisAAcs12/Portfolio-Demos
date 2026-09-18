@@ -1,5 +1,5 @@
 // Kopano Media & The Medium — OOH Site Locator
-// Vanilla JS + Leaflet. Data comes from data.js (BRANDS, MAP_KEY).
+// Vanilla JS + MapLibre GL JS (OpenFreeMap tiles). Data comes from data.js (BRANDS).
 // Which brand is "active" is held in these module-level `let` bindings —
 // every function below reads SITES/AREAS/CONTACT/CONFIG/LANDMARKS via
 // closure, so switching brands is just reassigning these and re-running
@@ -113,13 +113,13 @@ function filteredSites() {
 
 // ---------- map ----------
 
-let map, markerLayer;
-const markersByCode = new Map(); // site code -> Leaflet marker
+let map;
+const markersByCode = new Map(); // site code -> maplibregl.Marker
+let landmarkMarkers = []; // { marker, el } for every currently-built landmark
 
 // Landmarks only appear once zoomed in this far — keeps the wide view clean
 // and focused on the billboards themselves.
 const LANDMARK_MIN_ZOOM = 14;
-let landmarkLayer;
 
 const LANDMARK_META = {
   mall:          { emoji: "🛍️", label: "Shopping" },
@@ -133,63 +133,156 @@ const LANDMARK_META = {
   landmark:      { emoji: "📍", label: "Landmark" },
 };
 
-function landmarkIcon(lm) {
+function landmarkElement(lm) {
   const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
   const tierClass = lm.tier === "close" ? "tier-close" : "tier-area";
-  const size = lm.tier === "close" ? 32 : 26;
-  return L.divIcon({
-    className: "landmark-pin-wrap",
-    html: `<div class="landmark-pin ${tierClass}"><span>${meta.emoji}</span></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
-  });
+  const el = document.createElement("div");
+  el.className = `landmark-pin ${tierClass}`;
+  el.innerHTML = `<span>${meta.emoji}</span>`;
+  return el;
 }
 
 function rebuildLandmarks() {
-  landmarkLayer.clearLayers();
+  landmarkMarkers.forEach(({ marker }) => marker.remove());
+  landmarkMarkers = [];
+
   const visibleCodes = new Set(filteredSites().map(s => s.code));
+  const showNow = map.getZoom() >= LANDMARK_MIN_ZOOM;
+
   LANDMARKS.forEach(lm => {
     if (!lm.sites.some(code => visibleCodes.has(code))) return;
     const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
     const tierLabel = lm.tier === "close" ? "Right by the board" : "Nearby area";
-    const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon(lm) });
-    marker.bindPopup(`<div class="landmark-popup landmark-popup-${lm.tier}"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label} · ${tierLabel}</span></div>`, { maxWidth: 190 });
-    marker.addTo(landmarkLayer);
+    const el = landmarkElement(lm);
+    const popup = new maplibregl.Popup({ offset: 14, maxWidth: "190px" }).setHTML(
+      `<div class="landmark-popup landmark-popup-${lm.tier}"><strong>${meta.emoji} ${lm.name}</strong><span>${meta.label} · ${tierLabel}</span></div>`
+    );
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([lm.lng, lm.lat])
+      .setPopup(popup)
+      .addTo(map);
+    el.style.display = showNow ? "" : "none";
+    landmarkMarkers.push({ marker, el });
   });
 }
 
 function updateLandmarkVisibility() {
   const shouldShow = map.getZoom() >= LANDMARK_MIN_ZOOM;
-  const isShown = map.hasLayer(landmarkLayer);
-  if (shouldShow && !isShown) map.addLayer(landmarkLayer);
-  if (!shouldShow && isShown) map.removeLayer(landmarkLayer);
+  landmarkMarkers.forEach(({ el }) => {
+    el.style.display = shouldShow ? "" : "none";
+  });
+}
+
+// Applies a dark recolor to OpenFreeMap's Liberty style at runtime, rather
+// than depending on a third party's separately-hosted "dark" style file —
+// this way we own the whole look and it can't break if someone else's
+// project moves or changes. Liberty is the actively-maintained OpenFreeMap
+// style with real building-height data, which is why it's the base here
+// instead of the (explicitly unfinished) official Dark style.
+function applyDarkTheme() {
+  const style = map.getStyle();
+  if (!style || !style.layers) return;
+  style.layers.forEach(layer => {
+    const id = layer.id;
+    try {
+      if (layer.type === "background") {
+        map.setPaintProperty(id, "background-color", "#181d24");
+      } else if (layer.type === "fill") {
+        const src = (layer["source-layer"] || "").toLowerCase();
+        if (src.includes("water")) map.setPaintProperty(id, "fill-color", "#12232b");
+        else if (src.includes("landuse") || src.includes("landcover") || src.includes("park")) {
+          map.setPaintProperty(id, "fill-color", "#1c2129");
+        } else if (src.includes("building")) {
+          map.setPaintProperty(id, "fill-color", "#262d37");
+        }
+      } else if (layer.type === "line") {
+        const src = (layer["source-layer"] || "").toLowerCase();
+        if (src.includes("road") || src.includes("transportation")) {
+          map.setPaintProperty(id, "line-color", "#3d4753");
+        } else if (src.includes("water") || src.includes("waterway")) {
+          map.setPaintProperty(id, "line-color", "#12232b");
+        } else if (src.includes("boundary")) {
+          map.setPaintProperty(id, "line-color", "#414b58");
+        }
+      } else if (layer.type === "symbol") {
+        if (map.getLayoutProperty(id, "text-field") !== undefined) {
+          map.setPaintProperty(id, "text-color", "#aab0b6");
+          map.setPaintProperty(id, "text-halo-color", "#12151a");
+          map.setPaintProperty(id, "text-halo-width", 1.2);
+        }
+      }
+    } catch (err) {
+      // some layers don't support every paint property — safe to skip
+    }
+  });
+}
+
+function add3dBuildingsLayer() {
+  const style = map.getStyle();
+  const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
+  if (map.getLayer("boardbase-3d-buildings")) return;
+  // Add our own explicit vector source for the buildings layer, rather than
+  // assuming what Liberty's own internal source is named internally — this
+  // matches MapLibre's own official "Display buildings in 3D" example.
+  if (!map.getSource("boardbase-buildings")) {
+    map.addSource("boardbase-buildings", {
+      type: "vector",
+      url: "https://tiles.openfreemap.org/planet",
+    });
+  }
+  map.addLayer(
+    {
+      id: "boardbase-3d-buildings",
+      source: "boardbase-buildings",
+      "source-layer": "building",
+      type: "fill-extrusion",
+      minzoom: 14,
+      filter: ["!=", ["get", "hide_3d"], true],
+      paint: {
+        "fill-extrusion-color": [
+          "interpolate", ["linear"], ["coalesce", ["get", "render_height"], 5],
+          0, "#2c3842",
+          50, "#3d4753",
+          150, "#4d5866",
+        ],
+        "fill-extrusion-height": [
+          "interpolate", ["linear"], ["zoom"],
+          14, 0,
+          16, ["coalesce", ["get", "render_height"], 5],
+        ],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.85,
+      },
+    },
+    labelLayer ? labelLayer.id : undefined
+  );
 }
 
 function initMap() {
-  map = L.map("map", { zoomControl: false, attributionControl: true });
+  map = new maplibregl.Map({
+    container: "map",
+    style: "https://tiles.openfreemap.org/styles/liberty",
+    center: [27.99, -26.13],
+    zoom: 10,
+    pitch: 0,
+    bearing: 0,
+    attributionControl: { compact: true },
+  });
 
-  L.control.zoom({ position: "bottomright" }).addTo(map);
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
 
-  const cartoKey = MAP_KEY.CARTO_API_KEY ? `?key=${MAP_KEY.CARTO_API_KEY}` : "";
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoKey}`, {
-    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: "abcd",
-    maxZoom: 19,
-  }).addTo(map);
-
-  markerLayer = L.layerGroup().addTo(map);
-  landmarkLayer = L.layerGroup();
-
-  fitMapToBrand();
+  map.on("load", () => {
+    applyDarkTheme();
+    add3dBuildingsLayer();
+    fitMapToBrand();
+    rebuildMarkers();
+    updateLandmarkVisibility();
+  });
 
   map.on("zoomend", updateLandmarkVisibility);
 
   // Prevent trackpad-pinch and mobile-pinch gestures over the map from
-  // zooming the whole browser page instead of just the map. Leaflet handles
-  // its own zoom fine, but a ctrl+wheel (trackpad pinch) or a touch pinch
-  // can still leak through to the browser's native page zoom unless we
-  // explicitly stop it here.
+  // zooming the whole browser page instead of just the map.
   const mapEl = document.getElementById("map");
   mapEl.addEventListener("wheel", (e) => {
     if (e.ctrlKey) e.preventDefault();
@@ -199,8 +292,6 @@ function initMap() {
   map.on("click", () => {
     if (!state.selectedCode) hideMapPreview();
   });
-
-  updateLandmarkVisibility();
 }
 
 // Fits the map to whichever brand is active — Kopano's sites are all
@@ -208,25 +299,25 @@ function initMap() {
 // so a fixed center/zoom wouldn't work well for both.
 function fitMapToBrand() {
   if (!map || !SITES || SITES.length === 0) return;
-  const bounds = L.latLngBounds(SITES.map(s => [s.lat, s.lng]));
-  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+  const lngs = SITES.map(s => s.lng);
+  const lats = SITES.map(s => s.lat);
+  const bounds = [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
+  map.fitBounds(bounds, { padding: 40, maxZoom: 12, duration: 0 });
 }
 
-function pinIcon(selected) {
-  return L.divIcon({
-    className: "kop-pin-wrap",
-    html: `<div class="kop-pin${selected ? " selected" : ""}">
-             <div class="kop-pin-board"></div>
-             <div class="kop-pin-post"></div>
-           </div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 26],
-    popupAnchor: [0, -24],
-  });
+function pinElement(selected) {
+  const el = document.createElement("div");
+  el.className = `kop-pin${selected ? " selected" : ""}`;
+  el.innerHTML = `<div class="kop-pin-board"></div><div class="kop-pin-post"></div>`;
+  return el;
 }
 
 function rebuildMarkers() {
-  markerLayer.clearLayers();
+  if (!map || !map.isStyleLoaded()) return;
+  markersByCode.forEach(marker => marker.remove());
   markersByCode.clear();
 
   const visible = filteredSites();
@@ -256,18 +347,21 @@ function rebuildMarkers() {
       }
 
       const selected = state.selectedCode === site.code;
-      const marker = L.marker([lat, lng], { icon: pinIcon(selected) });
+      const el = pinElement(selected);
 
-      marker.on("mouseover", () => showMapPreview(site));
-      marker.on("mouseout", () => {
+      el.addEventListener("mouseenter", () => showMapPreview(site));
+      el.addEventListener("mouseleave", () => {
         if (state.selectedCode !== site.code) hideMapPreview();
       });
-      marker.on("click", (e) => {
-        L.DomEvent.stopPropagation(e);
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
         showMapPreview(site);
         selectSite(site.code, { fromMap: true });
       });
-      marker.addTo(markerLayer);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([lng, lat])
+        .addTo(map);
       markersByCode.set(site.code, marker);
     });
   });
@@ -276,7 +370,7 @@ function rebuildMarkers() {
 }
 
 function flyToSite(site) {
-  map.flyTo([site.lat, site.lng], Math.max(map.getZoom(), 13), { duration: 0.6 });
+  map.flyTo({ center: [site.lng, site.lat], zoom: Math.max(map.getZoom(), 13), duration: 600 });
   showMapPreview(site);
 }
 
@@ -485,8 +579,8 @@ function exitFocusView() {
 function updateMarkerSelection(oldCode, newCode) {
   const oldMarker = markersByCode.get(oldCode);
   const newMarker = markersByCode.get(newCode);
-  if (oldMarker) oldMarker.setIcon(pinIcon(false));
-  if (newMarker) newMarker.setIcon(pinIcon(true));
+  if (oldMarker) oldMarker.getElement().classList.remove("selected");
+  if (newMarker) newMarker.getElement().classList.add("selected");
 }
 
 document.addEventListener("keydown", (e) => {
@@ -637,7 +731,7 @@ document.getElementById("area-select").addEventListener("change", (e) => {
   rebuildMarkers();
   if (state.area !== "all") {
     const first = filteredSites()[0];
-    if (first) map.flyTo([first.lat, first.lng], 12, { duration: 0.6 });
+    if (first) map.flyTo({ center: [first.lng, first.lat], zoom: 12, duration: 600 });
   }
 });
 
@@ -681,21 +775,47 @@ function updateShareBar() {
   shareBar.classList.toggle("show", state.curateMode && state.picked.size > 0);
 }
 
-// ---------- 3D map tilt toggle ----------
-// A CSS-only trick: Leaflet itself is a flat 2D map, but tilting the whole
-// map container in 3D space (perspective + rotateX) gives a genuine angled
-// "looking down at the boards" view using the exact same tiles and pins —
-// no switch to a different map engine needed. The pins get an inverse
-// counter-rotation so they read as standing upright on the tilted ground
-// rather than lying flat with it.
+// ---------- 3D map view toggle ----------
+// This now drives MapLibre's real camera (pitch + bearing) over actual
+// vector map data — not the old CSS-transform trick on flat tiles, which
+// couldn't render readable text or standing buildings. Billboard pins
+// stay upright automatically here: MapLibre keeps HTML markers facing
+// the camera by default, so no counter-rotation hack is needed — they
+// read as little billboards standing on the tilted streets.
 const tiltToggleBtn = document.getElementById("tilt-toggle");
+let is3dView = false;
 if (tiltToggleBtn) {
   tiltToggleBtn.addEventListener("click", () => {
-    const mapWrapEl = document.querySelector(".map-wrap");
-    if (!mapWrapEl) return;
-    const isTilted = mapWrapEl.classList.toggle("tilt-3d");
-    tiltToggleBtn.classList.toggle("active", isTilted);
-    tiltToggleBtn.textContent = isTilted ? "🗺️ 2D View" : "🗺️ 3D View";
+    is3dView = !is3dView;
+    tiltToggleBtn.classList.toggle("active", is3dView);
+    tiltToggleBtn.textContent = is3dView ? "🗺️ 2D View" : "🗺️ 3D View";
+    map.easeTo({
+      pitch: is3dView ? 58 : 0,
+      bearing: is3dView ? -17 : 0,
+      duration: 900,
+    });
+  });
+}
+
+// ---------- more-filters dropdown (area, size, lighting, curate) ----------
+const filterMoreBtn = document.getElementById("filter-more-btn");
+const filterMorePanel = document.getElementById("filter-more-panel");
+if (filterMoreBtn && filterMorePanel) {
+  const closeFilterMore = () => {
+    filterMorePanel.classList.remove("show");
+    filterMoreBtn.classList.remove("active");
+    filterMoreBtn.setAttribute("aria-expanded", "false");
+  };
+  filterMoreBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = filterMorePanel.classList.toggle("show");
+    filterMoreBtn.classList.toggle("active", isOpen);
+    filterMoreBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+  filterMorePanel.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", closeFilterMore);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeFilterMore();
   });
 }
 
@@ -938,8 +1058,6 @@ function updateBrandHeaderUI() {
   document.querySelectorAll(".brand-pill").forEach(pill => {
     pill.classList.toggle("active", pill.dataset.brand === currentBrandId);
   });
-  const tagEl = document.getElementById("brand-tag");
-  if (tagEl) tagEl.textContent = brand.tagline;
 }
 
 // Re-runs everything that depends on which brand is active: dropdowns,
