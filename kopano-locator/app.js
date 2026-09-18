@@ -833,6 +833,15 @@ if (filterMoreBtn && filterMorePanel) {
     const isOpen = filterMorePanel.classList.toggle("show");
     filterMoreBtn.classList.toggle("active", isOpen);
     filterMoreBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    if (isOpen) {
+      // position: fixed, so this has to be set from the button's real
+      // on-screen location — there's no CSS-only way to anchor a fixed
+      // element to a specific other element the way absolute positioning
+      // normally would.
+      const rect = filterMoreBtn.getBoundingClientRect();
+      filterMorePanel.style.top = `${rect.bottom + 8}px`;
+      filterMorePanel.style.left = `${rect.left}px`;
+    }
   });
   filterMorePanel.addEventListener("click", (e) => e.stopPropagation());
   document.addEventListener("click", closeFilterMore);
