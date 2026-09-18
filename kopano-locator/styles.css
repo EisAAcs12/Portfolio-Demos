@@ -1,4 +1,8 @@
 :root {
+  color-scheme: dark; /* tells the browser this page is intentionally dark,
+    so native widgets (dropdown menus, scrollbars, form controls) render in
+    a matching dark style instead of defaulting to a jarring light one on
+    platforms/browsers that would otherwise guess light mode */
   /* A single, lighter, neutral-cool slate base shared by both brands —
      noticeably fresher than a near-black background while staying a
      proper dark UI (fits a map-based tool). Each brand's identity now
@@ -1253,16 +1257,28 @@ input, select { font-family: inherit; }
 #install-banner {
   display: none;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 8px 16px;
   background: var(--brand-accent);
   color: var(--asphalt-900);
   font-size: 12.5px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 #install-banner.show { display: flex; }
-#install-banner button {
+#install-banner span {
+  flex: 1 1 auto;
+  min-width: 160px;
+  line-height: 1.35;
+}
+#install-banner .install-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
+  flex-shrink: 0;
+}
+#install-banner button {
   background: var(--asphalt-900);
   color: var(--brand-accent);
   border: none;
@@ -1276,6 +1292,7 @@ input, select { font-family: inherit; }
   color: var(--asphalt-900);
   opacity: 0.7;
   padding: 6px 4px;
+  font-weight: 400;
 }
 
 /* ---------- Curate & share (client link) ---------- */
