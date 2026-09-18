@@ -299,9 +299,9 @@ input, select { font-family: inherit; }
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .15s, border-color .15s;
+  transition: background .15s, border-color .15s, transform .15s;
 }
-.filter-more-btn:hover { background: var(--asphalt-650); border-color: var(--brand-accent); }
+.filter-more-btn:hover { background: var(--asphalt-650); border-color: var(--brand-accent); transform: scale(1.06); }
 .filter-more-btn.active { background: var(--brand-accent); border-color: var(--brand-accent); }
 .hamburger-icon { display: flex; flex-direction: column; gap: 4px; width: 16px; }
 .hamburger-icon span { display: block; height: 2px; background: var(--text-hi); border-radius: 1px; }
@@ -318,15 +318,32 @@ input, select { font-family: inherit; }
   border-radius: var(--radius-md);
   box-shadow: 0 12px 32px -8px rgba(0,0,0,0.6);
   padding: 12px;
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 220px;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease, visibility 0s linear .15s;
 }
-.filter-more-panel.show { display: flex; }
+.filter-more-panel.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .15s ease, transform .15s ease, visibility 0s linear 0s;
+}
 .filter-more-panel select,
 .filter-more-panel .toggle-chip {
   width: 100%;
+  transition: border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease;
+}
+.filter-more-panel select:hover,
+.filter-more-panel .toggle-chip:hover {
+  border-color: var(--brand-accent);
+  transform: translateY(-1px);
 }
 
 .filterbar input[type="search"] {
