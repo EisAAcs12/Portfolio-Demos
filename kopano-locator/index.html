@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>BoardBase</title>
 <meta name="description" content="Find available billboard and digital screen sites across Gauteng and Limpopo." />
-<meta name="theme-color" content="#12151a" />
+<meta name="theme-color" content="#181d24" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icons/icon-192.png" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -46,8 +48,10 @@
 
   <div id="install-banner">
     <span>Install this app for one-tap access on site visits.</span>
-    <button id="install-btn">Install</button>
-    <button class="dismiss" id="dismiss-install">✕</button>
+    <div class="install-actions">
+      <button id="install-btn">Install</button>
+      <button class="dismiss" id="dismiss-install">✕</button>
+    </div>
   </div>
 
   <div class="filterbar">
