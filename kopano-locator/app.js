@@ -777,7 +777,9 @@ document.getElementById("illum-toggle").addEventListener("click", (e) => {
   btn.textContent = state.illuminated === "yes" ? "☀ Illuminated" : state.illuminated === "no" ? "☾ Non-illuminated" : "☀ Any lighting";
   renderList();
   rebuildMarkers();
-  closeFilterMorePanel();
+  // NOT closing the panel here on purpose — unlike the selects/curate
+  // toggle, this one cycles through 3 states on repeated clicks, so
+  // auto-closing would force a reopen for every single click.
 });
 
 document.getElementById("avail-toggle").addEventListener("click", (e) => {
