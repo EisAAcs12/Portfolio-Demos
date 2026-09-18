@@ -179,89 +179,100 @@ function updateLandmarkVisibility() {
 // project moves or changes. Liberty is the actively-maintained OpenFreeMap
 // style with real building-height data, which is why it's the base here
 // instead of the (explicitly unfinished) official Dark style.
-function applyDarkTheme() {
-  const style = map.getStyle();
-  if (!style || !style.layers) return;
-  style.layers.forEach(layer => {
-    const id = layer.id;
+// Recolors OpenFreeMap's Liberty style dark — mutating the style JSON
+// itself (via transformStyle, below) rather than repainting an
+// already-rendered map after the fact. Doing it after load causes a real,
+// visible flash of the original light theme before the dark colors kick
+// in; doing it here means the very first pixels painted are already dark.
+function darkenStyle(style) {
+  if (!style || !style.layers) return style;
+  const layers = style.layers.map(layer => {
+    const paint = { ...(layer.paint || {}) };
     try {
       if (layer.type === "background") {
-        map.setPaintProperty(id, "background-color", "#181d24");
+        paint["background-color"] = "#181d24";
       } else if (layer.type === "fill") {
         const src = (layer["source-layer"] || "").toLowerCase();
-        if (src.includes("water")) map.setPaintProperty(id, "fill-color", "#12232b");
+        if (src.includes("water")) paint["fill-color"] = "#12232b";
         else if (src.includes("landuse") || src.includes("landcover") || src.includes("park")) {
-          map.setPaintProperty(id, "fill-color", "#1c2129");
+          paint["fill-color"] = "#1c2129";
         } else if (src.includes("building")) {
-          map.setPaintProperty(id, "fill-color", "#262d37");
+          paint["fill-color"] = "#262d37";
         }
       } else if (layer.type === "line") {
         const src = (layer["source-layer"] || "").toLowerCase();
         if (src.includes("road") || src.includes("transportation")) {
-          map.setPaintProperty(id, "line-color", "#3d4753");
+          paint["line-color"] = "#3d4753";
         } else if (src.includes("water") || src.includes("waterway")) {
-          map.setPaintProperty(id, "line-color", "#12232b");
+          paint["line-color"] = "#12232b";
         } else if (src.includes("boundary")) {
-          map.setPaintProperty(id, "line-color", "#414b58");
+          paint["line-color"] = "#414b58";
         }
-      } else if (layer.type === "symbol") {
-        if (map.getLayoutProperty(id, "text-field") !== undefined) {
-          map.setPaintProperty(id, "text-color", "#aab0b6");
-          map.setPaintProperty(id, "text-halo-color", "#12151a");
-          map.setPaintProperty(id, "text-halo-width", 1.2);
-        }
+      } else if (layer.type === "symbol" && layer.layout && layer.layout["text-field"]) {
+        paint["text-color"] = "#aab0b6";
+        paint["text-halo-color"] = "#12151a";
+        paint["text-halo-width"] = 1.2;
       }
     } catch (err) {
       // some layers don't support every paint property — safe to skip
     }
+    return { ...layer, paint };
   });
+  return { ...style, layers };
 }
 
+// Adding the 3D buildings layer is a nice-to-have on top of the core map —
+// wrapped defensively so that if OpenFreeMap's building source ever has an
+// issue, it can't take the rest of map setup (pins!) down with it.
 function add3dBuildingsLayer() {
-  const style = map.getStyle();
-  const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
-  if (map.getLayer("boardbase-3d-buildings")) return;
-  // Add our own explicit vector source for the buildings layer, rather than
-  // assuming what Liberty's own internal source is named internally — this
-  // matches MapLibre's own official "Display buildings in 3D" example.
-  if (!map.getSource("boardbase-buildings")) {
-    map.addSource("boardbase-buildings", {
-      type: "vector",
-      url: "https://tiles.openfreemap.org/planet",
-    });
-  }
-  map.addLayer(
-    {
-      id: "boardbase-3d-buildings",
-      source: "boardbase-buildings",
-      "source-layer": "building",
-      type: "fill-extrusion",
-      minzoom: 14,
-      filter: ["!=", ["get", "hide_3d"], true],
-      paint: {
-        "fill-extrusion-color": [
-          "interpolate", ["linear"], ["coalesce", ["get", "render_height"], 5],
-          0, "#2c3842",
-          50, "#3d4753",
-          150, "#4d5866",
-        ],
-        "fill-extrusion-height": [
-          "interpolate", ["linear"], ["zoom"],
-          14, 0,
-          16, ["coalesce", ["get", "render_height"], 5],
-        ],
-        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-        "fill-extrusion-opacity": 0.85,
+  try {
+    const style = map.getStyle();
+    const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
+    if (map.getLayer("boardbase-3d-buildings")) return;
+    // Add our own explicit vector source for the buildings layer, rather than
+    // assuming what Liberty's own internal source is named internally — this
+    // matches MapLibre's own official "Display buildings in 3D" example.
+    if (!map.getSource("boardbase-buildings")) {
+      map.addSource("boardbase-buildings", {
+        type: "vector",
+        url: "https://tiles.openfreemap.org/planet",
+      });
+    }
+    map.addLayer(
+      {
+        id: "boardbase-3d-buildings",
+        source: "boardbase-buildings",
+        "source-layer": "building",
+        type: "fill-extrusion",
+        minzoom: 14,
+        filter: ["!=", ["get", "hide_3d"], true],
+        paint: {
+          "fill-extrusion-color": [
+            "interpolate", ["linear"], ["coalesce", ["get", "render_height"], 5],
+            0, "#2c3842",
+            50, "#3d4753",
+            150, "#4d5866",
+          ],
+          "fill-extrusion-height": [
+            "interpolate", ["linear"], ["zoom"],
+            14, 0,
+            16, ["coalesce", ["get", "render_height"], 5],
+          ],
+          "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+          "fill-extrusion-opacity": 0.85,
+        },
       },
-    },
-    labelLayer ? labelLayer.id : undefined
-  );
+      labelLayer ? labelLayer.id : undefined
+    );
+  } catch (err) {
+    // 3D buildings are a bonus visual, not core functionality — if this
+    // ever fails, the map/pins/everything else still needs to work fine.
+  }
 }
 
 function initMap() {
   map = new maplibregl.Map({
     container: "map",
-    style: "https://tiles.openfreemap.org/styles/liberty",
     center: [27.99, -26.13],
     zoom: 10,
     pitch: 0,
@@ -269,14 +280,25 @@ function initMap() {
     attributionControl: { compact: true },
   });
 
+  // setStyle (rather than passing style: in the constructor above) so we
+  // can pass transformStyle, which recolors the style before it's ever
+  // committed/rendered — this is what actually kills the light-then-dark
+  // flash, rather than repainting after the fact.
+  map.setStyle("https://tiles.openfreemap.org/styles/liberty", {
+    transformStyle: (previous, next) => darkenStyle(next),
+  });
+
   map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
 
   map.on("load", () => {
-    applyDarkTheme();
-    add3dBuildingsLayer();
+    // Core functionality first, guaranteed to run regardless of what
+    // happens below — the map and its pins are the whole point of the
+    // page, everything after this is a bonus that must not be able to
+    // block it if something about it goes wrong.
     fitMapToBrand();
     rebuildMarkers();
     updateLandmarkVisibility();
+    add3dBuildingsLayer();
   });
 
   map.on("zoomend", updateLandmarkVisibility);
@@ -290,7 +312,7 @@ function initMap() {
 
   // Tapping/clicking empty map area (not a marker) dismisses the preview
   map.on("click", () => {
-    if (!state.selectedCode) hideMapPreview();
+    hideMapPreview();
   });
 }
 
