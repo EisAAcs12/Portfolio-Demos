@@ -1,7 +1,7 @@
 {
-  "name": "Kopano Media — OOH Site Locator",
-  "short_name": "Kopano Locator",
-  "description": "Find available Kopano Media billboard faces across Gauteng.",
+  "name": "BoardBase",
+  "short_name": "BoardBase",
+  "description": "Find available Kopano Media/The Medium billboard faces across South Africa.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
