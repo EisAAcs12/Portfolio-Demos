@@ -308,9 +308,10 @@ input, select { font-family: inherit; }
 .filter-more-btn.active .hamburger-icon span { background: var(--asphalt-900); }
 
 .filter-more-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  position: fixed; /* NOT absolute — .filterbar has overflow-x:auto for its
+    horizontal scroll, which silently clips absolutely-positioned children
+    on the vertical axis too. Fixed positioning escapes that entirely;
+    JS sets the actual top/left from the button's real screen position. */
   z-index: 9999;
   background: var(--asphalt-800);
   border: 1px solid var(--line);
