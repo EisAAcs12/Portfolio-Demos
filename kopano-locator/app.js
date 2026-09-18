@@ -7,6 +7,7 @@
 
 let currentBrandId, SITES, AREAS, CONTACT, CONFIG, LANDMARKS;
 let liveSyncTimer = null;
+let searchDebounceTimer = null;
 
 const state = {
   search: "",
@@ -479,7 +480,7 @@ function siteCardHTML(site, expanded) {
 
   const detail = expanded ? `
     <div class="site-detail">
-      <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
+      <img class="detail-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" onload="this.style.animation='none'" />
       ${noteRow}
       <p>${site.description}</p>
       ${detailGridHTML(site)}
@@ -494,7 +495,7 @@ function siteCardHTML(site, expanded) {
     <div class="site-card${state.selectedCode === site.code ? " selected" : ""}" data-code="${site.code}">
       <div class="site-card-top">
         ${state.curateMode ? `<input type="checkbox" class="pick-check" data-pick="${site.code}" ${state.picked.has(site.code) ? "checked" : ""} />` : ""}
-        <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" />
+        <img class="card-thumb" src="${site.thumb}" alt="${site.code}" loading="lazy" onload="this.style.animation='none'" />
         <div class="site-title-line">
           <span class="site-shield">${site.code}</span>
           ${isDigital ? `<span class="format-badge">📺 Digital</span>` : ""}
@@ -542,7 +543,7 @@ function renderFocusView() {
         </div>
       </div>
       <div class="focus-body">
-        <img class="focus-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" />
+        <img class="focus-img" src="${site.image}" alt="${site.code} — ${site.title}" loading="lazy" onload="this.style.animation='none'" />
         <div class="focus-title-row">
           <span class="site-shield">${site.code}</span>
           ${isDigital ? `<span class="format-badge">📺 Digital</span>` : ""}
@@ -743,14 +744,18 @@ listEl.addEventListener("click", (e) => {
 
 document.getElementById("search-input").addEventListener("input", (e) => {
   state.search = e.target.value;
-  renderList();
-  rebuildMarkers();
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    renderList();
+    rebuildMarkers();
+  }, 180);
 });
 
 document.getElementById("area-select").addEventListener("change", (e) => {
   state.area = e.target.value;
   renderList();
   rebuildMarkers();
+  closeFilterMorePanel();
   if (state.area !== "all") {
     const first = filteredSites()[0];
     if (first) map.flyTo({ center: [first.lng, first.lat], zoom: 12, duration: 600 });
@@ -761,6 +766,7 @@ document.getElementById("size-select").addEventListener("change", (e) => {
   state.size = e.target.value;
   renderList();
   rebuildMarkers();
+  closeFilterMorePanel();
 });
 
 document.getElementById("illum-toggle").addEventListener("click", (e) => {
@@ -771,6 +777,7 @@ document.getElementById("illum-toggle").addEventListener("click", (e) => {
   btn.textContent = state.illuminated === "yes" ? "☀ Illuminated" : state.illuminated === "no" ? "☾ Non-illuminated" : "☀ Any lighting";
   renderList();
   rebuildMarkers();
+  closeFilterMorePanel();
 });
 
 document.getElementById("avail-toggle").addEventListener("click", (e) => {
@@ -822,12 +829,15 @@ if (tiltToggleBtn) {
 // ---------- more-filters dropdown (area, size, lighting, curate) ----------
 const filterMoreBtn = document.getElementById("filter-more-btn");
 const filterMorePanel = document.getElementById("filter-more-panel");
+
+function closeFilterMorePanel() {
+  if (!filterMoreBtn || !filterMorePanel) return;
+  filterMorePanel.classList.remove("show");
+  filterMoreBtn.classList.remove("active");
+  filterMoreBtn.setAttribute("aria-expanded", "false");
+}
+
 if (filterMoreBtn && filterMorePanel) {
-  const closeFilterMore = () => {
-    filterMorePanel.classList.remove("show");
-    filterMoreBtn.classList.remove("active");
-    filterMoreBtn.setAttribute("aria-expanded", "false");
-  };
   filterMoreBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     const isOpen = filterMorePanel.classList.toggle("show");
@@ -844,9 +854,9 @@ if (filterMoreBtn && filterMorePanel) {
     }
   });
   filterMorePanel.addEventListener("click", (e) => e.stopPropagation());
-  document.addEventListener("click", closeFilterMore);
+  document.addEventListener("click", closeFilterMorePanel);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeFilterMore();
+    if (e.key === "Escape") closeFilterMorePanel();
   });
 }
 
@@ -855,6 +865,7 @@ curateToggleBtn.addEventListener("click", () => {
   curateToggleBtn.classList.toggle("active", state.curateMode);
   updateShareBar();
   renderList();
+  closeFilterMorePanel();
 });
 
 shareClearBtn.addEventListener("click", () => {
