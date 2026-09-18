@@ -214,15 +214,6 @@ input, select { font-family: inherit; }
 .brand-pill-logo { height: 18px; width: auto; display: block; flex-shrink: 0; }
 .brand-pill .short-label { display: none; }
 
-.brand-tag {
-  font-size: 11px;
-  color: var(--text-low);
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  display: none;
-}
-@media (min-width: 640px) { .brand-tag { display: inline; } }
-
 .topbar-right {
   display: flex;
   align-items: center;
@@ -296,6 +287,47 @@ input, select { font-family: inherit; }
 }
 .filterbar::-webkit-scrollbar { display: none; }
 
+.filter-more-wrap { position: relative; flex-shrink: 0; }
+.filter-more-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--asphalt-700);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+.filter-more-btn:hover { background: var(--asphalt-650); border-color: var(--brand-accent); }
+.filter-more-btn.active { background: var(--brand-accent); border-color: var(--brand-accent); }
+.hamburger-icon { display: flex; flex-direction: column; gap: 4px; width: 16px; }
+.hamburger-icon span { display: block; height: 2px; background: var(--text-hi); border-radius: 1px; }
+.filter-more-btn.active .hamburger-icon span { background: var(--asphalt-900); }
+
+.filter-more-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 700;
+  background: var(--asphalt-800);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,0.6);
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+}
+.filter-more-panel.show { display: flex; }
+.filter-more-panel select,
+.filter-more-panel .toggle-chip {
+  width: 100%;
+}
+
 .filterbar input[type="search"] {
   flex: 1 1 180px;
   min-width: 140px;
@@ -356,7 +388,6 @@ input, select { font-family: inherit; }
   position: relative;
   flex: 1 1 48vh;
   min-height: 260px;
-  perspective: 1400px;
   overflow: hidden;
 }
 @media (min-width: 900px) {
@@ -368,33 +399,28 @@ input, select { font-family: inherit; }
   inset: 0;
   background: var(--asphalt-900);
   touch-action: none; /* stop pinch/trackpad-zoom on the map from also zooming the whole page */
-  transform-origin: 50% 100%;
-  transition: transform .6s cubic-bezier(.25, .8, .3, 1);
 }
 
-/* ---------- 3D tilt view ---------- */
-/* Tilts the whole map plane in 3D space via CSS — same tiles, same pins,
-   just viewed at an angle. Pins get an inverse rotateX so they read as
-   standing upright off the tilted ground rather than lying flat with it;
-   this needs transform-style: preserve-3d the whole way down Leaflet's
-   own pane structure for the counter-rotation to compose correctly. */
-.map-wrap.tilt-3d #map {
-  transform: rotateX(58deg) scale(1.65) translateY(4%);
+/* MapLibre's built-in zoom/compass control defaults to a bright white
+   widget — restyle it to match the rest of this dark UI instead. */
+.maplibregl-ctrl-group {
+  background: var(--asphalt-800);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
 }
-.map-wrap.tilt-3d #map,
-.map-wrap.tilt-3d .leaflet-map-pane,
-.map-wrap.tilt-3d .leaflet-tile-pane,
-.map-wrap.tilt-3d .leaflet-marker-pane,
-.map-wrap.tilt-3d .leaflet-overlay-pane,
-.map-wrap.tilt-3d .leaflet-shadow-pane,
-.map-wrap.tilt-3d .leaflet-popup-pane {
-  transform-style: preserve-3d;
+.maplibregl-ctrl-group button {
+  background: transparent;
 }
-.map-wrap.tilt-3d .kop-pin,
-.map-wrap.tilt-3d .landmark-pin {
-  transform: rotateX(-58deg);
-  transform-origin: 50% 100%;
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line);
 }
+.maplibregl-ctrl-group button:hover { background: var(--asphalt-700); }
+.maplibregl-ctrl-icon { filter: invert(1) brightness(1.6); }
+.maplibregl-ctrl-attrib {
+  background: rgba(24, 29, 36, 0.75) !important;
+  color: var(--text-low) !important;
+}
+.maplibregl-ctrl-attrib a { color: var(--text-mid) !important; }
 
 .tilt-toggle {
   position: absolute;
@@ -1015,7 +1041,9 @@ input, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  transform: translateY(-4px);
+  margin-bottom: 4px; /* small visual nudge — NOT a transform: MapLibre
+    sets its own inline transform on this exact element for positioning,
+    which would silently override a CSS transform on the same property */
 }
 .kop-pin-board {
   width: 26px;
@@ -1083,13 +1111,21 @@ input, select { font-family: inherit; }
 .landmark-popup strong { color: var(--text-hi); font-weight: 600; }
 .landmark-popup span { color: var(--text-low); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; }
 
-.leaflet-popup-content-wrapper {
+.maplibregl-popup-content {
   background: var(--asphalt-700);
   color: var(--text-hi);
   border-radius: var(--radius-md);
   overflow: hidden;
+  padding: 0;
+  box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6);
 }
-.leaflet-popup-tip { background: var(--asphalt-700); }
+.maplibregl-popup-tip { border-top-color: var(--asphalt-700) !important; border-bottom-color: var(--asphalt-700) !important; }
+.maplibregl-popup-close-button {
+  color: var(--text-mid);
+  font-size: 16px;
+  padding: 2px 6px;
+}
+.maplibregl-popup-close-button:hover { color: var(--text-hi); background: transparent; }
 
 /* ---------- Contact modal ---------- */
 .modal-overlay {
