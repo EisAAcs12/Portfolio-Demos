@@ -866,6 +866,11 @@ curateToggleBtn.addEventListener("click", () => {
   updateShareBar();
   renderList();
   closeFilterMorePanel();
+  // Switching brands mid-curation would mix site codes from two different
+  // companies into one link, which makes no sense — hide the option for
+  // as long as a curated selection is in progress.
+  const switcherWrap = document.getElementById("brand-switcher-wrap");
+  if (switcherWrap) switcherWrap.style.display = state.curateMode ? "none" : "";
 });
 
 shareClearBtn.addEventListener("click", () => {
@@ -1094,8 +1099,7 @@ function activateBrandData(id) {
 }
 
 function updateBrandHeaderUI() {
-  const brand = BRANDS[currentBrandId];
-  document.title = `BoardBase — ${brand.name} ${brand.nameAccent}`;
+  document.title = "BoardBase";
   document.body.dataset.brand = currentBrandId;
   document.querySelectorAll(".brand-pill").forEach(pill => {
     pill.classList.toggle("active", pill.dataset.brand === currentBrandId);
