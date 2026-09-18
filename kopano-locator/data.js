@@ -4,16 +4,10 @@
 //
 // This file is shared by both brands' data. The app switches which
 // brand's data is active via BRANDS[id] — see app.js's activateBrandData().
-
-// ---------------------------------------------------------------
-// MAP TILES
-// One shared CARTO key for both brands (it's a map-tiles key for this
-// project, not tied to either company). Get one free at
-// https://carto.com/basemaps/apikey if this ever needs to change.
-// ---------------------------------------------------------------
-const MAP_KEY = {
-  CARTO_API_KEY: "cb1_2kmy_1_abed039dd0f9e2ce493f22ff",
-};
+//
+// Map tiles come from OpenFreeMap (via MapLibre GL JS in app.js) — no API
+// key needed at all, so unlike the old CARTO setup there's nothing to
+// configure here for the map itself.
 
 // ---------------------------------------------------------------
 // LIVE AVAILABILITY SYNC — per brand, since Kopano Media and The Medium
@@ -29,7 +23,7 @@ const BRANDS = {
     nameAccent: "Media",
     tagline: "OOH Site Locator",
     CONFIG: {
-      SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o_kzoE/pub?gid=1481682342&single=true&output=csv",
+      SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o\_kzoE/pub?gid=1481682342\&single=true\&output=csv",
       REFRESH_SECONDS: 45,
     },
     CONTACT: {
