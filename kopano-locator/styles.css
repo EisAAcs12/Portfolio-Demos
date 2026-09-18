@@ -310,8 +310,8 @@ input, select { font-family: inherit; }
 .filter-more-panel {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
-  z-index: 700;
+  left: 0;
+  z-index: 9999;
   background: var(--asphalt-800);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
