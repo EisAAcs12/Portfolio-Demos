@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -34,7 +34,6 @@
           <span class="full-label">The Medium</span>
         </button>
       </div>
-      <span class="brand-tag" id="brand-tag">OOH Site Locator</span>
     </div>
     <div class="topbar-right">
       <div class="live-chip"><span class="live-dot"></span><span id="result-count">27 boards</span></div>
@@ -53,15 +52,22 @@
 
   <div class="filterbar">
     <input type="search" id="search-input" placeholder="Search area, road, or KOP code…" />
-    <select id="area-select">
-      <option value="all">All areas</option>
-    </select>
-    <select id="size-select">
-      <option value="all">All sizes</option>
-    </select>
-    <button class="toggle-chip" id="illum-toggle">☀ Any lighting</button>
     <button class="toggle-chip" id="avail-toggle">Available now</button>
-    <button class="toggle-chip" id="curate-toggle">👤 Curate for client</button>
+    <div class="filter-more-wrap">
+      <button type="button" id="filter-more-btn" class="filter-more-btn" title="More filters" aria-label="More filters" aria-expanded="false">
+        <span class="hamburger-icon"><span></span><span></span><span></span></span>
+      </button>
+      <div class="filter-more-panel" id="filter-more-panel">
+        <select id="area-select">
+          <option value="all">All areas</option>
+        </select>
+        <select id="size-select">
+          <option value="all">All sizes</option>
+        </select>
+        <button class="toggle-chip" id="illum-toggle">☀ Any lighting</button>
+        <button class="toggle-chip" id="curate-toggle">👤 Curate for client</button>
+      </div>
+    </div>
   </div>
 
   <div id="client-view-banner" class="client-view-banner">
@@ -123,7 +129,7 @@
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>
