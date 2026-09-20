@@ -982,6 +982,49 @@ contactModal.addEventListener("click", (e) => {
   if (e.target === contactModal) closeContactModal();
 });
 
+// ---------- welcome modal (first-visit only) ----------
+// Skipped entirely for anyone who's already installed the app — that's
+// clearly a returning user who doesn't need orienting, not a first-timer.
+(function initWelcomeModal() {
+  const modal = document.getElementById("welcome-modal");
+  if (!modal) return;
+
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  let alreadySeen = true;
+  try {
+    alreadySeen = !!localStorage.getItem("boardbase_welcomed");
+  } catch (err) {
+    // localStorage can throw in some private-browsing contexts — if so,
+    // just don't show the popup rather than risk showing it every load
+    alreadySeen = true;
+  }
+
+  if (!isStandalone && !alreadySeen) {
+    modal.classList.add("show");
+  }
+
+  function dismissWelcome() {
+    modal.classList.remove("show");
+    try { localStorage.setItem("boardbase_welcomed", "1"); } catch (err) { /* ignore */ }
+  }
+
+  document.getElementById("welcome-start-btn").addEventListener("click", dismissWelcome);
+  document.getElementById("welcome-close").addEventListener("click", dismissWelcome);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) dismissWelcome();
+  });
+})();
+
+// ---------- footer FAQ accordion ----------
+document.querySelectorAll(".faq-question").forEach(btn => {
+  btn.addEventListener("click", () => {
+    btn.closest(".faq-item").classList.toggle("open");
+  });
+});
+
 // ---------- live availability sync (Google Sheet, published as CSV) ----------
 
 const syncStatusEl = document.getElementById("sync-status");
@@ -1200,6 +1243,20 @@ function populateContactStatic() {
   const initials = CONTACT.name.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const avatarEl = document.getElementById("modal-avatar");
   if (avatarEl) avatarEl.textContent = initials;
+
+  // Footer contact block — mirrors whichever brand is currently active,
+  // same as the rest of the header/contact modal.
+  const footerName = document.getElementById("footer-contact-name");
+  const footerEmail = document.getElementById("footer-contact-email");
+  const footerWa = document.getElementById("footer-contact-whatsapp");
+  if (footerName) footerName.textContent = CONTACT.name;
+  if (footerEmail) {
+    footerEmail.textContent = CONTACT.email;
+    footerEmail.href = `mailto:${CONTACT.email}`;
+  }
+  if (footerWa) {
+    footerWa.href = `https://wa.me/${waNumber()}`;
+  }
 }
 
 // Which brand to start on: the URL's ?brand= param if valid, else Kopano.
