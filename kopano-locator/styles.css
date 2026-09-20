@@ -489,14 +489,18 @@ input, select { font-family: inherit; }
 .map-preview.show { opacity: 1; }
 .map-preview-frame {
   width: 80%;
-  height: 80%;
+  height: auto;
+  max-height: 85%;
   display: flex;
   flex-direction: column;
 }
 .map-preview-frame img {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   width: 100%;
+  aspect-ratio: 16 / 9; /* locks the photo into its actual landscape shape
+    regardless of anything else in the frame, so cover crops it the same,
+    predictable amount every time instead of stretching to fill whatever
+    space happens to be left over after the caption */
   object-fit: cover;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   border: 3px solid var(--asphalt-700);
@@ -507,19 +511,22 @@ input, select { font-family: inherit; }
   /* The gaps came from switching to object-fit: contain — that shows the
      whole photo, but since the mobile frame's shape doesn't match a wide
      landscape photo, "contain" left empty space on the sides to avoid
-     cropping. The actual fix is to make the frame's own shape match the
+     cropping. The real fix is to make the frame's own shape match the
      photos (they're all roughly 16:9), so "cover" can fill it completely
      with no gaps AND no more cropping than the photo's natural shape
-     already has. */
+     already has. Using a calc()-based height here instead of the newer
+     aspect-ratio property — more universally reliable across mobile
+     browsers when combined with percentage-based flex sizing. */
   .map-preview-frame {
     width: 92%;
     height: auto;
     max-height: 90%;
   }
   .map-preview-frame img {
-    aspect-ratio: 16 / 9;
     flex: 0 0 auto;
-    height: auto;
+    width: 100%;
+    height: calc((100vw - 8%) * 9 / 16);
+    max-height: 60vh;
     object-fit: cover;
   }
 }
