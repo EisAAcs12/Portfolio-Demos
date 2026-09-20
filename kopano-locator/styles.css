@@ -96,7 +96,10 @@ input, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   height: 100vh;
-  height: 100dvh;
+  height: 100svh; /* small viewport height — the guaranteed-minimum visible
+    space accounting for mobile browser chrome, unlike 100dvh which can
+    briefly report a taller value before the page has scrolled, letting
+    the footer peek through underneath on first load */
   opacity: 0;
   animation: app-fade-in .35s ease forwards;
 }
@@ -499,6 +502,18 @@ input, select { font-family: inherit; }
   border: 3px solid var(--asphalt-700);
   border-bottom: none;
   box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
+}
+@media (max-width: 899px) {
+  /* On mobile the map area is much shorter/squarer than on desktop, but
+     the site photos are wide landscape shots — object-fit: cover was
+     cropping them in tight to fill that squarer shape. Showing the whole
+     photo uncropped (with the frame's own dark background filling any
+     gap) actually shows the billboard properly instead of zooming in
+     past the parts that matter. */
+  .map-preview-frame img {
+    object-fit: contain;
+    background: var(--asphalt-900);
+  }
 }
 .map-preview-cap {
   flex-shrink: 0;
@@ -1359,30 +1374,11 @@ input, select { font-family: inherit; }
 
 /* ---------- Welcome modal (shown once, first visit only) ---------- */
 .welcome-card { max-width: 420px; }
-.welcome-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--brand-accent);
-  margin-bottom: 8px;
-}
 .welcome-body {
   font-size: 13px;
   line-height: 1.55;
   color: var(--text-mid);
-  margin: 10px 0 14px;
-}
-.welcome-body strong { color: var(--text-hi); }
-.welcome-points {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--text-mid);
+  margin: 12px 0 18px;
 }
 .welcome-start-btn {
   width: 100%;
