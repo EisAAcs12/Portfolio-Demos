@@ -230,19 +230,29 @@ function add3dBuildingsLayer() {
     if (map.getLayer("boardbase-3d-buildings")) return;
     const style = map.getStyle();
     const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
-    // Add our own explicit vector source for the buildings layer, rather than
-    // assuming what Liberty's own internal source is named internally — this
-    // matches MapLibre's own official "Display buildings in 3D" example.
-    if (!map.getSource("boardbase-buildings")) {
-      map.addSource("boardbase-buildings", {
-        type: "vector",
-        url: "https://tiles.openfreemap.org/planet",
-      });
+
+    // Reuse whichever vector source the base style already loaded, rather
+    // than adding a second one pointing at the same OpenFreeMap dataset —
+    // that was forcing a full duplicate download of the map data just to
+    // draw buildings, which is exactly why this used to feel slow. Find
+    // it by actually inspecting the loaded style instead of guessing a
+    // hardcoded name.
+    let sourceId = Object.keys(style.sources).find(
+      id => style.sources[id].type === "vector"
+    );
+    if (!sourceId) {
+      // Fallback only — shouldn't normally happen, since Liberty always
+      // ships a vector source, but stay safe if that ever changes.
+      sourceId = "boardbase-buildings";
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, { type: "vector", url: "https://tiles.openfreemap.org/planet" });
+      }
     }
+
     map.addLayer(
       {
         id: "boardbase-3d-buildings",
-        source: "boardbase-buildings",
+        source: sourceId,
         "source-layer": "building",
         type: "fill-extrusion",
         minzoom: 14,
