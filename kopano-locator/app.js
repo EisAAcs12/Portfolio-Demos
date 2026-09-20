@@ -227,9 +227,9 @@ function darkenStyle(style) {
 // issue, it can't take the rest of map setup (pins!) down with it.
 function add3dBuildingsLayer() {
   try {
+    if (map.getLayer("boardbase-3d-buildings")) return;
     const style = map.getStyle();
     const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
-    if (map.getLayer("boardbase-3d-buildings")) return;
     // Add our own explicit vector source for the buildings layer, rather than
     // assuming what Liberty's own internal source is named internally — this
     // matches MapLibre's own official "Display buildings in 3D" example.
@@ -246,7 +246,6 @@ function add3dBuildingsLayer() {
         "source-layer": "building",
         type: "fill-extrusion",
         minzoom: 14,
-        filter: ["!=", ["get", "hide_3d"], true],
         paint: {
           "fill-extrusion-color": [
             "interpolate", ["linear"], ["coalesce", ["get", "render_height"], 5],
@@ -279,6 +278,9 @@ function initMap() {
     pitch: 0,
     bearing: 0,
     attributionControl: { compact: true },
+    fadeDuration: 0, // tiles snap in instantly instead of cross-fading —
+      // noticeably snappier-feeling pans/zooms, especially on slower
+      // connections where the fade would otherwise linger
   });
 
   // setStyle (rather than passing style: in the constructor above) so we
@@ -292,14 +294,14 @@ function initMap() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
 
   map.on("load", () => {
-    // Core functionality first, guaranteed to run regardless of what
-    // happens below — the map and its pins are the whole point of the
-    // page, everything after this is a bonus that must not be able to
-    // block it if something about it goes wrong.
+    // Core functionality only — the map and its pins are the whole point
+    // of the page and need to appear as fast as possible. The 3D buildings
+    // layer is deliberately NOT added here anymore; it's extra weight
+    // most visitors will never even toggle on, so it's now only built the
+    // first time someone actually clicks "3D View" (see the toggle below).
     fitMapToBrand();
     rebuildMarkers();
     updateLandmarkVisibility();
-    add3dBuildingsLayer();
   });
 
   map.on("zoomend", updateLandmarkVisibility);
@@ -820,6 +822,10 @@ if (tiltToggleBtn) {
     is3dView = !is3dView;
     tiltToggleBtn.classList.toggle("active", is3dView);
     tiltToggleBtn.textContent = is3dView ? "🗺️ 2D View" : "🗺️ 3D View";
+    // Built lazily on first use rather than on every page load — most
+    // visitors never touch this, so there's no reason to pay for the
+    // extra source/layer setup before it's actually wanted.
+    if (is3dView && map && map.isStyleLoaded()) add3dBuildingsLayer();
     map.easeTo({
       pitch: is3dView ? 58 : 0,
       bearing: is3dView ? -17 : 0,
