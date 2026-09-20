@@ -86,7 +86,6 @@ body {
   background: var(--asphalt-900);
   color: var(--text-hi);
   font-family: var(--font-body);
-  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1357,3 +1356,138 @@ input, select { font-family: inherit; }
   transition: filter .15s;
 }
 .share-link-btn:hover { filter: brightness(1.08); }
+
+/* ---------- Welcome modal (shown once, first visit only) ---------- */
+.welcome-card { max-width: 420px; }
+.welcome-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--brand-accent);
+  margin-bottom: 8px;
+}
+.welcome-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-mid);
+  margin: 10px 0 14px;
+}
+.welcome-body strong { color: var(--text-hi); }
+.welcome-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-mid);
+}
+.welcome-start-btn {
+  width: 100%;
+  background: var(--brand-accent);
+  color: var(--asphalt-900);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  font-family: var(--font-display);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.welcome-start-btn:hover { filter: brightness(1.08); }
+
+/* ---------- Footer ---------- */
+/* Lives OUTSIDE #app on purpose — the tool itself stays locked to one
+   screen (unchanged), the page as a whole just becomes tall enough to
+   scroll past it into this footer below, same as any ordinary website. */
+.site-footer {
+  background: var(--asphalt-850);
+  border-top: 1px solid var(--line-soft);
+  padding: 36px max(24px, env(safe-area-inset-right)) 20px max(24px, env(safe-area-inset-left));
+}
+.footer-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (min-width: 800px) {
+  .footer-inner { grid-template-columns: 1.2fr 1fr 1.6fr; }
+}
+.footer-col h4 {
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-hi);
+  margin: 0 0 12px;
+}
+.footer-about .app-name {
+  border: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--text-hi);
+  display: block;
+}
+.footer-about p, .footer-col p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-mid);
+  margin: 0 0 6px;
+}
+.footer-col a {
+  color: var(--brand-accent);
+  text-decoration: none;
+}
+.footer-col a:hover { text-decoration: underline; }
+
+.faq-item { border-bottom: 1px solid var(--line-soft); }
+.faq-item:last-child { border-bottom: none; }
+.faq-question {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-hi);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+.faq-caret {
+  color: var(--brand-accent);
+  font-size: 16px;
+  font-weight: 400;
+  flex-shrink: 0;
+  transition: transform .2s ease;
+}
+.faq-item.open .faq-caret { transform: rotate(45deg); }
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-mid);
+  transition: max-height .25s ease, padding .25s ease;
+}
+.faq-item.open .faq-answer { max-height: 200px; padding-bottom: 12px; }
+
+.footer-bottom {
+  max-width: 1100px;
+  margin: 28px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11px;
+  color: var(--text-low);
+}
