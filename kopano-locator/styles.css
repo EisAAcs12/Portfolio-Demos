@@ -1516,3 +1516,21 @@ input, select { font-family: inherit; }
   font-size: 11px;
   color: var(--text-low);
 }
+
+/* Mobile-only footer compaction — same breakpoint the footer already
+   stacks to a single column at. Desktop (800px+) is completely untouched
+   by anything below; this only tightens padding/spacing that was using
+   desktop-sized values everywhere, which added up to the footer taking
+   over a huge share of a small phone screen. */
+@media (max-width: 799px) {
+  .site-footer {
+    padding: 22px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
+  }
+  .footer-inner { gap: 16px; }
+  .footer-about .app-name { margin-bottom: 6px; }
+  .footer-col h4 { margin-bottom: 8px; }
+  .footer-about p, .footer-col p { margin-bottom: 4px; }
+  .faq-question { padding: 7px 0; font-size: 12px; }
+  .faq-item.open .faq-answer { max-height: 160px; padding-bottom: 8px; }
+  .footer-bottom { margin-top: 16px; padding-top: 12px; }
+}
