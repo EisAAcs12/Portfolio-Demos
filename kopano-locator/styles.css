@@ -1,1489 +1,193 @@
-:root {
-  color-scheme: dark; /* tells the browser this page is intentionally dark,
-    so native widgets (dropdown menus, scrollbars, form controls) render in
-    a matching dark style instead of defaulting to a jarring light one on
-    platforms/browsers that would otherwise guess light mode */
-  /* A single, lighter, neutral-cool slate base shared by both brands —
-     noticeably fresher than a near-black background while staying a
-     proper dark UI (fits a map-based tool). Each brand's identity now
-     comes entirely from its accent colour below, not from also tinting
-     the background — mixing a warm accent with a warm-tinted background
-     was reading muddy/brownish, so the base stays neutral for both. */
-  --asphalt-900: #181d24;
-  --asphalt-850: #1f252d;
-  --asphalt-800: #262d37;
-  --asphalt-700: #323b47;
-  --asphalt-650: #3d4753;
-  --line: #414b58;
-  --line-soft: #313944;
-  --amber: #f5a623;
-  --amber-dim: #c9861b;
-  --amber-glow: rgba(245, 166, 35, 0.35);
-  --teal: #21c7b0;
-  --teal-dim: #14897a;
-  --red-signal: #e8583f;
-  --text-hi: #f4f1ea;
-  --text-mid: #aab0b6;
-  --text-low: #7c8390;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --font-display: "Oswald", "Arial Narrow", sans-serif;
-  --font-body: "Inter", -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
-
-  /* Each brand's real identity colour, sampled directly from their actual
-     logo files — not invented. Kept as their own constants (rather than
-     only living inside the brand-accent override below) so a pill button
-     can always show its OWN brand's colour regardless of which brand is
-     currently active app-wide. */
-  --kopano-brand: #10a0d8;   /* the sky-blue "K" mark in Kopano's real logo */
-  --medium-brand: #ff5722;   /* a vivid red-orange from The Medium's real
-                                 logo — bumped up in saturation from the
-                                 earlier pick, which read muddy/brownish
-                                 against a warm background; this one pops
-                                 clearly against the shared neutral base
-                                 and reads nothing like Kopano's blue */
-
-  /* Brand-identity accent — everything that's "chrome" (buttons, the
-     header, the calculator, badges) reads this instead of a literal colour
-     directly, so a brand can be reskinned without touching the map pins
-     or the universal available/optioned/booked status colors, which
-     stay --teal/--amber/--red-signal regardless of brand on purpose. */
-  --brand-accent: var(--kopano-brand);
-  --brand-accent-glow: rgba(16, 160, 216, 0.35);
-  --brand-accent-soft: rgba(16, 160, 216, 0.1);
-  --brand-accent-soft-strong: rgba(16, 160, 216, 0.16);
-  --brand-accent-border: rgba(16, 160, 216, 0.35);
-}
-
-/* Kopano Media — their real sky-blue, sampled from the logo in their
-   proposal deck. Explicit block (mirrors :root's default) so the two
-   brands stay symmetrical and neither depends on the other's fallback. */
-[data-brand="kopano"] {
-  --brand-accent: var(--kopano-brand);
-  --brand-accent-glow: rgba(16, 160, 216, 0.35);
-  --brand-accent-soft: rgba(16, 160, 216, 0.1);
-  --brand-accent-soft-strong: rgba(16, 160, 216, 0.16);
-  --brand-accent-border: rgba(16, 160, 216, 0.35);
-}
-
-/* The Medium — their real red-orange, sampled from the same logo file as
-   the blue used elsewhere in their branding. The map tiles, billboard
-   pins, and status colors are deliberately NOT overridden here — only
-   the surrounding app chrome changes. */
-[data-brand="medium"] {
-  --brand-accent: var(--medium-brand);
-  --brand-accent-glow: rgba(255, 87, 34, 0.35);
-  --brand-accent-soft: rgba(255, 87, 34, 0.1);
-  --brand-accent-soft-strong: rgba(255, 87, 34, 0.16);
-  --brand-accent-border: rgba(255, 87, 34, 0.35);
-}
-
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-
-body {
-  background: var(--asphalt-900);
-  color: var(--text-hi);
-  font-family: var(--font-body);
-  -webkit-tap-highlight-color: transparent;
-}
-
-button { font-family: inherit; cursor: pointer; }
-input, select { font-family: inherit; }
-
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100svh; /* small viewport height — the guaranteed-minimum visible
-    space accounting for mobile browser chrome, unlike 100dvh which can
-    briefly report a taller value before the page has scrolled, letting
-    the footer peek through underneath on first load */
-  opacity: 0;
-  animation: app-fade-in .35s ease forwards;
-}
-@keyframes app-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ---------- Header ---------- */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px max(18px, env(safe-area-inset-right)) 12px max(18px, env(safe-area-inset-left));
-  padding-top: max(12px, env(safe-area-inset-top));
-  background: var(--asphalt-850);
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
-}
-
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-
-.app-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-low);
-  white-space: nowrap;
-  flex-shrink: 0;
-  padding-right: 2px;
-  border-right: 1px solid var(--line);
-  margin-right: 2px;
-}
-
-.brand-mark {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--text-hi);
-  white-space: nowrap;
-}
-.brand-mark span { color: var(--brand-accent); }
-
-.brand-mark-select {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--text-hi);
-  background-color: transparent;
-  border: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  cursor: pointer;
-  padding-right: 16px;
-  max-width: 100%;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f5a623' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 9px;
-}
-.brand-mark-select:hover { color: var(--brand-accent); }
-.brand-mark-select:focus { outline: none; color: var(--brand-accent); }
-.brand-mark-select option {
-  background: var(--asphalt-800);
-  color: var(--text-hi);
-  font-family: var(--font-body);
-  text-transform: none;
-  font-weight: 400;
-}
-
-.brand-switcher-group {
-  display: flex;
-  align-items: center;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px;
-  gap: 2px;
-  flex-shrink: 1;
-  min-width: 0;
-}
-.brand-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-low);
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background .15s, color .15s;
-  white-space: nowrap;
-  min-width: 0;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.brand-pill:hover { color: var(--text-hi); }
-.brand-pill.active { background: var(--asphalt-700); color: var(--text-hi); }
-/* Each pill always shows its OWN brand's identity colour, regardless of
-   which brand is currently active app-wide — Kopano's mark stays amber
-   even while viewing The Medium, and vice versa isn't needed since
-   Medium's mark is its logo image rather than a coloured text accent. */
-.brand-pill-logo { height: 18px; width: auto; display: block; flex-shrink: 0; }
-.brand-pill .short-label { display: none; }
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.contact-chip {
-  font-family: var(--font-display);
-  font-size: 12px;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: var(--asphalt-900);
-  background: var(--brand-accent);
-  border: none;
-  border-radius: 999px;
-  padding: 8px 14px;
-  white-space: nowrap;
-  transition: filter .15s, transform .1s;
-}
-.contact-chip:hover { filter: brightness(1.08); }
-.contact-chip:active { transform: scale(0.97); }
-.contact-chip .short-label { display: none; }
-
-/* Tight phones: shrink chip text/padding before anything is forced to wrap */
-@media (max-width: 420px) {
-  .brand-mark { font-size: 17px; }
-  .brand-mark-select { font-size: 17px; }
-  .live-chip { padding: 5px 8px; font-size: 11px; }
-  .contact-chip { padding: 7px 10px; font-size: 11px; }
-  .contact-chip .full-label { display: none; }
-  .contact-chip .short-label { display: inline; }
-  .brand-pill { font-size: 11px; padding: 7px 10px; gap: 0; }
-  .brand-pill-logo { height: 20px; }
-  #brand-pill-kopano .full-label { display: none; }
-  #brand-pill-kopano .short-label { display: none; }
-  #brand-pill-medium .full-label { display: none; }
-  .app-name { display: none; }
-  .tilt-toggle { font-size: 10px; padding: 6px 10px; top: 8px; left: 8px; }
-}
-
-.live-chip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-mid);
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 0 3px rgba(33,199,176,0.18);
-  flex-shrink: 0;
-}
-
-/* ---------- Filters ---------- */
-.filterbar {
-  display: flex;
-  gap: 8px;
-  padding: 10px max(18px, env(safe-area-inset-right)) 10px max(18px, env(safe-area-inset-left));
-  background: var(--asphalt-850);
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.filterbar::-webkit-scrollbar { display: none; }
-
-.filter-more-wrap { position: relative; flex-shrink: 0; }
-.filter-more-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background .15s, border-color .15s, transform .15s;
-}
-.filter-more-btn:hover { background: var(--asphalt-650); border-color: var(--brand-accent); transform: scale(1.06); }
-.filter-more-btn.active { background: var(--brand-accent); border-color: var(--brand-accent); }
-.hamburger-icon { display: flex; flex-direction: column; gap: 4px; width: 16px; }
-.hamburger-icon span { display: block; height: 2px; background: var(--text-hi); border-radius: 1px; }
-.filter-more-btn.active .hamburger-icon span { background: var(--asphalt-900); }
-
-.filter-more-panel {
-  position: fixed; /* NOT absolute — .filterbar has overflow-x:auto for its
-    horizontal scroll, which silently clips absolutely-positioned children
-    on the vertical axis too. Fixed positioning escapes that entirely;
-    JS sets the actual top/left from the button's real screen position. */
-  z-index: 9999;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  box-shadow: 0 12px 32px -8px rgba(0,0,0,0.6);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 220px;
-  opacity: 0;
-  transform: translateY(-6px) scale(0.98);
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity .15s ease, transform .15s ease, visibility 0s linear .15s;
-}
-.filter-more-panel.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  visibility: visible;
-  pointer-events: auto;
-  transition: opacity .15s ease, transform .15s ease, visibility 0s linear 0s;
-}
-.filter-more-panel select,
-.filter-more-panel .toggle-chip {
-  width: 100%;
-  transition: border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease;
-}
-.filter-more-panel select:hover,
-.filter-more-panel .toggle-chip:hover {
-  border-color: var(--brand-accent);
-  transform: translateY(-1px);
-}
-
-.filterbar input[type="search"] {
-  flex: 1 1 180px;
-  min-width: 140px;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: 13px;
-}
-.filterbar input[type="search"]::placeholder { color: var(--text-low); }
-
-.filterbar select {
-  flex: 0 0 auto;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  border-radius: var(--radius-sm);
-  padding: 8px 8px;
-  font-size: 13px;
-}
-
-.toggle-chip {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
-  white-space: nowrap;
-  transition: border-color .15s, color .15s, background .15s;
-}
-.toggle-chip.active {
-  border-color: var(--brand-accent);
-  color: var(--brand-accent);
-  background: var(--brand-accent-soft);
-}
-
-/* ---------- Layout ---------- */
-.layout {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  opacity: 1;
-  transition: opacity .18s ease;
-}
-.layout.brand-switching { opacity: 0; }
-@media (min-width: 900px) {
-  .layout { flex-direction: row; }
-}
-
-.map-wrap {
-  position: relative;
-  flex: 1 1 48vh;
-  min-height: 260px;
-  overflow: hidden;
-}
-@media (min-width: 900px) {
-  .map-wrap { flex: 1 1 auto; order: 2; }
-}
-
-#map {
-  position: absolute;
-  inset: 0;
-  background: var(--asphalt-900);
-  touch-action: none; /* stop pinch/trackpad-zoom on the map from also zooming the whole page */
-}
-
-/* MapLibre's built-in zoom/compass control defaults to a bright white
-   widget — restyle it to match the rest of this dark UI instead. */
-.maplibregl-ctrl-group {
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
-}
-.maplibregl-ctrl-group button {
-  background: transparent;
-}
-.maplibregl-ctrl-group button + button {
-  border-top: 1px solid var(--line);
-}
-.maplibregl-ctrl-group button:hover { background: var(--asphalt-700); }
-.maplibregl-ctrl-icon { filter: invert(1) brightness(1.6); }
-.maplibregl-ctrl-attrib {
-  background: rgba(24, 29, 36, 0.75) !important;
-  color: var(--text-low) !important;
-}
-.maplibregl-ctrl-attrib a { color: var(--text-mid) !important; }
-
-.tilt-toggle {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 650;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  font-family: var(--font-display);
-  font-size: 11.5px;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  padding: 8px 13px;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
-  transition: background .15s, border-color .15s, color .15s;
-}
-.tilt-toggle:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
-.tilt-toggle.active { background: var(--brand-accent); border-color: var(--brand-accent); color: var(--asphalt-900); }
-
-/* Hover/tap site preview — a fixed overlay centered inside the map itself
-   (not anchored to the pin's screen position), so it's always fully visible
-   at a consistent size on both desktop hover and mobile tap, with no need
-   to scroll or move the cursor to see the whole photo. The image and its
-   caption are both sized against the same .map-preview-frame box (rather
-   than one being a flex item and the other position:absolute against a
-   different reference box), so they always line up edge-to-edge with no
-   gap or size mismatch between them. */
-.map-preview {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-  z-index: 500;
-}
-.map-preview.show { opacity: 1; }
-.map-preview-frame {
-  width: 80%;
-  height: 80%;
-  display: flex;
-  flex-direction: column;
-}
-.map-preview-frame img {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border: 3px solid var(--asphalt-700);
-  border-bottom: none;
-  box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
-}
-@media (max-width: 899px) {
-  /* On mobile the map area is much shorter/squarer than on desktop, but
-     the site photos are wide landscape shots — object-fit: cover was
-     cropping them in tight to fill that squarer shape. Showing the whole
-     photo uncropped (with the frame's own dark background filling any
-     gap) actually shows the billboard properly instead of zooming in
-     past the parts that matter. */
-  .map-preview-frame img {
-    object-fit: contain;
-    background: var(--asphalt-900);
-  }
-}
-.map-preview-cap {
-  flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  background: var(--asphalt-700);
-  border: 3px solid var(--asphalt-700);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  padding: 8px 14px 10px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-hi);
-}
-.map-preview-cap span:first-child { color: var(--amber); font-weight: 700; margin-right: 6px; }
-.map-preview-line2 {
-  color: var(--text-mid);
-  font-size: 11px;
-  margin-top: 3px;
-}
-
-.panel {
-  flex: 1 1 52vh;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--asphalt-800);
-  border-top: 1px solid var(--line-soft);
-}
-@media (min-width: 900px) {
-  .panel {
-    flex: 0 0 400px;
-    order: 1;
-    border-top: none;
-    border-right: 1px solid var(--line-soft);
-  }
-}
-@media (min-width: 1180px) {
-  .panel { flex-basis: 440px; }
-}
-
-.panel-header {
-  padding: 12px 16px 8px;
-  flex-shrink: 0;
-}
-.panel-title {
-  font-family: var(--font-display);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-mid);
-}
-.panel-title strong { color: var(--text-hi); }
-
-.site-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px 12px 16px;
-}
-
-/* ---------- Focus view (one site, fills the whole panel) ---------- */
-/* Replaces the scrolling list entirely while a site is selected, so its
-   full detail — image, specs, calculator, everything — has the whole
-   panel to itself instead of competing with sibling cards for space.
-   Up/Down arrow keys (desktop) or the on-screen buttons page through
-   whatever's currently filtered/searched, without leaving this view. */
-.focus-view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.focus-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 2px 10px;
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
-}
-.focus-back {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: var(--font-body);
-  white-space: nowrap;
-  transition: color .15s, border-color .15s;
-}
-.focus-back:hover { color: var(--text-hi); border-color: var(--brand-accent); }
-.focus-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.focus-position {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-low);
-  margin-right: 2px;
-  white-space: nowrap;
-}
-.focus-prev, .focus-next {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-hi);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  transition: background .15s, border-color .15s;
-}
-.focus-prev:hover, .focus-next:hover { background: var(--asphalt-650); border-color: var(--brand-accent); }
-.focus-prev:disabled, .focus-next:disabled { opacity: 0.35; cursor: default; }
-
-.focus-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 2px 16px;
-  animation: detail-fade-in .2s ease;
-}
-.focus-img {
-  width: 100%;
-  max-height: 150px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  display: block;
-  margin-bottom: 10px;
-}
-.focus-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.focus-size {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--teal);
-  white-space: nowrap;
-}
-.focus-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-hi);
-  margin: 0 0 9px;
-  line-height: 1.3;
-}
-.focus-status-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-.focus-desc {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-mid);
-  margin: 9px 0;
-}
-
-.empty-state {
-  padding: 40px 20px;
-  text-align: center;
-  color: var(--text-low);
-  font-size: 13px;
-}
-
-/* ---------- Area group ---------- */
-.area-group { margin-bottom: 6px; }
-.area-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 8px 6px;
-  cursor: pointer;
-  user-select: none;
-}
-.area-group-head:hover .area-group-name { color: var(--text-hi); }
-.area-group-name {
-  font-family: var(--font-display);
-  font-size: 13.5px;
-  letter-spacing: 0.3px;
-  color: var(--text-mid);
-  text-transform: uppercase;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.area-group-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-low);
-  background: var(--asphalt-700);
-  border-radius: 999px;
-  padding: 2px 8px;
-  flex-shrink: 0;
-}
-.area-chevron {
-  color: var(--text-low);
-  font-size: 11px;
-  transition: transform .15s;
-  margin-left: 6px;
-}
-.area-group.collapsed .area-chevron { transform: rotate(-90deg); }
-.area-group.collapsed .area-body { display: none; }
-
-/* ---------- Site card ---------- */
-.site-card {
-  background: var(--asphalt-700);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-  padding: 11px 12px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: border-color .15s, background .15s;
-}
-.site-card:hover { border-color: var(--line); background: var(--asphalt-650); }
-.site-card.selected {
-  border-color: var(--brand-accent);
-  box-shadow: 0 0 0 1px var(--brand-accent), 0 0 18px -4px var(--brand-accent-glow);
-}
-
-.site-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-@keyframes img-shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.card-thumb, .detail-img, .map-preview-frame img, .focus-img {
-  background: linear-gradient(100deg, var(--asphalt-800) 30%, var(--asphalt-700) 50%, var(--asphalt-800) 70%);
-  background-size: 200% 100%;
-  animation: img-shimmer 1.6s ease-in-out infinite;
-}
-.card-thumb {
-  width: 52px;
-  height: 52px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
-
-.pick-check {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  accent-color: var(--brand-accent);
-  margin-top: 17px;
-  cursor: pointer;
-}
-
-.site-shield {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--asphalt-900);
-  background: var(--brand-accent);
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.format-badge {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  padding: 1px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  margin-left: 6px;
-}
-
-.site-title-line { flex: 1; min-width: 0; }
-.site-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-hi);
-  line-height: 1.3;
-  margin: 0 0 2px;
-}
-.site-size {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--teal);
-}
-
-.illum-icon { flex-shrink: 0; margin-top: 1px; }
-.illum-icon.on { color: var(--brand-accent); }
-.illum-icon.off { color: var(--text-low); }
-
-.site-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 8px;
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.meta-item { display: flex; align-items: center; gap: 4px; }
-.meta-item svg { flex-shrink: 0; opacity: 0.7; }
-
-.rate-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 9px;
-}
-.rate-figure {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-hi);
-}
-.rate-per {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin-left: 2px;
-}
-.rate-flag {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-low);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 1px 5px;
-  cursor: help;
-}
-
-.calc-block {
-  background: var(--asphalt-800);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin: 12px 0;
-}
-.calc-head {
-  font-family: var(--font-display);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-mid);
-  margin-bottom: 9px;
-}
-.calc-durations {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.duration-btn {
-  flex: 1;
-  background: var(--asphalt-700);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 7px 4px;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  transition: border-color .15s, color .15s, background .15s;
-}
-.duration-btn.active {
-  border-color: var(--brand-accent);
-  color: var(--brand-accent);
-  background: var(--brand-accent-soft);
-}
-.calc-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-}
-.calc-total-label {
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.calc-total-figure {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--brand-accent);
-}
-.calc-disclaimer {
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin: 9px 0 0 !important;
-  line-height: 1.4;
-}
-
-.site-card-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  margin-top: 10px;
-}
-
-.signal {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 3px;
-  background: var(--asphalt-900);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-.signal-light {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--asphalt-650);
-  opacity: 0.35;
-  transition: opacity .15s, box-shadow .15s, background .15s;
-}
-.signal-light.red.on {
-  background: var(--red-signal);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(232,88,63,0.75);
-}
-.signal-light.amber.on {
-  background: var(--amber);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(245,166,35,0.75);
-}
-.signal-light.green.on {
-  background: var(--teal);
-  opacity: 1;
-  box-shadow: 0 0 7px 1px rgba(33,199,176,0.75);
-}
-
-.avail-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  font-family: var(--font-mono);
-  padding: 3px 7px;
-  border-radius: 4px;
-  white-space: normal;
-  line-height: 1.4;
-}
-.avail-badge.available { background: rgba(33,199,176,0.12); color: var(--teal); }
-.avail-badge.optioned { background: rgba(245,166,35,0.1); color: var(--amber); }
-.avail-badge.booked { background: rgba(232,88,63,0.12); color: var(--red-signal); }
-
-.live-note {
-  background: var(--brand-accent-soft);
-  border-left: 2px solid var(--brand-accent);
-  padding: 7px 10px;
-  font-size: 12px;
-  color: var(--text-hi);
-  margin: 0 0 10px;
-  border-radius: 0 4px 4px 0;
-}
-
-.sync-line {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--text-low);
-  margin-top: 4px;
-}
-.sync-line.ok { color: var(--teal); }
-
-.enquire-btn {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 11.5px;
-  color: var(--brand-accent);
-  background: var(--brand-accent-soft);
-  border: 1px solid var(--brand-accent-border);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  white-space: nowrap;
-  transition: background .15s, border-color .15s;
-}
-.enquire-btn:hover { background: var(--brand-accent-soft-strong); border-color: var(--brand-accent); }
-
-/* ---------- Detail expand ---------- */
-.site-detail {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-mid);
-  animation: detail-fade-in .25s ease;
-}
-@keyframes detail-fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.site-detail p { margin: 0 0 10px; }
-.detail-img {
-  width: 100%;
-  max-height: 220px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  margin-bottom: 10px;
-  display: block;
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 14px;
-  margin-bottom: 10px;
-}
-.detail-field dt {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-low);
-  margin-bottom: 2px;
-}
-.detail-field dd {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-hi);
-}
-.gps-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--text-mid);
-}
-.copy-btn {
-  display: inline-block;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 10.5px;
-  text-decoration: none;
-}
-.copy-btn:hover { color: var(--text-hi); border-color: var(--teal); }
-
-/* ---------- Map markers ---------- */
-.kop-pin {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 4px; /* small visual nudge — NOT a transform: MapLibre
-    sets its own inline transform on this exact element for positioning,
-    which would silently override a CSS transform on the same property */
-}
-.kop-pin-board {
-  width: 26px;
-  height: 16px;
-  background: var(--amber);
-  border-radius: 2px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 10px var(--amber-glow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--asphalt-900);
-}
-.kop-pin-post { width: 2px; height: 10px; background: var(--text-low); }
-.kop-pin.selected .kop-pin-board {
-  background: var(--teal);
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 14px 2px rgba(33,199,176,0.55);
-}
-
-/* ---------- Nearby landmarks (visible once zoomed in) ---------- */
-/* Two tiers, visually distinct: "close" = right next to the board (the
-   strongest sales signal, so it's bigger and gently pulses to draw the
-   eye), "area" = general nearby draw, still visible but a step down. */
-.landmark-pin {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-.landmark-pin.tier-area {
-  width: 26px;
-  height: 26px;
-  background: rgba(167, 139, 250, 0.25);
-  border: 2px solid #a78bfa;
-  font-size: 13px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 10px rgba(167, 139, 250, 0.5), 0 2px 8px rgba(0,0,0,0.5);
-}
-.landmark-pin.tier-close {
-  width: 32px;
-  height: 32px;
-  background: rgba(244, 114, 182, 0.3);
-  border: 2.5px solid #f472b6;
-  font-size: 16px;
-  box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 16px rgba(244, 114, 182, 0.75), 0 2px 10px rgba(0,0,0,0.55);
-  animation: landmark-pulse 2.2s ease-in-out infinite;
-}
-@keyframes landmark-pulse {
-  0%, 100% { box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 16px rgba(244, 114, 182, 0.75), 0 2px 10px rgba(0,0,0,0.55); }
-  50%      { box-shadow: 0 0 0 2px var(--asphalt-900), 0 0 26px rgba(244, 114, 182, 1), 0 2px 10px rgba(0,0,0,0.55); }
-}
-
-.landmark-popup {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px 8px 12px;
-  font-size: 12px;
-  border-left: 3px solid var(--line);
-}
-.landmark-popup-area { border-left-color: #a78bfa; }
-.landmark-popup-close { border-left-color: #f472b6; }
-.landmark-popup strong { color: var(--text-hi); font-weight: 600; }
-.landmark-popup span { color: var(--text-low); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; }
-
-.maplibregl-popup-content {
-  background: var(--asphalt-700);
-  color: var(--text-hi);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  padding: 0;
-  box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6);
-}
-.maplibregl-popup-tip { border-top-color: var(--asphalt-700) !important; border-bottom-color: var(--asphalt-700) !important; }
-.maplibregl-popup-close-button {
-  color: var(--text-mid);
-  font-size: 16px;
-  padding: 2px 6px;
-}
-.maplibregl-popup-close-button:hover { color: var(--text-hi); background: transparent; }
-
-/* ---------- Contact modal ---------- */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(10,12,15,0.72);
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 2000;
-}
-.modal-overlay.show { display: flex; }
-
-.modal-card {
-  position: relative;
-  background: var(--asphalt-800);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 24px 22px 22px;
-  max-width: 360px;
-  width: 100%;
-}
-
-.modal-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: var(--text-low);
-  font-size: 16px;
-  padding: 4px;
-}
-.modal-close:hover { color: var(--text-hi); }
-
-.modal-eyebrow {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--brand-accent);
-  margin-bottom: 8px;
-}
-.modal-heading {
-  font-family: var(--font-display);
-  font-size: 22px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin: 0 0 6px;
-}
-.modal-sub {
-  font-size: 12.5px;
-  color: var(--text-mid);
-  margin: 0 0 18px;
-  line-height: 1.5;
-}
-
-.modal-contact-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--asphalt-700);
-  border-radius: var(--radius-sm);
-  margin-bottom: 14px;
-}
-.modal-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--brand-accent);
-  color: var(--asphalt-900);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.modal-name { font-weight: 600; font-size: 13.5px; }
-.modal-role { font-size: 11.5px; color: var(--text-low); }
-
-.modal-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  margin-bottom: 8px;
-  transition: filter .15s;
-}
-.modal-action-btn:hover { filter: brightness(1.08); }
-.modal-action-btn.whatsapp { background: #25D366; color: #08360f; }
-.modal-action-btn.email { background: var(--asphalt-700); color: var(--text-hi); border: 1px solid var(--line); }
-.modal-action-btn span { font-family: var(--font-mono); font-weight: 400; opacity: 0.9; }
-
-/* ---------- Scrollbars ---------- */
-.site-list::-webkit-scrollbar { width: 8px; }
-.site-list::-webkit-scrollbar-thumb { background: var(--asphalt-650); border-radius: 8px; }
-.site-list::-webkit-scrollbar-track { background: transparent; }
-
-/* ---------- Install banner ---------- */
-#install-banner {
-  display: none;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  background: var(--brand-accent);
-  color: var(--asphalt-900);
-  font-size: 12.5px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-#install-banner.show { display: flex; }
-#install-banner span {
-  flex: 1 1 auto;
-  min-width: 160px;
-  line-height: 1.35;
-}
-#install-banner .install-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-#install-banner button {
-  background: var(--asphalt-900);
-  color: var(--brand-accent);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-weight: 600;
-  font-size: 12px;
-}
-#install-banner .dismiss {
-  background: transparent;
-  color: var(--asphalt-900);
-  opacity: 0.7;
-  padding: 6px 4px;
-  font-weight: 400;
-}
-
-/* ---------- Curate & share (client link) ---------- */
-.client-view-banner {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  background: var(--teal);
-  color: var(--asphalt-900);
-  font-size: 12.5px;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-.client-view-banner.show { display: flex; }
-.client-view-banner button {
-  margin-left: auto;
-  background: var(--asphalt-900);
-  color: var(--teal);
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-weight: 600;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.share-bar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: var(--asphalt-700);
-  border-top: 1px solid var(--line);
-  flex-shrink: 0;
-}
-.share-bar.show { display: flex; }
-#share-count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-mid);
-}
-.share-clear-btn {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  border-radius: var(--radius-sm);
-  padding: 7px 10px;
-  font-size: 12px;
-}
-.share-clear-btn:hover { color: var(--text-hi); border-color: var(--line-soft); }
-.share-link-btn {
-  background: var(--brand-accent);
-  color: var(--asphalt-900);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 7px 14px;
-  font-weight: 700;
-  font-size: 12px;
-  white-space: nowrap;
-  transition: filter .15s;
-}
-.share-link-btn:hover { filter: brightness(1.08); }
-
-/* ---------- Welcome modal (shown once, first visit only) ---------- */
-.welcome-card { max-width: 420px; }
-.welcome-body {
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-mid);
-  margin: 12px 0 18px;
-}
-.welcome-start-btn {
-  width: 100%;
-  background: var(--brand-accent);
-  color: var(--asphalt-900);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  font-weight: 700;
-  font-size: 14px;
-  font-family: var(--font-display);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: filter .15s;
-}
-.welcome-start-btn:hover { filter: brightness(1.08); }
-
-/* ---------- Footer ---------- */
-/* Lives OUTSIDE #app on purpose — the tool itself stays locked to one
-   screen (unchanged), the page as a whole just becomes tall enough to
-   scroll past it into this footer below, same as any ordinary website. */
-.site-footer {
-  background: var(--asphalt-850);
-  border-top: 1px solid var(--line-soft);
-  padding: 36px max(24px, env(safe-area-inset-right)) 20px max(24px, env(safe-area-inset-left));
-}
-.footer-inner {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 28px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-@media (min-width: 800px) {
-  .footer-inner { grid-template-columns: 1.2fr 1fr 1.6fr; }
-}
-.footer-col h4 {
-  font-family: var(--font-display);
-  font-size: 12.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--text-hi);
-  margin: 0 0 12px;
-}
-.footer-about .app-name {
-  border: none;
-  padding: 0;
-  margin: 0 0 10px;
-  font-size: 15px;
-  color: var(--text-hi);
-  display: block;
-}
-.footer-about p, .footer-col p {
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-mid);
-  margin: 0 0 6px;
-}
-.footer-col a {
-  color: var(--brand-accent);
-  text-decoration: none;
-}
-.footer-col a:hover { text-decoration: underline; }
-
-.faq-item { border-bottom: 1px solid var(--line-soft); }
-.faq-item:last-child { border-bottom: none; }
-.faq-question {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: var(--text-hi);
-  font-size: 12.5px;
-  font-weight: 600;
-  text-align: left;
-  padding: 10px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  cursor: pointer;
-}
-.faq-caret {
-  color: var(--brand-accent);
-  font-size: 16px;
-  font-weight: 400;
-  flex-shrink: 0;
-  transition: transform .2s ease;
-}
-.faq-item.open .faq-caret { transform: rotate(45deg); }
-.faq-answer {
-  max-height: 0;
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--text-mid);
-  transition: max-height .25s ease, padding .25s ease;
-}
-.faq-item.open .faq-answer { max-height: 200px; padding-bottom: 12px; }
-
-.footer-bottom {
-  max-width: 1100px;
-  margin: 28px auto 0;
-  padding-top: 16px;
-  border-top: 1px solid var(--line-soft);
-  font-size: 11px;
-  color: var(--text-low);
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>BoardBase</title>
+<meta name="description" content="Find available billboard and digital screen sites across Gauteng and Limpopo." />
+<meta name="theme-color" content="#181d24" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand" id="brand-switcher-wrap">
+      <span class="app-name">BoardBase</span>
+      <div class="brand-switcher-group" role="group" aria-label="Switch media company">
+        <button type="button" class="brand-pill" id="brand-pill-kopano" data-brand="kopano">
+          <img src="brand-assets/kopano-logo.png" alt="" class="brand-pill-logo" />
+          <span class="full-label">Kopano Media</span>
+          <span class="short-label">Kopano</span>
+        </button>
+        <button type="button" class="brand-pill" id="brand-pill-medium" data-brand="medium">
+          <img src="brand-assets/the-medium-logo.png" alt="" class="brand-pill-logo" />
+          <span class="full-label">The Medium</span>
+        </button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-chip"><span class="live-dot"></span><span id="result-count">27 boards</span></div>
+      <button class="contact-chip" id="header-contact-btn">
+        <span class="full-label">Contact for pricing</span>
+        <span class="short-label">Contact</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="install-banner">
+    <span>Install this app for one-tap access on site visits.</span>
+    <div class="install-actions">
+      <button id="install-btn">Install</button>
+      <button class="dismiss" id="dismiss-install">✕</button>
+    </div>
+  </div>
+
+  <div class="filterbar">
+    <div class="filter-more-wrap">
+      <button type="button" id="filter-more-btn" class="filter-more-btn" title="More filters" aria-label="More filters" aria-expanded="false">
+        <span class="hamburger-icon"><span></span><span></span><span></span></span>
+      </button>
+      <div class="filter-more-panel" id="filter-more-panel">
+        <select id="area-select">
+          <option value="all">All areas</option>
+        </select>
+        <select id="size-select">
+          <option value="all">All sizes</option>
+        </select>
+        <button class="toggle-chip" id="illum-toggle">☀ Any lighting</button>
+        <button class="toggle-chip" id="curate-toggle">👤 Curate for client</button>
+      </div>
+    </div>
+    <input type="search" id="search-input" placeholder="Search area, road, or KOP code…" />
+    <button class="toggle-chip" id="avail-toggle">Available now</button>
+  </div>
+
+  <div id="client-view-banner" class="client-view-banner">
+    <span id="client-view-text"></span>
+    <button id="client-view-clear">View full inventory</button>
+  </div>
+
+  <div class="layout">
+    <div class="map-wrap">
+      <div id="map"></div>
+      <button type="button" id="tilt-toggle" class="tilt-toggle" title="Toggle a 3D angled view of the map">🗺️ 3D View</button>
+      <div class="map-preview" id="map-preview">
+        <div class="map-preview-frame">
+          <img id="map-preview-img" src="" alt="" />
+          <div class="map-preview-cap">
+            <div class="map-preview-line1"><span id="map-preview-code"></span><span id="map-preview-title"></span></div>
+            <div class="map-preview-line2" id="map-preview-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Boards by <strong>area</strong> — tap a card to locate it</div>
+        <div class="sync-line" id="sync-status">Loading availability…</div>
+      </div>
+      <div class="site-list" id="site-list"></div>
+      <div id="share-bar" class="share-bar">
+        <span id="share-count">0 selected</span>
+        <button id="share-clear-btn" class="share-clear-btn">Clear</button>
+        <button id="share-link-btn" class="share-link-btn">Share link</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="contact-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" id="contact-close">✕</button>
+      <div class="modal-eyebrow">Rates vary by season &amp; site — always confirm current pricing</div>
+      <h2 class="modal-heading">Contact for pricing</h2>
+      <p class="modal-sub" id="contact-subtitle">Get today's rate card for any Kopano Media site</p>
+      <div class="modal-contact-row">
+        <div class="modal-avatar" id="modal-avatar">PM</div>
+        <div>
+          <div class="modal-name" id="contact-name">Peter Mashamba</div>
+          <div class="modal-role" id="contact-role">Managing Director</div>
+        </div>
+      </div>
+      <a class="modal-action-btn whatsapp" id="contact-whatsapp-link" href="#" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm5.8 14.03c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11-.41-.13-.94-.31-1.62-.6-2.85-1.23-4.71-4.1-4.85-4.29-.14-.19-1.16-1.54-1.16-2.94 0-1.4.73-2.08 1-2.36.26-.28.57-.35.76-.35.19 0 .38 0 .55.01.18.01.41-.07.64.49.24.57.81 1.97.88 2.11.07.14.11.3.02.49-.09.19-.14.3-.28.46-.14.16-.29.36-.42.48-.14.13-.29.28-.12.55.16.28.73 1.2 1.57 1.95 1.08.96 1.99 1.26 2.27 1.4.28.14.44.12.6-.07.16-.19.69-.8.87-1.08.18-.28.36-.23.6-.14.24.09 1.55.73 1.82.86.27.14.45.2.51.32.07.12.07.68-.17 1.36z"/></svg>
+        WhatsApp
+      </a>
+      <a class="modal-action-btn email" id="contact-email-link" href="mailto:">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V6z"/><path d="m22 6-10 7L2 6"/></svg>
+        Email <span id="contact-email-display">peter@kopanomediacomms.co.za</span>
+      </a>
+    </div>
+  </div>
+
+  <div id="welcome-modal" class="modal-overlay">
+    <div class="modal-card welcome-card">
+      <button class="modal-close" id="welcome-close">✕</button>
+      <h2 class="modal-heading">We're glad you're here</h2>
+      <p class="welcome-body">
+        Kopano Media and The Medium put together every billboard and digital
+        screen they've got on offer across Gauteng and Limpopo — real spots,
+        mapped exactly where they stand. Take a look around, we think you'll
+        like what you find.
+      </p>
+      <button class="welcome-start-btn" id="welcome-start-btn">Let's go</button>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer" id="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col footer-about">
+      <span class="app-name">BoardBase</span>
+      <p>A live site locator for out-of-home billboard and digital screen
+        inventory across Gauteng and Limpopo, hosting listings from
+        Kopano Media and The Medium.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <p id="footer-contact-name">Peter Mashamba</p>
+      <p><a href="mailto:" id="footer-contact-email">peter@kopanomediacomms.co.za</a></p>
+      <p><a href="#" id="footer-contact-whatsapp">WhatsApp</a></p>
+    </div>
+    <div class="footer-col footer-faq">
+      <h4>Frequently asked questions</h4>
+      <div class="faq-item">
+        <button class="faq-question">How often is availability updated?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">Live sites sync directly from the media owner's own tracking sheet — usually within minutes of a change. Sites without a live connection still show accurate static data.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">What does "Optioned" mean?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">A site that's been provisionally reserved by another client but isn't fully confirmed yet. Worth asking about — it can still open up.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">Are the prices shown final?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">No — figures shown are estimates to help you budget. Confirm current, final pricing directly with the media owner before booking.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">Can I get a shortlist sent to me?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">Yes — ask your media owner contact for a curated link. It shows only the specific sites picked for you, with everything else exactly as normal.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 BoardBase. Site data belongs to its respective media owner.</span>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
