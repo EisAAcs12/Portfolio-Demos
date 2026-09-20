@@ -1173,16 +1173,25 @@ input, select { font-family: inherit; }
 
 /* ---------- Contact modal ---------- */
 .modal-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(10,12,15,0.72);
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, visibility 0s linear .25s;
 }
-.modal-overlay.show { display: flex; }
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .25s ease, visibility 0s linear 0s;
+}
 
 .modal-card {
   position: relative;
@@ -1192,6 +1201,11 @@ input, select { font-family: inherit; }
   padding: 24px 22px 22px;
   max-width: 360px;
   width: 100%;
+  transform: translateY(28px) scale(0.96);
+  transition: transform .3s cubic-bezier(.34, 1.15, .4, 1);
+}
+.modal-overlay.show .modal-card {
+  transform: translateY(0) scale(1);
 }
 
 .modal-close {
