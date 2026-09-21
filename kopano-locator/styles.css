@@ -494,7 +494,8 @@ input, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
 }
-.map-preview-frame img {
+.map-preview-frame img,
+.map-preview-frame video {
   flex: 0 0 auto;
   width: 100%;
   aspect-ratio: 16 / 9; /* locks the photo into its actual landscape shape
@@ -507,6 +508,12 @@ input, select { font-family: inherit; }
   border-bottom: none;
   box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
 }
+/* Sites with real drive-by footage show that instead of the static photo —
+   the image stays in the DOM as the fallback for every site that doesn't
+   have one, and as the poster frame while the video loads. */
+.map-preview-frame video { display: none; }
+.map-preview-frame.has-video img { display: none; }
+.map-preview-frame.has-video video { display: block; }
 @media (max-width: 899px) {
   /* The gaps came from switching to object-fit: contain — that shows the
      whole photo, but since the mobile frame's shape doesn't match a wide
