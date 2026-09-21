@@ -23,7 +23,7 @@ const BRANDS = {
     nameAccent: "Media",
     tagline: "OOH Site Locator",
     CONFIG: {
-      SHEET_CSV_URL: "",
+      SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o\_kzoE/pub?gid=1481682342\&single=true\&output=csv",
       REFRESH_SECONDS: 45,
     },
     CONTACT: {
