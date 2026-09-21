@@ -427,6 +427,7 @@ const mapPreviewSub = document.getElementById("map-preview-sub");
 // after itself rather than leaving an old cycle quietly running.
 let previewCycleTimer = null;
 let previewVideoEndedHandler = null;
+let previewVideoReadyHandler = null;
 const PREVIEW_PHOTO_SECONDS = 5;
 
 function stopPreviewCycle() {
@@ -437,6 +438,10 @@ function stopPreviewCycle() {
   if (previewVideoEndedHandler) {
     mapPreviewVideo.removeEventListener("ended", previewVideoEndedHandler);
     previewVideoEndedHandler = null;
+  }
+  if (previewVideoReadyHandler) {
+    mapPreviewVideo.removeEventListener("canplay", previewVideoReadyHandler);
+    previewVideoReadyHandler = null;
   }
   mapPreviewVideo.pause();
 }
@@ -457,6 +462,10 @@ function showMapPreview(site) {
   if (mapPreviewVideo.dataset.src !== site.video) {
     mapPreviewVideo.src = site.video;
     mapPreviewVideo.dataset.src = site.video;
+    mapPreviewVideo.load(); // start buffering immediately, not just on play() —
+      // preload="auto" hints at this too, but calling load() explicitly
+      // after changing src guarantees it kicks off right away rather than
+      // depending on browser-specific preload heuristics
   }
 
   const showPhotoThenVideo = () => {
@@ -464,16 +473,37 @@ function showMapPreview(site) {
     previewCycleTimer = setTimeout(playVideoOnce, PREVIEW_PHOTO_SECONDS * 1000);
   };
 
-  function playVideoOnce() {
-    mapPreviewFrame.classList.add("has-video");
+  function revealAndPlay() {
     mapPreviewVideo.currentTime = 0;
-    mapPreviewVideo.play().catch(() => {
-      // autoplay blocked (rare, e.g. some low-power modes) — just fall
-      // back to the photo rather than getting stuck on a frozen video
+    mapPreviewVideo.play().then(() => {
+      mapPreviewFrame.classList.add("has-video"); // crossfade in only once
+        // playback has actually begun — this is what kills the lag: we're
+        // never revealing a video that's still buffering or stuck on its
+        // first frame, only one that's genuinely already moving
+    }).catch(() => {
+      // autoplay blocked (rare, e.g. some low-power modes) — just stay on
+      // the photo rather than getting stuck on a frozen video
       showPhotoThenVideo();
     });
     previewVideoEndedHandler = () => showPhotoThenVideo();
     mapPreviewVideo.addEventListener("ended", previewVideoEndedHandler, { once: true });
+  }
+
+  function playVideoOnce() {
+    // HAVE_FUTURE_DATA (3) or better means it can actually play through
+    // this moment without immediately stalling. The 5-second photo phase
+    // usually gives it plenty of time to get there in the background, but
+    // if it hasn't (slow connection), wait for it rather than revealing
+    // something that'll freeze the instant it's shown.
+    if (mapPreviewVideo.readyState >= 3) {
+      revealAndPlay();
+    } else {
+      previewVideoReadyHandler = () => {
+        previewVideoReadyHandler = null;
+        revealAndPlay();
+      };
+      mapPreviewVideo.addEventListener("canplay", previewVideoReadyHandler, { once: true });
+    }
   }
 
   showPhotoThenVideo();
