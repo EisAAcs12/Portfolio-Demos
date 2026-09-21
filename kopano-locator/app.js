@@ -412,10 +412,34 @@ function flyToSite(site) {
 // ---------- map preview overlay ----------
 
 const mapPreviewEl = document.getElementById("map-preview");
+const mapPreviewFrame = document.querySelector(".map-preview-frame");
 const mapPreviewImg = document.getElementById("map-preview-img");
+const mapPreviewVideo = document.getElementById("map-preview-video");
 const mapPreviewCode = document.getElementById("map-preview-code");
 const mapPreviewTitle = document.getElementById("map-preview-title");
 const mapPreviewSub = document.getElementById("map-preview-sub");
+
+// Cycles a site's preview between its static photo and its real drive-by
+// footage, if it has one: photo shows for a few seconds, then the video
+// plays through once, then back to the photo — repeating for as long as
+// the preview stays open. previewCycleTimer/previewVideoEndedHandler are
+// tracked so switching sites or closing the preview always cleans up
+// after itself rather than leaving an old cycle quietly running.
+let previewCycleTimer = null;
+let previewVideoEndedHandler = null;
+const PREVIEW_PHOTO_SECONDS = 5;
+
+function stopPreviewCycle() {
+  if (previewCycleTimer) {
+    clearTimeout(previewCycleTimer);
+    previewCycleTimer = null;
+  }
+  if (previewVideoEndedHandler) {
+    mapPreviewVideo.removeEventListener("ended", previewVideoEndedHandler);
+    previewVideoEndedHandler = null;
+  }
+  mapPreviewVideo.pause();
+}
 
 function showMapPreview(site) {
   mapPreviewImg.src = site.image;
@@ -424,10 +448,40 @@ function showMapPreview(site) {
   mapPreviewTitle.textContent = " — " + site.title;
   mapPreviewSub.textContent = `${site.area} · ${site.size}`;
   mapPreviewEl.classList.add("show");
+
+  stopPreviewCycle();
+  mapPreviewFrame.classList.remove("has-video");
+
+  if (!site.video) return; // photo-only site — nothing to cycle
+
+  if (mapPreviewVideo.dataset.src !== site.video) {
+    mapPreviewVideo.src = site.video;
+    mapPreviewVideo.dataset.src = site.video;
+  }
+
+  const showPhotoThenVideo = () => {
+    mapPreviewFrame.classList.remove("has-video");
+    previewCycleTimer = setTimeout(playVideoOnce, PREVIEW_PHOTO_SECONDS * 1000);
+  };
+
+  function playVideoOnce() {
+    mapPreviewFrame.classList.add("has-video");
+    mapPreviewVideo.currentTime = 0;
+    mapPreviewVideo.play().catch(() => {
+      // autoplay blocked (rare, e.g. some low-power modes) — just fall
+      // back to the photo rather than getting stuck on a frozen video
+      showPhotoThenVideo();
+    });
+    previewVideoEndedHandler = () => showPhotoThenVideo();
+    mapPreviewVideo.addEventListener("ended", previewVideoEndedHandler, { once: true });
+  }
+
+  showPhotoThenVideo();
 }
 
 function hideMapPreview() {
   mapPreviewEl.classList.remove("show");
+  stopPreviewCycle();
 }
 
 // ---------- rendering ----------
