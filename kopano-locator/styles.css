@@ -508,12 +508,29 @@ input, select { font-family: inherit; }
   border-bottom: none;
   box-shadow: 0 16px 48px -8px rgba(0,0,0,0.8);
 }
-/* Sites with real drive-by footage show that instead of the static photo —
-   the image stays in the DOM as the fallback for every site that doesn't
-   have one, and as the poster frame while the video loads. */
-.map-preview-frame video { display: none; }
-.map-preview-frame.has-video img { display: none; }
-.map-preview-frame.has-video video { display: block; }
+/* Sites with real drive-by footage crossfade into it instead of jumping —
+   both img and video are stacked in the same spot and fade between each
+   other, rather than one being display:none (which can't be animated at
+   all — that's what caused the instant jump before). */
+.map-preview-frame {
+  position: relative;
+}
+.map-preview-frame img {
+  position: relative;
+  z-index: 1;
+}
+.map-preview-frame video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity .5s ease;
+  pointer-events: none;
+}
+.map-preview-frame.has-video video {
+  opacity: 1;
+}
 @media (max-width: 899px) {
   /* The gaps came from switching to object-fit: contain — that shows the
      whole photo, but since the mobile frame's shape doesn't match a wide
@@ -529,7 +546,8 @@ input, select { font-family: inherit; }
     height: auto;
     max-height: 90%;
   }
-  .map-preview-frame img {
+  .map-preview-frame img,
+  .map-preview-frame video {
     flex: 0 0 auto;
     width: 100%;
     height: calc((100vw - 8%) * 9 / 16);
