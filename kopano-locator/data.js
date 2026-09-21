@@ -23,7 +23,7 @@ const BRANDS = {
     nameAccent: "Media",
     tagline: "OOH Site Locator",
     CONFIG: {
-      SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR4EqCasg5kocxv3WLRROsH8nCxJnIsEu4PuV2GkLeZQyfqYrWULYYquSaSx-YPaV8rEa3YC2o\_kzoE/pub?gid=1481682342\&single=true\&output=csv",
+      SHEET_CSV_URL: "",
       REFRESH_SECONDS: 45,
     },
     CONTACT: {
@@ -47,11 +47,6 @@ const BRANDS = {
 ],
     SITES: [
   {
-    // VIDEO NOTE: KOP001/KOP009 and KOP002/KOP008 are two directional
-    // pairs standing right next to each other at the same Deco Park
-    // corner with near-identical descriptions — the video assigned here
-    // is a best-guess from footage alone; worth a quick eyeball check
-    // against the real board next time someone's on site.
     code: "KOP001", video: "videos/KOP001.mp4", area: "Fourways & Northriding", image: "images/full/KOP001.jpg", thumb: "images/thumb/KOP001.jpg", rateCard: 60000, suggestedRate: 42000, production: 24000,
     title: "Witkoppen Road – towards Fourways",
     description: "On Witkoppen road facing traffic from Malibongwe drive and Northriding traveling northerly direction towards Fourways Mall, Cedar Square, Monte Casino, Fourways Crossings, Sunninghill, The Buzz Shopping Centre, Rivonia Office Parks, Paulshof, Kyalami and Sunninghill.",
@@ -132,7 +127,7 @@ const BRANDS = {
     trafficCount: "85 000+ vehicles/day", illuminated: false, lat: -26.184297, lng: 28.017900
   },
   {
-    code: "KOP013", area: "Parktown, Westcliff & Braamfontein", image: "images/full/KOP013.jpg", thumb: "images/thumb/KOP013.jpg", rateCard: 50000, suggestedRate: 35000, production: 13500,
+    code: "KOP013", video: "videos/KOP013.mp4", area: "Parktown, Westcliff & Braamfontein", image: "images/full/KOP013.jpg", thumb: "images/thumb/KOP013.jpg", rateCard: 50000, suggestedRate: 35000, production: 13500,
     title: "Barry Hertzog & Empire Road – Parktown, JHB",
     description: "On Barry Hertzog Ave next to 44 Stanley towards the Empire Road intersection, facing traffic from Braamfontein, Auckland Park and Johannesburg CBD, traveling towards Greenside, Milpark Hospital, Rand Steam shopping centre, Melville, Parktown, Emmarentia and Randburg.",
     size: "3m x 12m", lsm: "LSM 6-8 to 9-10",
@@ -156,7 +151,7 @@ const BRANDS = {
     trafficCount: "85 000+ vehicles/day", illuminated: false, lat: -26.184936, lng: 28.032337
   },
   {
-    code: "KOP027", video: "videos/KOP027.mp4", area: "Parktown, Westcliff & Braamfontein", image: "images/full/KOP027.jpg", thumb: "images/thumb/KOP027.jpg", rateCard: 50000, suggestedRate: 35000, production: 15080,
+    code: "KOP027", area: "Parktown, Westcliff & Braamfontein", image: "images/full/KOP027.jpg", thumb: "images/thumb/KOP027.jpg", rateCard: 50000, suggestedRate: 35000, production: 15080,
     title: "Smit Street – Braamfontein, JHB",
     description: "Located on Smit Street entering the Braamfontein precinct, facing traffic heading into Braamfontein CBD and joining the N1 highway (north and south, towards the M2), the Nelson Mandela Bridge and the Neighbourgoods Market, plus higher-learning institutions like Wits University, Rosebank College and Boston City Campus.",
     size: "3m x 12m", lsm: "LSM 6-8 and 8-10",
