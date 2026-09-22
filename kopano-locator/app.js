@@ -1121,6 +1121,16 @@ document.querySelectorAll(".faq-question").forEach(btn => {
   });
 });
 
+// ---------- footer FAQ master toggle (mobile) ----------
+const footerFaqToggle = document.getElementById("footer-faq-toggle");
+const footerFaqList = document.getElementById("footer-faq-list");
+if (footerFaqToggle && footerFaqList) {
+  footerFaqToggle.addEventListener("click", () => {
+    footerFaqToggle.classList.toggle("open");
+    footerFaqList.classList.toggle("open");
+  });
+}
+
 // ---------- footer credit fade-in ----------
 // Only fades in once actually scrolled into view, rather than firing
 // (and finishing) invisibly before anyone's scrolled far enough to see it.
@@ -1137,6 +1147,35 @@ if (footerCreditEl && "IntersectionObserver" in window) {
   creditObserver.observe(footerCreditEl);
 } else if (footerCreditEl) {
   footerCreditEl.classList.add("visible"); // fallback for very old browsers
+}
+
+// ---------- floating jump button (tool <-> footer) ----------
+const pageJumpBtn = document.getElementById("page-jump-btn");
+const pageJumpIcon = document.getElementById("page-jump-icon");
+const siteFooterEl = document.getElementById("site-footer");
+if (pageJumpBtn && pageJumpIcon && siteFooterEl) {
+  let jumpingToFooter = true;
+
+  const updateJumpDirection = () => {
+    // Past a small threshold means we've left the fixed-height tool
+    // section and are looking at the footer — flip the button to bring
+    // the user back up instead of further down.
+    jumpingToFooter = window.scrollY < 40;
+    pageJumpIcon.textContent = jumpingToFooter ? "↓" : "↑";
+    pageJumpIcon.classList.toggle("flipped", !jumpingToFooter);
+    pageJumpBtn.title = jumpingToFooter ? "See more info below" : "Back to the map";
+  };
+
+  window.addEventListener("scroll", updateJumpDirection, { passive: true });
+  updateJumpDirection();
+
+  pageJumpBtn.addEventListener("click", () => {
+    if (jumpingToFooter) {
+      siteFooterEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  });
 }
 
 // ---------- live availability sync (Google Sheet, published as CSV) ----------
