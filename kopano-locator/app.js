@@ -1175,6 +1175,12 @@ if (pageJumpBtn && pageJumpIcon && siteFooterEl) {
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+    // Belt-and-suspenders: some browsers fire 'scroll' inconsistently
+    // during a JS-triggered smooth scroll, so also check directly a
+    // moment after the animation should have settled, rather than
+    // relying on the scroll listener alone to flip the icon.
+    setTimeout(updateJumpDirection, 500);
+    setTimeout(updateJumpDirection, 900);
   });
 }
 
