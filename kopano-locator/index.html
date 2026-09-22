@@ -163,7 +163,11 @@
       <p><a href="#" id="footer-contact-whatsapp">WhatsApp</a></p>
     </div>
     <div class="footer-col footer-faq">
-      <h4>Frequently asked questions</h4>
+      <button type="button" class="footer-faq-toggle" id="footer-faq-toggle">
+        <h4>Frequently asked questions</h4>
+        <span class="footer-faq-caret">▾</span>
+      </button>
+      <div class="footer-faq-list" id="footer-faq-list">
       <div class="faq-item">
         <button class="faq-question">How often is availability updated?<span class="faq-caret">+</span></button>
         <div class="faq-answer">Live sites sync directly from the media owner's own tracking sheet — usually within minutes of a change. Sites without a live connection still show accurate static data.</div>
@@ -180,6 +184,7 @@
         <button class="faq-question">Can I get a shortlist sent to me?<span class="faq-caret">+</span></button>
         <div class="faq-answer">Yes — ask your media owner contact for a curated link. It shows only the specific sites picked for you, with everything else exactly as normal.</div>
       </div>
+      </div>
     </div>
   </div>
   <div class="footer-bottom">
@@ -187,6 +192,10 @@
     <span class="footer-credit" id="footer-credit">Built by Enziano Isaacs</span>
   </div>
 </footer>
+
+<button type="button" id="page-jump-btn" class="page-jump-btn" title="Scroll">
+  <span id="page-jump-icon">↓</span>
+</button>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="data.js"></script>
