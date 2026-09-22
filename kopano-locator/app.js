@@ -231,22 +231,18 @@ function add3dBuildingsLayer() {
     const style = map.getStyle();
     const labelLayer = style.layers.find(l => l.type === "symbol" && l.layout && l.layout["text-field"]);
 
-    // Reuse whichever vector source the base style already loaded, rather
-    // than adding a second one pointing at the same OpenFreeMap dataset —
-    // that was forcing a full duplicate download of the map data just to
-    // draw buildings, which is exactly why this used to feel slow. Find
-    // it by actually inspecting the loaded style instead of guessing a
-    // hardcoded name.
-    let sourceId = Object.keys(style.sources).find(
-      id => style.sources[id].type === "vector"
-    );
-    if (!sourceId) {
-      // Fallback only — shouldn't normally happen, since Liberty always
-      // ships a vector source, but stay safe if that ever changes.
-      sourceId = "boardbase-buildings";
-      if (!map.getSource(sourceId)) {
-        map.addSource(sourceId, { type: "vector", url: "https://tiles.openfreemap.org/planet" });
-      }
+    // Back to a dedicated source pointed straight at OpenFreeMap's planet
+    // endpoint — matching their official documented example. An earlier
+    // version of this tried to reuse whichever vector source the base
+    // style happened to load, on the theory that it'd have the same
+    // building data and save a duplicate fetch. That assumption was never
+    // actually verified, and it looks like it was wrong — Liberty's own
+    // source doesn't carry the same building density, which is exactly
+    // why buildings looked sparser after that "optimization." A duplicate
+    // fetch is a real but minor cost; missing buildings isn't.
+    const sourceId = "boardbase-buildings";
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, { type: "vector", url: "https://tiles.openfreemap.org/planet" });
     }
 
     map.addLayer(
@@ -1124,6 +1120,24 @@ document.querySelectorAll(".faq-question").forEach(btn => {
     btn.closest(".faq-item").classList.toggle("open");
   });
 });
+
+// ---------- footer credit fade-in ----------
+// Only fades in once actually scrolled into view, rather than firing
+// (and finishing) invisibly before anyone's scrolled far enough to see it.
+const footerCreditEl = document.getElementById("footer-credit");
+if (footerCreditEl && "IntersectionObserver" in window) {
+  const creditObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        footerCreditEl.classList.add("visible");
+        creditObserver.disconnect();
+      }
+    });
+  }, { threshold: 0.4 });
+  creditObserver.observe(footerCreditEl);
+} else if (footerCreditEl) {
+  footerCreditEl.classList.add("visible"); // fallback for very old browsers
+}
 
 // ---------- live availability sync (Google Sheet, published as CSV) ----------
 
