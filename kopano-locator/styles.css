@@ -1575,3 +1575,73 @@ input, select { font-family: inherit; }
   .faq-item.open .faq-answer { max-height: 160px; padding-bottom: 8px; }
   .footer-bottom { margin-top: 16px; padding-top: 12px; }
 }
+
+/* ---------- Floating page-jump button ---------- */
+/* The map captures scroll for zooming and the site list has its own
+   internal scroll, so an ordinary scroll gesture rarely reaches the page
+   itself — this gives one clear, always-available way to move between
+   the tool and the footer without fighting either of those. */
+.page-jump-btn {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  color: var(--asphalt-900);
+  border: none;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.6);
+  z-index: 1500;
+  transition: transform .15s ease, opacity .2s ease;
+}
+.page-jump-btn:hover { transform: scale(1.08); }
+.page-jump-btn:active { transform: scale(0.95); }
+#page-jump-icon {
+  display: inline-block;
+  transition: transform .25s ease;
+}
+#page-jump-icon.flipped {
+  transform: rotate(180deg);
+}
+
+/* ---------- Footer FAQ master toggle (mobile only) ---------- */
+/* Desktop always shows all four questions open — plenty of room there.
+   On mobile this collapses the whole list behind one toggle instead,
+   which is the biggest single contributor to how tall the footer was. */
+.footer-faq-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: default;
+  text-align: left;
+}
+.footer-faq-caret { display: none; }
+
+@media (max-width: 799px) {
+  .footer-faq-toggle { cursor: pointer; }
+  .footer-faq-caret {
+    display: inline-block;
+    color: var(--brand-accent);
+    font-size: 13px;
+    transition: transform .2s ease;
+    flex-shrink: 0;
+  }
+  .footer-faq-toggle.open .footer-faq-caret { transform: rotate(180deg); }
+  .footer-faq-list {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .3s ease;
+  }
+  .footer-faq-list.open { max-height: 600px; }
+}
