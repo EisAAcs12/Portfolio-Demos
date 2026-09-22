@@ -556,6 +556,14 @@ input, select { font-family: inherit; }
     max-height: 60vh;
     object-fit: cover;
   }
+  .map-preview {
+    /* the desktop nudge (a % of container height) barely moves anything
+       here since mobile's map area is much shorter to begin with — a
+       fixed pixel offset works regardless of how tall that area is */
+    padding-bottom: 0;
+    align-items: flex-start;
+    padding-top: 8%;
+  }
 }
 .map-preview-cap {
   flex-shrink: 0;
@@ -1583,7 +1591,7 @@ input, select { font-family: inherit; }
    the tool and the footer without fighting either of those. */
 .page-jump-btn {
   position: fixed;
-  right: max(16px, env(safe-area-inset-right));
+  left: max(16px, env(safe-area-inset-left));
   bottom: max(16px, env(safe-area-inset-bottom));
   width: 46px;
   height: 46px;
