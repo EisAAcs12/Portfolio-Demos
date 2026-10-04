@@ -271,7 +271,7 @@ const BRANDS = {
 
   { name: "Mall of Africa", category: "mall", tier: "area", lat: -26.0150679, lng: 28.1055399, sites: ["KOP019", "KOP020"] },
   { name: "Vodacom World", category: "office", tier: "area", lat: -25.9701557, lng: 28.1285179, sites: ["KOP019", "KOP020"] },
-  { name: "Engen Summit Road", category: "fuel", tier: "area", lat: -25.9522169, lng: 28.1302890, sites: ["KOP019", "KOP020"] },
+  { name: "Engen Summit Road", priority: true, category: "fuel", tier: "area", lat: -25.9522169, lng: 28.1302890, sites: ["KOP019", "KOP020"] },
 
   { name: "Sandton City", category: "mall", tier: "area", lat: -26.1088467, lng: 28.0527198, sites: ["KOP023"] },
   { name: "Gautrain Sandton Station", category: "transport", tier: "area", lat: -26.1078845, lng: 28.0572632, sites: ["KOP023"] },
@@ -293,7 +293,7 @@ const BRANDS = {
   { name: "FNB Stadium", category: "landmark", tier: "area", lat: -26.2347569, lng: 27.9826554, sites: ["KOP010"] },
   { name: "Trade Route Mall", category: "mall", tier: "area", lat: -26.3274906, lng: 27.8688145, sites: ["KOP014"] },
 
-  { name: "Shoprite Olievenhoutbosch Corner", category: "mall", tier: "area", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
+  { name: "Shoprite Olievenhoutbosch Corner", priority: true, category: "mall", tier: "area", lat: -25.9035290, lng: 28.0944299, sites: ["KOP021", "KOP022"] },
 
   // --- Closer-in landmarks: literally next to / within a few hundred
   // metres of a site, straight from the original site descriptions,
@@ -302,8 +302,8 @@ const BRANDS = {
   { name: "Netcare Milpark Hospital", category: "health", tier: "close", lat: -26.1802894, lng: 28.0176318, sites: ["KOP003"] },
   { name: "Milpark Rea Vaya Station", category: "transport", tier: "close", lat: -26.1832600, lng: 28.0198100, sites: ["KOP003"] },
   { name: "Northlands Deco Park", category: "mall", tier: "close", lat: -26.0330863, lng: 27.9613374, sites: ["KOP009", "KOP008"] },
-  { name: "Engen Cosmo City Convenience Centre", category: "fuel", tier: "close", lat: -26.0216680, lng: 27.9286172, sites: ["KOP015", "KOP016"] },
-  { name: "KFC Cosmo City", category: "dining", tier: "close", lat: -26.0370883, lng: 27.9218208, sites: ["KOP025", "KOP026"] },
+  { name: "Engen Cosmo City Convenience Centre", priority: true, category: "fuel", tier: "close", lat: -26.0216680, lng: 27.9286172, sites: ["KOP015", "KOP016"] },
+  { name: "KFC Cosmo City", priority: true, category: "dining", tier: "close", lat: -26.0370883, lng: 27.9218208, sites: ["KOP025", "KOP026"] },
   { name: "Moscow Corner Centre", category: "mall", tier: "close", lat: -26.0383776, lng: 27.9232362, sites: ["KOP025", "KOP026"] },
   { name: "Kagiso Magistrates Court", category: "landmark", tier: "close", lat: -26.1637201, lng: 27.7803257, sites: ["KOP018"] },
   { name: "Regal Inn Hotel Midrand", category: "landmark", tier: "close", lat: -25.9528174, lng: 28.1269338, sites: ["KOP019", "KOP020"] },
@@ -311,7 +311,7 @@ const BRANDS = {
   { name: "Noordheuwel Mall", category: "mall", tier: "close", lat: -26.0829604, lng: 27.8021552, sites: ["KOP004"] },
   { name: "Barlow Park Lifestyle Centre", category: "mall", tier: "close", lat: -26.0993393, lng: 28.0790018, sites: ["KOP023"] },
   { name: "KPMG Crescent", category: "office", tier: "close", lat: -26.1856333, lng: 28.0313874, sites: ["KOP011"] },
-  { name: "Checkers Emmarentia", category: "mall", tier: "close", lat: -26.1610000, lng: 28.0120000, sites: ["KOP017"] },
+  { name: "Checkers Emmarentia", priority: true, category: "mall", tier: "close", lat: -26.1610000, lng: 28.0120000, sites: ["KOP017"] },
   { name: "Lenmed Ahmed Kathrada Private Hospital", category: "health", tier: "close", lat: -26.3277018, lng: 27.8640828, sites: ["KOP014"] },
   { name: "Chicken Licken Olievenhoutbosch", category: "dining", tier: "close", lat: -25.9041384, lng: 28.0955668, sites: ["KOP021", "KOP022"] },
   { name: "eTV Studios", category: "landmark", tier: "close", lat: -26.1273098, lng: 28.0315964, sites: ["KOP024"] },
@@ -571,7 +571,7 @@ const BRANDS = {
       { name: "Cosmo City Shopping Centre", category: "mall", tier: "area", lat: -26.0222793, lng: 27.9286348, sites: ["TM002A", "TM002B"] },
       { name: "Mall of Tembisa", category: "mall", tier: "close", lat: -25.9592264, lng: 28.2031257, sites: ["TM003A", "TM003B"] },
       { name: "Chris Hani Mall", category: "mall", tier: "close", lat: -26.3429914, lng: 28.1824854, sites: ["TM004A", "TM004B"] },
-      { name: "Shoprite Daveyton", category: "mall", tier: "close", lat: -26.1635117, lng: 28.4022227, sites: ["TM006A", "TM006B"] },
+      { name: "Shoprite Daveyton", priority: true, category: "mall", tier: "close", lat: -26.1635117, lng: 28.4022227, sites: ["TM006A", "TM006B"] },
       { name: "Chamdor Square Shopping Centre", category: "mall", tier: "close", lat: -26.1559518, lng: 27.7955722, sites: ["TM007A", "TM007B"] },
       { name: "Jubilee Mall", category: "mall", tier: "close", lat: -25.4053878, lng: 28.2696922, sites: ["TM008A", "TM008B"] },
       { name: "Jubilee District Hospital", category: "health", tier: "area", lat: -25.4031152, lng: 28.2662349, sites: ["TM008A", "TM008B"] },
