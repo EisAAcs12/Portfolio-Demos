@@ -36,7 +36,12 @@ function fmtDate(iso) {
 }
 
 function isAvailableNow(site) {
-  return resolveStatus(site) === "available";
+  // "Available now" is a filter for what a rep can realistically still
+  // pitch a client on — an optioned site hasn't been confirmed yet and
+  // can still fall through, so it stays included here even though its
+  // own status badge/light elsewhere keeps showing "Optioned" as normal.
+  const status = resolveStatus(site);
+  return status === "available" || status === "optioned";
 }
 
 // Resolves the effective status for a site: "available" | "optioned" | "booked"
@@ -134,12 +139,53 @@ const LANDMARK_META = {
   landmark:      { emoji: "📍", label: "Landmark" },
 };
 
+// A handful of well-known national chains get their own bold, always-
+// visible pin colour (not their actual logo — see the note on this in
+// chat; reproducing real trademarked artwork in a paid product is a
+// different, more exposed thing than just naming a real business
+// factually). Matched by substring against the landmark's name.
+const CHAIN_COLORS = [
+  { match: "kfc", color: "#c8102e", label: "KFC" },
+  { match: "mcdonald", color: "#ffc72c", textColor: "#12151a", label: "M" },
+  { match: "absa", color: "#c8102e", label: "ABSA" },
+  { match: "fnb", color: "#ff8200", textColor: "#12151a", label: "FNB" },
+  { match: "standard bank", color: "#0033a0", label: "SB" },
+  { match: "nedbank", color: "#00884a", label: "NB" },
+  { match: "capitec", color: "#0072ce", label: "CAP" },
+  { match: "shoprite", color: "#e2231a", label: "SR" },
+  { match: "checkers", color: "#00a651", label: "CHK" },
+  { match: "pick n pay", color: "#e2231a", label: "PnP" },
+  { match: "woolworths", color: "#12151a", label: "W" },
+  { match: "spar", color: "#00954c", label: "SPAR" },
+  { match: "engen", color: "#005bac", label: "ENG" },
+  { match: "shell", color: "#ffd500", textColor: "#12151a", label: "SHL" },
+  { match: "nando", color: "#c8102e", label: "N" },
+];
+
+function chainLookup(name) {
+  const n = name.toLowerCase();
+  return CHAIN_COLORS.find(c => n.includes(c.match)) || null;
+}
+
 function landmarkElement(lm) {
   const meta = LANDMARK_META[lm.category] || LANDMARK_META.landmark;
   const tierClass = lm.tier === "close" ? "tier-close" : "tier-area";
   const el = document.createElement("div");
-  el.className = `landmark-pin ${tierClass}`;
-  el.innerHTML = `<span>${meta.emoji}</span>`;
+
+  if (lm.priority) {
+    const chain = chainLookup(lm.name);
+    el.className = "landmark-pin landmark-pin-priority";
+    if (chain) {
+      el.style.background = chain.color;
+      el.style.color = chain.textColor || "#fff";
+      el.innerHTML = `<span class="landmark-priority-label">${chain.label}</span>`;
+    } else {
+      el.innerHTML = `<span>${meta.emoji}</span>`;
+    }
+  } else {
+    el.className = `landmark-pin ${tierClass}`;
+    el.innerHTML = `<span>${meta.emoji}</span>`;
+  }
   return el;
 }
 
@@ -162,15 +208,17 @@ function rebuildLandmarks() {
       .setLngLat([lm.lng, lm.lat])
       .setPopup(popup)
       .addTo(map);
-    el.style.display = showNow ? "" : "none";
-    landmarkMarkers.push({ marker, el });
+    // Priority landmarks (well-known chains) stay visible at every zoom
+    // level — everything else still only appears once zoomed in.
+    el.style.display = (lm.priority || showNow) ? "" : "none";
+    landmarkMarkers.push({ marker, el, priority: !!lm.priority });
   });
 }
 
 function updateLandmarkVisibility() {
   const shouldShow = map.getZoom() >= LANDMARK_MIN_ZOOM;
-  landmarkMarkers.forEach(({ el }) => {
-    el.style.display = shouldShow ? "" : "none";
+  landmarkMarkers.forEach(({ el, priority }) => {
+    el.style.display = (priority || shouldShow) ? "" : "none";
   });
 }
 
@@ -189,11 +237,14 @@ function darkenStyle(style) {
   if (!style || !style.layers) return style;
   const layers = style.layers.map(layer => {
     const paint = { ...(layer.paint || {}) };
+    const layout = { ...(layer.layout || {}) };
+    let minzoom = layer.minzoom;
     try {
+      const src = (layer["source-layer"] || "").toLowerCase();
+      const isPoi = src.includes("poi");
       if (layer.type === "background") {
         paint["background-color"] = "#181d24";
       } else if (layer.type === "fill") {
-        const src = (layer["source-layer"] || "").toLowerCase();
         if (src.includes("water")) paint["fill-color"] = "#12232b";
         else if (src.includes("landuse") || src.includes("landcover") || src.includes("park")) {
           paint["fill-color"] = "#1c2129";
@@ -201,7 +252,6 @@ function darkenStyle(style) {
           paint["fill-color"] = "#262d37";
         }
       } else if (layer.type === "line") {
-        const src = (layer["source-layer"] || "").toLowerCase();
         if (src.includes("road") || src.includes("transportation")) {
           paint["line-color"] = "#3d4753";
         } else if (src.includes("water") || src.includes("waterway")) {
@@ -209,15 +259,31 @@ function darkenStyle(style) {
         } else if (src.includes("boundary")) {
           paint["line-color"] = "#414b58";
         }
-      } else if (layer.type === "symbol" && layer.layout && layer.layout["text-field"]) {
-        paint["text-color"] = "#aab0b6";
-        paint["text-halo-color"] = "#12151a";
-        paint["text-halo-width"] = 1.2;
+      } else if (layer.type === "symbol") {
+        if (layout["text-field"]) {
+          paint["text-color"] = isPoi ? "#c7ccd1" : "#aab0b6";
+          paint["text-halo-color"] = "#12151a";
+          paint["text-halo-width"] = 1.2;
+        }
+        if (isPoi) {
+          // Real points of interest — shops, restaurants, banks, fuel
+          // stations — straight from OpenStreetMap's own data, already
+          // part of the same map tiles we're loading. Boost their icon
+          // visibility against the dark background and let them start
+          // appearing a bit sooner while zooming in, so the area around
+          // each board reads as genuinely detailed rather than empty,
+          // without us having to hand-curate every single one.
+          paint["icon-opacity"] = 1;
+          if (paint["text-opacity"] === undefined) paint["text-opacity"] = 1;
+          if (typeof minzoom === "number" && minzoom > 13) minzoom = 13;
+        }
       }
     } catch (err) {
       // some layers don't support every paint property — safe to skip
     }
-    return { ...layer, paint };
+    const newLayer = { ...layer, paint, layout };
+    if (minzoom !== undefined) newLayer.minzoom = minzoom;
+    return newLayer;
   });
   return { ...style, layers };
 }
@@ -513,7 +579,6 @@ function hideMapPreview() {
 // ---------- rendering ----------
 
 const listEl = document.getElementById("site-list");
-const resultCountEl = document.getElementById("result-count");
 
 function illuminatedIconSvg(on) {
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -522,22 +587,8 @@ function illuminatedIconSvg(on) {
   </svg>`;
 }
 
-function calcBlockHTML(site) {
-  const durations = [1, 3, 6, 12];
-  const hasProduction = site.production > 0;
-  const calcTotal = site.suggestedRate * 1 + (site.production || 0);
-  return `
-    <div class="calc-block">
-      <div class="calc-head">Estimate a campaign cost</div>
-      <div class="calc-durations">
-        ${durations.map(m => `<button class="duration-btn${m === 1 ? " active" : ""}" data-code="${site.code}" data-months="${m}">${m} mo</button>`).join("")}
-      </div>
-      <div class="calc-total">
-        <span class="calc-total-label">Estimated total</span>
-        <span class="calc-total-figure" data-calc-total="${site.code}">${fmtMoney(calcTotal)}</span>
-      </div>
-      <p class="calc-disclaimer">Estimate only — suggested rate × months${hasProduction ? " + production" : ""}. Final pricing confirmed via Contact for pricing.</p>
-    </div>`;
+function ratePromptHTML() {
+  return `<div class="rate-prompt">To get the rates for these boards, please contact us.</div>`;
 }
 
 function detailGridHTML(site) {
@@ -576,7 +627,6 @@ function siteCardHTML(site, expanded) {
       ${noteRow}
       <p>${site.description}</p>
       ${detailGridHTML(site)}
-      ${calcBlockHTML(site)}
       <div class="gps-row">
         <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
         <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
@@ -598,9 +648,8 @@ function siteCardHTML(site, expanded) {
           ${illuminatedIconSvg(site.illuminated)}
         </span>
       </div>
-      <div class="rate-row">
-        <span class="rate-figure">Media Rate from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
-        <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
+      <div class="rate-prompt-row">
+        ${ratePromptHTML()}
       </div>
       <div class="site-card-bottom">
         ${signal}
@@ -621,8 +670,6 @@ function renderFocusView() {
   const isDigital = site.format === "digital";
   const noteRow = site.liveNote ? `<p class="live-note">📌 ${site.liveNote}</p>` : "";
   const posLabel = visible.length > 1 ? `${idx + 1} of ${visible.length}` : "";
-
-  resultCountEl.textContent = `${visible.length} of ${state.clientView ? state.clientView.size : SITES.length} boards`;
 
   listEl.innerHTML = `
     <div class="focus-view">
@@ -649,14 +696,12 @@ function renderFocusView() {
             ${illuminatedIconSvg(site.illuminated)}
           </span>
         </div>
-        <div class="rate-row">
-          <span class="rate-figure">Media Rate from ${fmtMoney(site.suggestedRate)}<span class="rate-per">/mo</span></span>
-          <span class="rate-flag" title="Indicative estimate only — final pricing confirmed via Contact for pricing">estimate*</span>
+        <div class="rate-prompt-row">
+          ${ratePromptHTML()}
         </div>
         ${noteRow}
         <p class="focus-desc">${site.description}</p>
         ${detailGridHTML(site)}
-        ${calcBlockHTML(site)}
         <div class="gps-row">
           <span>${site.lat.toFixed(6)}, ${site.lng.toFixed(6)}</span>
           <a class="copy-btn" href="https://www.google.com/maps/search/?api=1&query=${site.lat},${site.lng}" target="_blank" rel="noopener">Open in Maps</a>
@@ -714,8 +759,6 @@ function renderList() {
   }
 
   const visible = filteredSites();
-  const total = state.clientView ? state.clientView.size : SITES.length;
-  resultCountEl.textContent = `${visible.length} of ${total} boards`;
 
   if (visible.length === 0) {
     listEl.innerHTML = `<div class="empty-state">No boards match those filters.<br>Try clearing search or the area filter.</div>`;
@@ -801,18 +844,6 @@ listEl.addEventListener("click", (e) => {
     if (pickCheck.checked) state.picked.add(code);
     else state.picked.delete(code);
     updateShareBar();
-    return;
-  }
-  const durationBtn = e.target.closest(".duration-btn");
-  if (durationBtn) {
-    e.stopPropagation();
-    const site = SITES.find(s => s.code === durationBtn.dataset.code);
-    const months = parseInt(durationBtn.dataset.months, 10);
-    const total = site.suggestedRate * months + site.production;
-    const calcBlock = durationBtn.closest(".calc-block");
-    calcBlock.querySelectorAll(".duration-btn").forEach(b => b.classList.toggle("active", b === durationBtn));
-    const totalEl = calcBlock.querySelector(".calc-total-figure");
-    if (totalEl) totalEl.textContent = fmtMoney(total);
     return;
   }
   const enquireBtn = e.target.closest(".enquire-btn");
