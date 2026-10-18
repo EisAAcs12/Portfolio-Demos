@@ -1,3 +1,5 @@
+// BoardBase © 2026 Enziano Isaacs. All rights reserved. Confidential and proprietary —
+// shared for evaluation only under a non-disclosure agreement. Do not copy or distribute.
 // Kopano Media & The Medium — OOH Site Locator
 // Vanilla JS + MapLibre GL JS (OpenFreeMap tiles). Data comes from data.js (BRANDS).
 // Which brand is "active" is held in these module-level `let` bindings —
@@ -126,6 +128,10 @@ let landmarkMarkers = []; // { marker, el } for every currently-built landmark
 // Landmarks only appear once zoomed in this far — keeps the wide view clean
 // and focused on the billboards themselves.
 const LANDMARK_MIN_ZOOM = 14;
+// Well-known chains (KFC, Engen etc.) come in a step earlier, but still only
+// once the person has zoomed in past the wide overview, so they never
+// overshadow the billboard pins on first load.
+const LANDMARK_PRIORITY_MIN_ZOOM = 13;
 
 const LANDMARK_META = {
   mall:          { emoji: "🛍️", label: "Shopping" },
@@ -194,7 +200,9 @@ function rebuildLandmarks() {
   landmarkMarkers = [];
 
   const visibleCodes = new Set(filteredSites().map(s => s.code));
-  const showNow = map.getZoom() >= LANDMARK_MIN_ZOOM;
+  const z = map.getZoom();
+  const showNow = z >= LANDMARK_MIN_ZOOM;
+  const showPriorityNow = z >= LANDMARK_PRIORITY_MIN_ZOOM;
 
   LANDMARKS.forEach(lm => {
     if (!lm.sites.some(code => visibleCodes.has(code))) return;
@@ -208,17 +216,19 @@ function rebuildLandmarks() {
       .setLngLat([lm.lng, lm.lat])
       .setPopup(popup)
       .addTo(map);
-    // Priority landmarks (well-known chains) stay visible at every zoom
-    // level — everything else still only appears once zoomed in.
-    el.style.display = (lm.priority || showNow) ? "" : "none";
+    // Priority landmarks (well-known chains) appear a little earlier than
+    // the rest, but both stay hidden in the wide overview.
+    el.style.display = (lm.priority ? showPriorityNow : showNow) ? "" : "none";
     landmarkMarkers.push({ marker, el, priority: !!lm.priority });
   });
 }
 
 function updateLandmarkVisibility() {
-  const shouldShow = map.getZoom() >= LANDMARK_MIN_ZOOM;
+  const z = map.getZoom();
+  const shouldShow = z >= LANDMARK_MIN_ZOOM;
+  const shouldShowPriority = z >= LANDMARK_PRIORITY_MIN_ZOOM;
   landmarkMarkers.forEach(({ el, priority }) => {
-    el.style.display = (priority || shouldShow) ? "" : "none";
+    el.style.display = (priority ? shouldShowPriority : shouldShow) ? "" : "none";
   });
 }
 
