@@ -1,3 +1,5 @@
+// BoardBase © 2026 Enziano Isaacs. All rights reserved. Confidential and proprietary —
+// shared for evaluation only under a non-disclosure agreement. Do not copy or distribute.
 // Kopano Media & The Medium — combined OOH Sites Inventory
 // Kopano Media parsed from Kopano_Media_OOH_Inventory_March_2026.pptx
 // The Medium parsed from The_Medium_January_2026_Inventory_packages.pptx
@@ -30,8 +32,8 @@ const BRANDS = {
   name: "Peter Mashamba",
   role: "Managing Director",
   email: "peter@kopanomediacomms.co.za",
-  phone: "082 675 0747",
-  phoneHref: "+27826750747",
+  phone: "082 301 9920",
+  phoneHref: "+27823019920",
 },
     AREAS: [
   "Fourways & Northriding",
