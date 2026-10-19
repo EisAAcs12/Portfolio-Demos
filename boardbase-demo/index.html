@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>BoardBase</title>
+<meta name="description" content="Find available billboard and digital screen sites across Gauteng and Limpopo." />
+<meta name="theme-color" content="#181d24" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand" id="brand-switcher-wrap">
+      <span class="app-name">BoardBase</span>
+      <div class="brand-switcher-group" role="group" aria-label="Switch media company">
+        <button type="button" class="brand-pill" id="brand-pill-kopano" data-brand="kopano">
+          <img src="brand-assets/meridian-logo.svg" alt="" class="brand-pill-logo" />
+          <span class="full-label">Meridian Outdoor</span>
+          <span class="short-label">Meridian</span>
+        </button>
+        <button type="button" class="brand-pill" id="brand-pill-medium" data-brand="medium">
+          <img src="brand-assets/apex-logo.svg" alt="" class="brand-pill-logo" />
+          <span class="full-label">Apex Media</span>
+        </button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="contact-chip" id="header-contact-btn">
+        <span class="full-label">Contact for pricing</span>
+        <span class="short-label">Contact</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="install-banner">
+    <span>Install this app for one-tap access on site visits.</span>
+    <div class="install-actions">
+      <button id="install-btn">Install</button>
+      <button class="dismiss" id="dismiss-install">✕</button>
+    </div>
+  </div>
+
+  <div class="filterbar">
+    <div class="filter-more-wrap">
+      <button type="button" id="filter-more-btn" class="filter-more-btn" title="More filters" aria-label="More filters" aria-expanded="false">
+        <span class="hamburger-icon"><span></span><span></span><span></span></span>
+      </button>
+      <div class="filter-more-panel" id="filter-more-panel">
+        <select id="area-select">
+          <option value="all">All areas</option>
+        </select>
+        <select id="size-select">
+          <option value="all">All sizes</option>
+        </select>
+        <button class="toggle-chip" id="illum-toggle">☀ Any lighting</button>
+        <button class="toggle-chip" id="curate-toggle">👤 Site Selection</button>
+      </div>
+    </div>
+    <input type="search" id="search-input" placeholder="Search area, road, or KOP code…" />
+    <button class="toggle-chip" id="avail-toggle">Available now</button>
+  </div>
+
+  <div id="client-view-banner" class="client-view-banner">
+    <span id="client-view-text"></span>
+    <button id="client-view-clear">View full inventory</button>
+  </div>
+
+  <div class="layout">
+    <div class="map-wrap">
+      <div id="map"></div>
+      <button type="button" id="tilt-toggle" class="tilt-toggle" title="Toggle a 3D angled view of the map">🗺️ 3D View</button>
+      <div class="map-preview" id="map-preview">
+        <div class="map-preview-frame">
+          <img id="map-preview-img" src="" alt="" />
+          <video id="map-preview-video" muted playsinline preload="auto"></video>
+          <div class="map-preview-cap">
+            <div class="map-preview-line1"><span id="map-preview-code"></span><span id="map-preview-title"></span></div>
+            <div class="map-preview-line2" id="map-preview-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Boards by <strong>area</strong> — tap a card to locate it</div>
+        <div class="sync-line" id="sync-status">Loading availability…</div>
+      </div>
+      <div class="site-list" id="site-list"></div>
+      <div id="share-bar" class="share-bar">
+        <span id="share-count">0 selected</span>
+        <button id="share-clear-btn" class="share-clear-btn">Clear</button>
+        <button id="share-link-btn" class="share-link-btn">Share link</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="contact-modal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" id="contact-close">✕</button>
+      <div class="modal-eyebrow">Rates vary by season &amp; site — always confirm current pricing</div>
+      <h2 class="modal-heading">Contact for pricing</h2>
+      <p class="modal-sub" id="contact-subtitle">Get today's rate card for any Meridian Outdoor site</p>
+      <div class="modal-contact-row">
+        <div class="modal-avatar" id="modal-avatar">PM</div>
+        <div>
+          <div class="modal-name" id="contact-name">Demo Sales Desk</div>
+          <div class="modal-role" id="contact-role">Sales Manager</div>
+        </div>
+      </div>
+      <a class="modal-action-btn whatsapp" id="contact-whatsapp-link" href="#" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm5.8 14.03c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11-.41-.13-.94-.31-1.62-.6-2.85-1.23-4.71-4.1-4.85-4.29-.14-.19-1.16-1.54-1.16-2.94 0-1.4.73-2.08 1-2.36.26-.28.57-.35.76-.35.19 0 .38 0 .55.01.18.01.41-.07.64.49.24.57.81 1.97.88 2.11.07.14.11.3.02.49-.09.19-.14.3-.28.46-.14.16-.29.36-.42.48-.14.13-.29.28-.12.55.16.28.73 1.2 1.57 1.95 1.08.96 1.99 1.26 2.27 1.4.28.14.44.12.6-.07.16-.19.69-.8.87-1.08.18-.28.36-.23.6-.14.24.09 1.55.73 1.82.86.27.14.45.2.51.32.07.12.07.68-.17 1.36z"/></svg>
+        WhatsApp
+      </a>
+      <a class="modal-action-btn email" id="contact-email-link" href="mailto:">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V6z"/><path d="m22 6-10 7L2 6"/></svg>
+        Email <span id="contact-email-display">sales@meridian-outdoor.example</span>
+      </a>
+    </div>
+  </div>
+
+  <div id="welcome-modal" class="modal-overlay">
+    <div class="modal-card welcome-card">
+      <button class="modal-close" id="welcome-close">✕</button>
+      <h2 class="modal-heading">We're glad you're here</h2>
+      <p class="welcome-body">
+        Meridian Outdoor and Apex Media put together every billboard and digital
+        screen they've got on offer across Gauteng (a fictional demo) — real spots,
+        mapped exactly where they stand. Take a look around, we think you'll
+        like what you find.
+      </p>
+      <button class="welcome-start-btn" id="welcome-start-btn">Let's go</button>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer" id="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col footer-about">
+      <span class="app-name">BoardBase</span>
+      <p>A live site locator for out-of-home billboard and digital screen
+        inventory across Gauteng, shown here with fictional demo listings from
+        Meridian Outdoor and Apex Media.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <p id="footer-contact-name">Demo Sales Desk</p>
+      <p><a href="mailto:" id="footer-contact-email">sales@meridian-outdoor.example</a></p>
+      <p><a href="#" id="footer-contact-whatsapp">WhatsApp</a></p>
+    </div>
+    <div class="footer-col footer-faq">
+      <button type="button" class="footer-faq-toggle" id="footer-faq-toggle">
+        <h4>Frequently asked questions</h4>
+        <span class="footer-faq-caret">▾</span>
+      </button>
+      <div class="footer-faq-list" id="footer-faq-list">
+      <div class="faq-item">
+        <button class="faq-question">How often is availability updated?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">Live sites sync directly from the media owner's own tracking sheet — usually within minutes of a change. Sites without a live connection still show accurate static data.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">What does "Optioned" mean?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">A site that's been provisionally reserved by another client but isn't fully confirmed yet. Worth asking about — it can still open up.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">Are the prices shown final?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">No — figures shown are estimates to help you budget. Confirm current, final pricing directly with the media owner before booking.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">Can I get a shortlist sent to me?<span class="faq-caret">+</span></button>
+        <div class="faq-answer">Yes — ask your media owner contact for a curated link, using Site Selection. It shows only the specific sites picked for you, with everything else exactly as normal.</div>
+      </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 BoardBase. Site data belongs to its respective media owner.</span>
+    <span class="footer-confidential">Demo with fictional data</span>
+    <span class="footer-credit" id="footer-credit">Built by Enziano Isaacs</span>
+  </div>
+</footer>
+
+<button type="button" id="page-jump-btn" class="page-jump-btn" title="Scroll">
+  <span id="page-jump-icon">↓</span>
+</button>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
