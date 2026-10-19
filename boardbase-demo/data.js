@@ -7,7 +7,7 @@
 
 const BRANDS = {
   kopano: {
-  "id": "kopano",
+  "id": "meridian",
   "name": "Meridian",
   "nameAccent": "Outdoor",
   "tagline": "OOH Site Locator",
@@ -18,9 +18,9 @@ const BRANDS = {
   "CONTACT": {
     "name": "Demo Sales Desk",
     "role": "Sales Manager",
-    "email": "sales@meridian-outdoor.example",
-    "phone": "000 000 0000",
-    "phoneHref": "+27000000000"
+    "email": "enziano@icloud.com",
+    "phone": "064 900 9815",
+    "phoneHref": "+2765 900 9815"
   },
   "AREAS": [
     "Sandton",
