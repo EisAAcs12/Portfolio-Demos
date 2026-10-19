@@ -1018,30 +1018,75 @@ shareClearBtn.addEventListener("click", () => {
   renderList();
 });
 
+// Small on-screen message so the person always sees that something happened.
+function showToast(msg) {
+  let t = document.getElementById("bb-toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "bb-toast";
+    t.className = "bb-toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+// Clipboard copy that also works where navigator.clipboard is blocked.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (err2) {
+      return false;
+    }
+  }
+}
+
 shareLinkBtn.addEventListener("click", async () => {
   const codes = [...state.picked];
-  if (codes.length === 0) return;
+  if (codes.length === 0) {
+    showToast("Tap one or more sites first");
+    return;
+  }
   const url = new URL(location.href);
   url.search = "";
+  url.hash = "";
   if (currentBrandId !== "kopano") url.searchParams.set("brand", currentBrandId);
   url.searchParams.set("sites", codes.join(","));
   const shareUrl = url.toString();
   const shareText = `${codes.length} ${brandFullName()} billboard site${codes.length === 1 ? "" : "s"} selected for you — view the map:`;
 
-  if (navigator.share) {
+  // Only phones/tablets get the native share sheet. On desktop it can open
+  // silently in a separate window, which looked like "nothing happened".
+  const isTouch = window.matchMedia("(pointer: coarse)").matches;
+  if (isTouch && navigator.share) {
     try {
       await navigator.share({ title: `${brandFullName()} — selected sites`, text: shareText, url: shareUrl });
       return;
     } catch (err) {
-      // user cancelled the native share sheet — fall through to clipboard
+      if (err && err.name === "AbortError") return; // person closed the share sheet
     }
   }
-  try {
-    await navigator.clipboard.writeText(shareUrl);
+  if (await copyText(shareUrl)) {
     const original = shareLinkBtn.textContent;
     shareLinkBtn.textContent = "Link copied!";
     setTimeout(() => (shareLinkBtn.textContent = original), 1600);
-  } catch (err) {
+    showToast("Link copied — paste it into WhatsApp or email");
+  } else {
     prompt("Copy this link to send to your client:", shareUrl);
   }
 });
@@ -1509,3 +1554,23 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   });
 }
+
+
+// ---------- keep the layout correct when the phone is rotated ----------
+// Mobile browsers report a stale height for a moment after rotation, so the
+// app height is set from the real inner height and re-checked shortly after.
+function syncAppHeight() {
+  document.documentElement.style.setProperty("--app-h", window.innerHeight + "px");
+  if (typeof map !== "undefined" && map && map.resize) map.resize();
+}
+let _rotateTimer;
+function scheduleSync() {
+  clearTimeout(_rotateTimer);
+  _rotateTimer = setTimeout(syncAppHeight, 120);
+}
+window.addEventListener("resize", scheduleSync);
+window.addEventListener("orientationchange", () => {
+  scheduleSync();
+  setTimeout(syncAppHeight, 400);
+});
+syncAppHeight();
